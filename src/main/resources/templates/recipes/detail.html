@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${recipe.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <p class="crumb"><a th:href="@{/recipes}">Recipes</a></p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="pagehead">
+        <div>
+            <h1 th:text="${recipe.name}">Pesto pasta</h1>
+            <p class="pagehead__note" th:if="${recipe.description}"
+               th:text="${recipe.description}">A quick weeknight dinner.</p>
+        </div>
+        <div class="actions">
+            <a class="button button--quiet" th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Edit</a>
+            <button type="button" class="button button--danger"
+                    data-dialog-open="delete-dialog"
+                    th:attr="data-name=${recipe.name},
+                             data-entity='recipe',
+                             data-delete-url=@{/recipes/{id}/delete(id=${recipe.id})},
+                             data-blocked=${blockedReason}">Delete</button>
+        </div>
+    </div>
+
+    <dl class="factgrid">
+        <div class="factgrid__item">
+            <dt>Serves</dt>
+            <dd th:text="${recipe.servings}">4</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Prep</dt>
+            <dd th:text="|${recipe.prepMinutes} min|">10 min</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Cook</dt>
+            <dd th:text="|${recipe.cookMinutes} min|">25 min</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Times cooked</dt>
+            <dd th:text="${recipe.timesCooked}">0</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Last cooked</dt>
+            <dd th:text="${recipe.lastCookedAt != null} ? ${@fmt.date(recipe.lastCookedAt)} : 'Never'">Never</dd>
+        </div>
+    </dl>
+
+    <p class="taglist" th:unless="${#sets.isEmpty(recipe.tags)}">
+        <span class="badge" th:each="tag : ${recipe.tags}" th:text="${tag}">italian</span>
+    </p>
+
+    <section class="section">
+        <h2>Ingredients</h2>
+        <div class="empty empty--tight" th:if="${#lists.isEmpty(recipe.lines)}">
+            <p>No ingredients on this recipe yet.</p>
+        </div>
+        <table class="table" th:unless="${#lists.isEmpty(recipe.lines)}">
+            <thead>
+            <tr>
+                <th scope="col">Ingredient</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Note</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="line : ${recipe.lines}">
+                <td th:text="${line.ingredient.name}">Basil</td>
+                <td th:text="${@fmt.amount(line.quantity, line.unit)}">1 cup</td>
+                <td th:text="${line.note}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section" th:if="${recipe.instructions}">
+        <h2>Instructions</h2>
+        <p class="prose" th:text="${recipe.instructions}">Step one.</p>
+    </section>
+</main>
+
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form th:action="@{/recipes}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title" data-delete-heading>Delete recipe?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-delete-message>Delete this recipe?</p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

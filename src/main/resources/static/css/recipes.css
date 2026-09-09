@@ -1,0 +1,115 @@
+/* PantryPlan — recipe detail and multi-field form styles. */
+
+.filters {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin: 0 0 1.5rem;
+}
+
+.filters__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.filters__field label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.filters__field input {
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    font-size: 0.92rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: #FFFFFF;
+    min-width: 14rem;
+}
+
+.filters__field input:focus {
+    border-color: var(--herb);
+    outline: 2px solid var(--herb-wash);
+}
+
+/* ---------- recipe detail ---------- */
+
+.factgrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    margin: 0 0 1.25rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+}
+
+.factgrid__item { margin: 0; }
+
+.factgrid dt {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 0.15rem;
+}
+
+.factgrid dd {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.15rem;
+}
+
+.taglist {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin: 0 0 1.5rem;
+}
+
+.section { margin-top: 2.25rem; }
+
+.section h2 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    margin: 0 0 0.85rem;
+}
+
+.prose {
+    max-width: 68ch;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+.empty--tight { padding: 1.5rem; }
+
+/* ---------- wider forms ---------- */
+
+.form--wide { max-width: 44rem; }
+
+.fieldrow {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.fieldrow .field { flex: 1 1 8rem; }
+
+.form textarea {
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    font: inherit;
+    color: var(--ink);
+    background: #FFFFFF;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    resize: vertical;
+}
+
+.form textarea:focus {
+    border-color: var(--herb);
+    outline: 2px solid var(--herb-wash);
+}
+
+.table td .badge { margin-right: 0.25rem; }

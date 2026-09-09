@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Recipes')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Recipes</h1>
+            <p class="pagehead__note">
+                Search by name, by an ingredient one calls for, or by a tag you have
+                given it.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <form th:action="@{/recipes}" method="get">
+        <div class="toolbar">
+            <div class="searchbar">
+                <label class="visually-hidden" for="q">Search recipes by name</label>
+                <input type="search" id="q" name="q" th:value="${query}" placeholder="Search by name">
+                <button type="submit" class="button button--quiet">Search</button>
+                <a th:if="${searching}" th:href="@{/recipes}" class="searchbar__clear">Clear</a>
+            </div>
+            <a class="button button--primary" th:href="@{/recipes/new}">New recipe</a>
+        </div>
+
+        <div class="filters">
+            <div class="filters__field">
+                <label for="ingredient">Contains ingredient</label>
+                <input type="text" id="ingredient" name="ingredient"
+                       th:value="${ingredientQuery}" placeholder="e.g. basil">
+            </div>
+            <div class="filters__field">
+                <label for="tag">Tag</label>
+                <input type="text" id="tag" name="tag" th:value="${tagQuery}"
+                       list="tag-options" placeholder="e.g. weeknight">
+                <datalist id="tag-options">
+                    <option th:each="known : ${knownTags}" th:value="${known}"></option>
+                </datalist>
+            </div>
+        </div>
+    </form>
+
+    <p class="resultcount" th:if="${searching}">
+        <span th:text="${#lists.size(recipes)}">0</span>
+        <span th:text="${#lists.size(recipes) == 1 ? 'recipe' : 'recipes'}">recipes</span> matched
+    </p>
+
+    <div class="empty" th:if="${#lists.isEmpty(recipes)}">
+        <p th:if="${searching}">Nothing matched those criteria.</p>
+        <p th:unless="${searching}">
+            No recipes yet. Add one and it becomes available to plan a week around.
+        </p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(recipes)}">
+        <caption class="visually-hidden">Recipes on this account</caption>
+        <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Serves</th>
+            <th scope="col">Total time</th>
+            <th scope="col">Tags</th>
+            <th scope="col">Times cooked</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="recipe : ${recipes}">
+            <td><a th:href="@{/recipes/{id}(id=${recipe.id})}" th:text="${recipe.name}">Pesto pasta</a></td>
+            <td th:text="${recipe.servings}">4</td>
+            <td>
+                <span th:if="${recipe.totalMinutes() > 0}"
+                      th:text="|${recipe.totalMinutes()} min|">35 min</span>
+                <span th:if="${recipe.totalMinutes() == 0}" class="muted">not set</span>
+            </td>
+            <td>
+                <span class="badge" th:each="tag : ${recipe.tags}" th:text="${tag}">italian</span>
+                <span th:if="${#sets.isEmpty(recipe.tags)}" class="muted">none</span>
+            </td>
+            <td th:text="${recipe.timesCooked}">0</td>
+            <td class="table__actions">
+                <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Edit</a>
+                <button type="button" class="linkbutton linkbutton--danger"
+                        data-dialog-open="delete-dialog"
+                        th:attr="data-name=${recipe.name},
+                                 data-entity='recipe',
+                                 data-delete-url=@{/recipes/{id}/delete(id=${recipe.id})},
+                                 data-blocked=${blockReasons.get(recipe.id)}">Delete</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form th:action="@{/recipes}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title" data-delete-heading>Delete recipe?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-delete-message>Delete this recipe?</p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

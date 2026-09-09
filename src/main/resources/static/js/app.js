@@ -45,17 +45,29 @@
         }
     }
 
+    /*
+     * One delete dialog serves every list. The trigger supplies the full URL to
+     * post to, the display name, the noun to use in the copy, and — when the
+     * record cannot be removed — the reason, in which case the confirm button is
+     * hidden rather than letting the cook submit something the server refuses.
+     */
     function fillDeleteDialog(dialog, trigger) {
-        var name = trigger.getAttribute("data-name") || "this ingredient";
-        var id = trigger.getAttribute("data-id");
+        var name = trigger.getAttribute("data-name") || "this record";
+        var entity = trigger.getAttribute("data-entity") || "record";
+        var url = trigger.getAttribute("data-delete-url");
         var blocked = trigger.getAttribute("data-blocked");
 
         var form = dialog.querySelector("[data-delete-form]");
+        var heading = dialog.querySelector("[data-delete-heading]");
         var message = dialog.querySelector("[data-delete-message]");
         var blockedNote = dialog.querySelector("[data-delete-blocked]");
         var submit = dialog.querySelector("[data-delete-submit]");
 
-        form.action = form.getAttribute("data-action-base") + "/" + id + "/delete";
+        if (url) {
+            form.action = url;
+        }
+        heading.textContent = "Delete " + entity + "?";
+        submit.textContent = "Delete " + entity;
 
         if (blocked) {
             message.textContent = name + " cannot be deleted yet.";
@@ -91,13 +103,11 @@
             if (owner) {
                 owner.close();
             }
+            return;
         }
-    });
 
-    /* Clicking the backdrop closes the dialog. The backdrop is the dialog
-       element itself, so a click landing on it rather than on its contents
-       means the pointer was outside the panel. */
-    document.addEventListener("click", function (event) {
+        /* A click landing on the dialog element itself is a click on the
+           backdrop, since the panel's contents are its children. */
         if (event.target.tagName === "DIALOG") {
             event.target.close();
         }

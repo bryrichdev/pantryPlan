@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Recipe')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <p class="crumb"><a th:href="@{/recipes}">Recipes</a></p>
+    <h1 th:text="${form.new} ? 'New recipe' : 'Edit recipe'">New recipe</h1>
+
+    <form th:action="@{/recipes}" th:object="${form}" method="post" class="form form--wide">
+        <input type="hidden" th:field="*{id}">
+
+        <div class="field">
+            <label for="name">Name</label>
+            <input type="text" id="name" th:field="*{name}" maxlength="150" autofocus>
+            <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</p>
+        </div>
+
+        <div class="fieldrow">
+            <div class="field">
+                <label for="servings">Serves</label>
+                <input type="number" id="servings" th:field="*{servings}" min="1" max="100">
+                <p class="field__error" th:if="${#fields.hasErrors('servings')}"
+                   th:errors="*{servings}">Servings error</p>
+            </div>
+            <div class="field">
+                <label for="prepMinutes">Prep minutes</label>
+                <input type="number" id="prepMinutes" th:field="*{prepMinutes}" min="0" max="1440">
+                <p class="field__error" th:if="${#fields.hasErrors('prepMinutes')}"
+                   th:errors="*{prepMinutes}">Prep error</p>
+            </div>
+            <div class="field">
+                <label for="cookMinutes">Cook minutes</label>
+                <input type="number" id="cookMinutes" th:field="*{cookMinutes}" min="0" max="1440">
+                <p class="field__error" th:if="${#fields.hasErrors('cookMinutes')}"
+                   th:errors="*{cookMinutes}">Cook error</p>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="description">Description</label>
+            <textarea id="description" th:field="*{description}" rows="2" maxlength="2000"></textarea>
+            <p class="field__hint">One or two lines describing the dish. Optional.</p>
+            <p class="field__error" th:if="${#fields.hasErrors('description')}"
+               th:errors="*{description}">Description error</p>
+        </div>
+
+        <div class="field">
+            <label for="tagsCsv">Tags</label>
+            <input type="text" id="tagsCsv" th:field="*{tagsCsv}" maxlength="300"
+                   placeholder="weeknight, italian, freezer">
+            <p class="field__hint">Separate with commas. Tags are searchable.</p>
+            <p class="field__error" th:if="${#fields.hasErrors('tagsCsv')}"
+               th:errors="*{tagsCsv}">Tags error</p>
+        </div>
+
+        <div class="field">
+            <label for="instructions">Instructions</label>
+            <textarea id="instructions" th:field="*{instructions}" rows="10" maxlength="20000"></textarea>
+            <p class="field__error" th:if="${#fields.hasErrors('instructions')}"
+               th:errors="*{instructions}">Instructions error</p>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="button button--primary">Save recipe</button>
+            <a th:href="@{/recipes}" class="button button--quiet">Cancel</a>
+        </div>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>
