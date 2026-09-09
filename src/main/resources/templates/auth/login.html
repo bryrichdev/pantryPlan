@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Sign in')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page page--split">
+    <div class="split">
+        <section class="split__form">
+            <h1>Sign in</h1>
+
+            <p class="notice notice--good" th:if="${registered}">
+                Account created. Sign in to get started.
+            </p>
+            <p class="notice notice--bad" th:if="${param.error}">
+                That email and password combination did not match an account.
+            </p>
+            <p class="notice notice--good" th:if="${param.logout}">
+                You are signed out.
+            </p>
+
+            <form th:action="@{/login}" method="post" class="form">
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" autocomplete="username" required>
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password"
+                           autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="button button--primary">Sign in</button>
+            </form>
+
+            <p class="footnote">
+                No account yet? <a th:href="@{/register}">Create one</a>.
+            </p>
+        </section>
+        <div th:replace="~{fragments/sample-list :: samplelist}"></div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

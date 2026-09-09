@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<aside th:fragment="samplelist" class="showcase">
+    <p class="showcase__caption">Sunday roast, planned for six</p>
+    <ul class="showcase__list">
+        <li class="showcase__item showcase__item--have">
+            <span class="showcase__name">Olive oil</span>
+            <span class="showcase__note">already have 500 ml</span>
+        </li>
+        <li class="showcase__item showcase__item--have">
+            <span class="showcase__name">Rosemary</span>
+            <span class="showcase__note">already have 20 g</span>
+        </li>
+        <li class="showcase__item showcase__item--need">
+            <span class="showcase__name">Chicken thighs</span>
+            <span class="showcase__note">buy 1.8 kg</span>
+        </li>
+        <li class="showcase__item showcase__item--need">
+            <span class="showcase__name">Yukon potatoes</span>
+            <span class="showcase__note">buy 900 g</span>
+        </li>
+        <li class="showcase__item showcase__item--have">
+            <span class="showcase__name">Garlic</span>
+            <span class="showcase__note">already have 6 cloves</span>
+        </li>
+        <li class="showcase__item showcase__item--need">
+            <span class="showcase__name">Heavy cream</span>
+            <span class="showcase__note">buy 240 ml</span>
+        </li>
+    </ul>
+    <p class="showcase__summary">Six ingredients in the recipes, three in the cart.</p>
+</aside>
+
+</body>
+</html>

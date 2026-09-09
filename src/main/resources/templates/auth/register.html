@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Create an account')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page page--split">
+    <div class="split">
+        <section class="split__form">
+            <h1>Create an account</h1>
+            <p class="lede lede--tight">
+                Your recipes and pantry stay tied to this account and are visible only to you.
+            </p>
+
+            <form th:action="@{/register}" th:object="${form}" method="post" class="form">
+                <div class="field">
+                    <label for="displayName">Name</label>
+                    <input type="text" id="displayName" th:field="*{displayName}"
+                           autocomplete="name" maxlength="100">
+                    <p class="field__error" th:if="${#fields.hasErrors('displayName')}"
+                       th:errors="*{displayName}">Name error</p>
+                </div>
+
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" th:field="*{email}"
+                           autocomplete="email" maxlength="255">
+                    <p class="field__error" th:if="${#fields.hasErrors('email')}"
+                       th:errors="*{email}">Email error</p>
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" th:field="*{password}"
+                           autocomplete="new-password">
+                    <p class="field__hint">At least 10 characters.</p>
+                    <p class="field__error" th:if="${#fields.hasErrors('password')}"
+                       th:errors="*{password}">Password error</p>
+                </div>
+
+                <div class="field">
+                    <label for="confirmPassword">Confirm password</label>
+                    <input type="password" id="confirmPassword" th:field="*{confirmPassword}"
+                           autocomplete="new-password">
+                    <p class="field__error" th:if="${#fields.hasErrors('confirmPassword')}"
+                       th:errors="*{confirmPassword}">Confirmation error</p>
+                </div>
+
+                <button type="submit" class="button button--primary">Create account</button>
+            </form>
+
+            <p class="footnote">
+                Already registered? <a th:href="@{/login}">Sign in</a>.
+            </p>
+        </section>
+        <div th:replace="~{fragments/sample-list :: samplelist}"></div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

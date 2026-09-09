@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|${pageTitle} — PantryPlan|">PantryPlan</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+
+<body>
+
+<header th:fragment="topnav" class="topnav">
+    <div class="topnav__inner">
+        <a class="wordmark" th:href="@{/}">PantryPlan</a>
+
+        <nav class="topnav__links" sec:authorize="isAuthenticated()">
+            <a th:href="@{/recipes}">Recipes</a>
+            <a th:href="@{/pantry}">Pantry</a>
+            <a th:href="@{/meal-plans}">Meal plans</a>
+            <a th:href="@{/grocery-lists}">Grocery lists</a>
+            <a th:href="@{/reports/pantry-stock}">Reports</a>
+        </nav>
+
+        <div class="topnav__account">
+            <span sec:authorize="isAuthenticated()" class="topnav__user"
+                  th:text="${currentUserName}">Cook</span>
+            <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="button button--quiet">Sign out</button>
+            </form>
+            <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="button button--quiet">Sign in</a>
+        </div>
+    </div>
+</header>
+
+<footer th:fragment="sitefooter" class="sitefooter">
+    <p>PantryPlan — plan the week, shop for what is missing.</p>
+    <p>Questions? <a href="mailto:support@pantryplan.example">support@pantryplan.example</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Plan the week')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page page--split">
+    <div class="split">
+        <section class="split__pitch">
+            <h1 class="display">Your grocery list already knows what is in the pantry.</h1>
+            <p class="lede">
+                Keep your recipes, your shelves, and next week's meals in one place.
+                Plan the week, and PantryPlan works out what is actually missing.
+            </p>
+            <div class="actions">
+                <a class="button button--primary" th:href="@{/register}">Create an account</a>
+                <a class="button button--quiet" th:href="@{/login}">Sign in</a>
+            </div>
+        </section>
+        <div th:replace="~{fragments/sample-list :: samplelist}"></div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>
