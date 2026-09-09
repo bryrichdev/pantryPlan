@@ -1,14 +1,15 @@
 /*
- * PantryPlan dialog behaviour.
+ * PantryPlan browser behaviour.
  *
- * Uses the native <dialog> element, which supplies the backdrop, Escape to
- * close, and focus containment. This file only wires buttons to dialogs and
- * fills in the values for the row being acted on. Validation stays on the
- * server: a rejected form re-renders the page with data-open-dialog set, and
- * the dialog reopens with the messages already in the markup.
+ * Two features live here: modal dialogs built on the native <dialog> element,
+ * and the repeating ingredient rows on the recipe form. Neither does any
+ * validation — that stays on the server, so a rejected form comes back with
+ * its messages already rendered.
  */
 (function () {
     "use strict";
+
+    /* ---------------------------------------------------------------- dialogs */
 
     function openDialog(dialog) {
         if (typeof dialog.showModal === "function") {
@@ -46,10 +47,10 @@
     }
 
     /*
-     * One delete dialog serves every list. The trigger supplies the full URL to
-     * post to, the display name, the noun to use in the copy, and — when the
-     * record cannot be removed — the reason, in which case the confirm button is
-     * hidden rather than letting the cook submit something the server refuses.
+     * One delete dialog serves every list. The trigger supplies the URL to post
+     * to, the display name, the noun for the copy, and — when the record cannot
+     * be removed — the reason, in which case the confirm button is hidden rather
+     * than letting the cook submit something the server refuses.
      */
     function fillDeleteDialog(dialog, trigger) {
         var name = trigger.getAttribute("data-name") || "this record";
@@ -81,17 +82,61 @@
         }
     }
 
+    /* ------------------------------------------------------- repeating rows */
+
+    /*
+     * Spring binds an indexed list by field name: lines[0].quantity,
+     * lines[1].quantity and so on. The indexes must run 0..n-1 with no gaps, or
+     * binding stops at the first missing position. So every add and every remove
+     * renumbers the whole set.
+     */
+    function renumberLines(container) {
+        var rows = container.querySelectorAll(".lineitem");
+        rows.forEach(function (row, index) {
+            row.querySelectorAll("input, select").forEach(function (field) {
+                if (field.name) {
+                    field.name = field.name.replace(/lines\[\d+\]/, "lines[" + index + "]");
+                }
+                if (field.id) {
+                    field.id = field.id.replace(/lines\d+\./, "lines" + index + ".");
+                }
+            });
+        });
+    }
+
+    function addLineRow(container) {
+        var template = document.getElementById("line-template");
+        if (!template) {
+            return;
+        }
+        var index = container.querySelectorAll(".lineitem").length;
+        var markup = template.innerHTML.split("INDEX").join(String(index));
+        var holder = document.createElement("div");
+        holder.innerHTML = markup.trim();
+
+        var row = holder.firstElementChild;
+        container.appendChild(row);
+        renumberLines(container);
+
+        var firstField = row.querySelector("select, input");
+        if (firstField) {
+            firstField.focus();
+        }
+    }
+
+    /* ---------------------------------------------------------------- wiring */
+
     document.addEventListener("click", function (event) {
-        var trigger = event.target.closest("[data-dialog-open]");
-        if (trigger) {
-            var dialog = document.getElementById(trigger.getAttribute("data-dialog-open"));
+        var opener = event.target.closest("[data-dialog-open]");
+        if (opener) {
+            var dialog = document.getElementById(opener.getAttribute("data-dialog-open"));
             if (!dialog) {
                 return;
             }
             if (dialog.id === "ingredient-dialog") {
-                fillIngredientDialog(dialog, trigger);
+                fillIngredientDialog(dialog, opener);
             } else if (dialog.id === "delete-dialog") {
-                fillDeleteDialog(dialog, trigger);
+                fillDeleteDialog(dialog, opener);
             }
             openDialog(dialog);
             return;
@@ -106,6 +151,34 @@
             return;
         }
 
+        if (event.target.closest("[data-add-line]")) {
+            var addContainer = document.querySelector("[data-lines]");
+            if (addContainer) {
+                addLineRow(addContainer);
+            }
+            return;
+        }
+
+        var remover = event.target.closest("[data-remove-line]");
+        if (remover) {
+            var container = remover.closest("[data-lines]");
+            var row = remover.closest(".lineitem");
+            if (!container || !row) {
+                return;
+            }
+            /* Never leave the form with nothing to type into. Clearing the last
+               row is more useful than removing it. */
+            if (container.querySelectorAll(".lineitem").length === 1) {
+                row.querySelectorAll("input, select").forEach(function (field) {
+                    field.value = "";
+                });
+            } else {
+                row.remove();
+                renumberLines(container);
+            }
+            return;
+        }
+
         /* A click landing on the dialog element itself is a click on the
            backdrop, since the panel's contents are its children. */
         if (event.target.tagName === "DIALOG") {
@@ -113,7 +186,7 @@
         }
     });
 
-    /* Reopen after a rejected submission so the errors are visible. */
+    /* Reopen a dialog after a rejected submission so the errors are visible. */
     document.addEventListener("DOMContentLoaded", function () {
         var requested = document.body.getAttribute("data-open-dialog");
         if (!requested) {

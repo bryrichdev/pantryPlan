@@ -1,10 +1,14 @@
 package edu.wgu.pantryplan.service;
 
+import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.Recipe;
+import edu.wgu.pantryplan.domain.RecipeLine;
 import edu.wgu.pantryplan.domain.User;
+import edu.wgu.pantryplan.repository.IngredientRepository;
 import edu.wgu.pantryplan.repository.PlanEntryRepository;
 import edu.wgu.pantryplan.repository.RecipeRepository;
 import edu.wgu.pantryplan.web.form.RecipeForm;
+import edu.wgu.pantryplan.web.form.RecipeLineForm;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -27,11 +31,14 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final PlanEntryRepository planEntryRepository;
+    private final IngredientRepository ingredientRepository;
 
     public RecipeService(RecipeRepository recipeRepository,
-                         PlanEntryRepository planEntryRepository) {
+                         PlanEntryRepository planEntryRepository,
+                         IngredientRepository ingredientRepository) {
         this.recipeRepository = recipeRepository;
         this.planEntryRepository = planEntryRepository;
+        this.ingredientRepository = ingredientRepository;
     }
 
     @Transactional(readOnly = true)
@@ -59,10 +66,6 @@ public class RecipeService {
         return recipe;
     }
 
-    /**
-     * Forces the tag collection to load. Calling size() on a lazy collection is
-     * what triggers Hibernate to fetch it.
-     */
     private List<Recipe> withTags(List<Recipe> recipes) {
         recipes.forEach(recipe -> recipe.getTags().size());
         return recipes;
@@ -76,6 +79,7 @@ public class RecipeService {
     public Recipe create(RecipeForm form, User user) {
         Recipe recipe = new Recipe(user, form.getName().trim(), form.getServings());
         applyForm(recipe, form);
+        replaceLines(recipe, form, user);
         return recipeRepository.save(recipe);
     }
 
@@ -85,6 +89,7 @@ public class RecipeService {
         recipe.setName(form.getName().trim());
         recipe.setServings(form.getServings());
         applyForm(recipe, form);
+        replaceLines(recipe, form, user);
         return recipeRepository.save(recipe);
     }
 
@@ -94,6 +99,34 @@ public class RecipeService {
         recipe.setPrepMinutes(form.getPrepMinutes() == null ? 0 : form.getPrepMinutes());
         recipe.setCookMinutes(form.getCookMinutes() == null ? 0 : form.getCookMinutes());
         recipe.setTags(form.parsedTags());
+    }
+
+    /**
+     * Rewrites the ingredient list from the submitted form.
+     *
+     * <p>Existing rows are dropped and rebuilt rather than matched up and
+     * patched. Orphan removal deletes the old rows, and because every
+     * replacement is a brand new object with no id, there is no chance of
+     * Hibernate trying to delete and re-insert the same row in one flush.
+     *
+     * <p>Each ingredient is re-read scoped to the owner, so a tampered id
+     * belonging to another account fails here rather than silently attaching
+     * someone else's record.
+     */
+    private void replaceLines(Recipe recipe, RecipeForm form, User user) {
+        recipe.clearLines();
+        for (RecipeLineForm lineForm : form.getLines()) {
+            if (lineForm.isBlank()) {
+                continue;
+            }
+            Ingredient ingredient = ingredientRepository
+                    .findByIdAndUser(lineForm.getIngredientId(), user)
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "No ingredient " + lineForm.getIngredientId() + " for this account"));
+            RecipeLine line = new RecipeLine(ingredient, lineForm.getQuantity(), lineForm.getUnit());
+            line.setNote(emptyToNull(lineForm.getNote()));
+            recipe.addLine(line);
+        }
     }
 
     private String emptyToNull(String value) {

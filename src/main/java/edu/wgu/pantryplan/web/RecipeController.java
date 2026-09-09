@@ -1,16 +1,23 @@
 package edu.wgu.pantryplan.web;
 
+import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.Recipe;
+import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
+import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.RecipeInUseException;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.RecipeForm;
+import edu.wgu.pantryplan.web.form.RecipeLineForm;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,12 +34,24 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/recipes")
 public class RecipeController {
 
+    private static final BigDecimal MIN_QUANTITY = new BigDecimal("0.001");
+    private static final BigDecimal MAX_QUANTITY = new BigDecimal("9999999.999");
+
     private final RecipeService recipeService;
+    private final IngredientService ingredientService;
     private final UserService userService;
 
-    public RecipeController(RecipeService recipeService, UserService userService) {
+    public RecipeController(RecipeService recipeService,
+                            IngredientService ingredientService,
+                            UserService userService) {
         this.recipeService = recipeService;
+        this.ingredientService = ingredientService;
         this.userService = userService;
+    }
+
+    @ModelAttribute("units")
+    public Unit[] units() {
+        return Unit.values();
     }
 
     private User currentUser(AppUserDetails principal) {
@@ -56,15 +75,13 @@ public class RecipeController {
             }
         }
 
-        boolean searching = notBlank(name) || notBlank(ingredient) || notBlank(tag);
-
         model.addAttribute("recipes", results);
         model.addAttribute("blockReasons", blockReasons);
         model.addAttribute("knownTags", recipeService.allTags(user));
         model.addAttribute("query", orEmpty(name));
         model.addAttribute("ingredientQuery", orEmpty(ingredient));
         model.addAttribute("tagQuery", orEmpty(tag));
-        model.addAttribute("searching", searching);
+        model.addAttribute("searching", notBlank(name) || notBlank(ingredient) || notBlank(tag));
         return "recipes/list";
     }
 
@@ -80,16 +97,18 @@ public class RecipeController {
     public String detail(@AuthenticationPrincipal AppUserDetails principal,
                          @PathVariable Long id,
                          Model model) {
-        User user = currentUser(principal);
-        Recipe recipe = recipeService.requireOwned(id, user);
+        Recipe recipe = recipeService.requireOwned(id, currentUser(principal));
         model.addAttribute("recipe", recipe);
         model.addAttribute("blockedReason", recipeService.describeReferences(recipe));
         return "recipes/detail";
     }
 
     @GetMapping("/new")
-    public String createForm(Model model) {
-        model.addAttribute("form", new RecipeForm());
+    public String createForm(@AuthenticationPrincipal AppUserDetails principal, Model model) {
+        RecipeForm form = new RecipeForm();
+        form.ensureOneEmptyRow();
+        model.addAttribute("form", form);
+        model.addAttribute("ingredientOptions", ingredientService.findAll(currentUser(principal)));
         return "recipes/form";
     }
 
@@ -97,8 +116,10 @@ public class RecipeController {
     public String editForm(@AuthenticationPrincipal AppUserDetails principal,
                            @PathVariable Long id,
                            Model model) {
-        Recipe recipe = recipeService.requireOwned(id, currentUser(principal));
+        User user = currentUser(principal);
+        Recipe recipe = recipeService.requireOwned(id, user);
         model.addAttribute("form", RecipeForm.from(recipe));
+        model.addAttribute("ingredientOptions", ingredientService.findAll(user));
         return "recipes/form";
     }
 
@@ -106,14 +127,21 @@ public class RecipeController {
     public String save(@AuthenticationPrincipal AppUserDetails principal,
                        @Valid @ModelAttribute("form") RecipeForm form,
                        BindingResult result,
+                       Model model,
                        RedirectAttributes redirectAttributes) {
         User user = currentUser(principal);
+
+        form.removeBlankLines();
+        validateLines(form, result, user);
 
         if (recipeService.nameCollides(user, form.getName(), form.getId())) {
             result.rejectValue("name", "name.duplicate",
                     "You already have a recipe with that name");
         }
+
         if (result.hasErrors()) {
+            form.ensureOneEmptyRow();
+            model.addAttribute("ingredientOptions", ingredientService.findAll(user));
             return "recipes/form";
         }
 
@@ -124,6 +152,53 @@ public class RecipeController {
         redirectAttributes.addFlashAttribute("message",
                 form.isNew() ? "Recipe created." : "Recipe updated.");
         return "redirect:/recipes/" + saved.getId();
+    }
+
+    /**
+     * Checks the ingredient rows by hand rather than with cascading bean
+     * validation, because a row the cook never touched has already been
+     * discarded by this point and must not raise errors. Rows that survive are
+     * required to be complete, and the ingredient must belong to this account.
+     */
+    private void validateLines(RecipeForm form, BindingResult result, User user) {
+        Set<Long> ownedIds = new HashSet<>();
+        for (Ingredient ingredient : ingredientService.findAll(user)) {
+            ownedIds.add(ingredient.getId());
+        }
+
+        List<RecipeLineForm> lines = form.getLines();
+        for (int i = 0; i < lines.size(); i++) {
+            RecipeLineForm line = lines.get(i);
+            String prefix = "lines[" + i + "].";
+
+            if (line.getIngredientId() == null) {
+                result.rejectValue(prefix + "ingredientId", "line.ingredient.required",
+                        "Choose an ingredient");
+            } else if (!ownedIds.contains(line.getIngredientId())) {
+                result.rejectValue(prefix + "ingredientId", "line.ingredient.unknown",
+                        "That ingredient is not on your list");
+            }
+
+            if (line.getQuantity() == null) {
+                result.rejectValue(prefix + "quantity", "line.quantity.required",
+                        "Enter an amount");
+            } else if (line.getQuantity().compareTo(MIN_QUANTITY) < 0) {
+                result.rejectValue(prefix + "quantity", "line.quantity.min",
+                        "Amount must be greater than zero");
+            } else if (line.getQuantity().compareTo(MAX_QUANTITY) > 0) {
+                result.rejectValue(prefix + "quantity", "line.quantity.max",
+                        "That amount is too large");
+            }
+
+            if (line.getUnit() == null) {
+                result.rejectValue(prefix + "unit", "line.unit.required", "Choose a unit");
+            }
+
+            if (line.getNote() != null && line.getNote().length() > 255) {
+                result.rejectValue(prefix + "note", "line.note.length",
+                        "Note must be 255 characters or fewer");
+            }
+        }
     }
 
     @PostMapping("/{id}/delete")

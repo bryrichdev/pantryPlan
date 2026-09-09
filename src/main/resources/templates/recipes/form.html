@@ -55,6 +55,70 @@
                th:errors="*{tagsCsv}">Tags error</p>
         </div>
 
+        <!-- Ingredient lines ------------------------------------------- -->
+        <fieldset class="lines">
+            <legend>Ingredients</legend>
+
+            <p class="field__hint lines__hint" th:if="${#lists.isEmpty(ingredientOptions)}">
+                You have no ingredients yet.
+                <a th:href="@{/ingredients}">Add some first</a>, then come back and
+                they will appear in the list here.
+            </p>
+
+            <div class="lines__rows" data-lines>
+                <div class="lineitem" th:each="line, iter : *{lines}">
+                    <div class="lineitem__grid">
+                        <div class="lineitem__cell lineitem__cell--wide">
+                            <select th:field="*{lines[__${iter.index}__].ingredientId}"
+                                    aria-label="Ingredient">
+                                <option value="">Choose an ingredient</option>
+                                <option th:each="option : ${ingredientOptions}"
+                                        th:value="${option.id}"
+                                        th:text="${option.name}">Basil</option>
+                            </select>
+                        </div>
+                        <div class="lineitem__cell">
+                            <input type="number" step="0.001" min="0.001" inputmode="decimal"
+                                   th:field="*{lines[__${iter.index}__].quantity}"
+                                   placeholder="Amount" aria-label="Amount">
+                        </div>
+                        <div class="lineitem__cell">
+                            <select th:field="*{lines[__${iter.index}__].unit}" aria-label="Unit">
+                                <option value="">Unit</option>
+                                <option th:each="option : ${units}"
+                                        th:value="${option}"
+                                        th:text="${option.abbreviation}">cup</option>
+                            </select>
+                        </div>
+                        <div class="lineitem__cell lineitem__cell--wide">
+                            <input type="text" maxlength="255"
+                                   th:field="*{lines[__${iter.index}__].note}"
+                                   placeholder="Note, e.g. finely chopped" aria-label="Note">
+                        </div>
+                        <div class="lineitem__cell lineitem__cell--action">
+                            <button type="button" class="linkbutton linkbutton--danger"
+                                    data-remove-line>Remove</button>
+                        </div>
+                    </div>
+
+                    <p class="field__error"
+                       th:if="${#fields.hasErrors('lines[__${iter.index}__].ingredientId')}"
+                       th:errors="*{lines[__${iter.index}__].ingredientId}">Ingredient error</p>
+                    <p class="field__error"
+                       th:if="${#fields.hasErrors('lines[__${iter.index}__].quantity')}"
+                       th:errors="*{lines[__${iter.index}__].quantity}">Amount error</p>
+                    <p class="field__error"
+                       th:if="${#fields.hasErrors('lines[__${iter.index}__].unit')}"
+                       th:errors="*{lines[__${iter.index}__].unit}">Unit error</p>
+                    <p class="field__error"
+                       th:if="${#fields.hasErrors('lines[__${iter.index}__].note')}"
+                       th:errors="*{lines[__${iter.index}__].note}">Note error</p>
+                </div>
+            </div>
+
+            <button type="button" class="button button--quiet" data-add-line>Add ingredient row</button>
+        </fieldset>
+
         <div class="field">
             <label for="instructions">Instructions</label>
             <textarea id="instructions" th:field="*{instructions}" rows="10" maxlength="20000"></textarea>
@@ -68,6 +132,45 @@
         </div>
     </form>
 </main>
+
+<!-- Blueprint for a new row. Kept out of the document flow by <template>,
+     so its controls are never submitted. INDEX is swapped for the real
+     position when the row is cloned. -->
+<template id="line-template">
+    <div class="lineitem">
+        <div class="lineitem__grid">
+            <div class="lineitem__cell lineitem__cell--wide">
+                <select name="lines[INDEX].ingredientId" id="linesINDEX.ingredientId"
+                        aria-label="Ingredient">
+                    <option value="">Choose an ingredient</option>
+                    <option th:each="option : ${ingredientOptions}"
+                            th:value="${option.id}" th:text="${option.name}">Basil</option>
+                </select>
+            </div>
+            <div class="lineitem__cell">
+                <input type="number" step="0.001" min="0.001" inputmode="decimal"
+                       name="lines[INDEX].quantity" id="linesINDEX.quantity"
+                       placeholder="Amount" aria-label="Amount">
+            </div>
+            <div class="lineitem__cell">
+                <select name="lines[INDEX].unit" id="linesINDEX.unit" aria-label="Unit">
+                    <option value="">Unit</option>
+                    <option th:each="option : ${units}"
+                            th:value="${option}" th:text="${option.abbreviation}">cup</option>
+                </select>
+            </div>
+            <div class="lineitem__cell lineitem__cell--wide">
+                <input type="text" maxlength="255"
+                       name="lines[INDEX].note" id="linesINDEX.note"
+                       placeholder="Note, e.g. finely chopped" aria-label="Note">
+            </div>
+            <div class="lineitem__cell lineitem__cell--action">
+                <button type="button" class="linkbutton linkbutton--danger"
+                        data-remove-line>Remove</button>
+            </div>
+        </div>
+    </div>
+</template>
 
 <footer th:replace="~{fragments/layout :: sitefooter}"></footer>
 </body>

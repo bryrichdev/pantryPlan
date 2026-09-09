@@ -1,4 +1,4 @@
-/* PantryPlan — recipe detail and multi-field form styles. */
+/* PantryPlan — recipe detail, search filters, and repeating line rows. */
 
 .filters {
     display: flex;
@@ -86,7 +86,7 @@
 
 /* ---------- wider forms ---------- */
 
-.form--wide { max-width: 44rem; }
+.form--wide { max-width: 52rem; }
 
 .fieldrow {
     display: flex;
@@ -113,3 +113,66 @@
 }
 
 .table td .badge { margin-right: 0.25rem; }
+
+/* ---------- repeating ingredient rows ---------- */
+
+.lines {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem 1.25rem;
+    margin: 0 0 1.15rem;
+}
+
+.lines legend {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    padding: 0 0.4rem;
+}
+
+.lines__hint { margin-top: 0; }
+
+.lines__rows { margin-bottom: 0.9rem; }
+
+.lineitem {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--rule);
+}
+
+.lineitem:last-child { border-bottom: 0; }
+
+.lineitem__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) 6.5rem 6rem minmax(0, 2fr) auto;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.lineitem__cell { min-width: 0; }
+
+.lineitem__cell input,
+.lineitem__cell select {
+    width: 100%;
+    padding: 0.45rem 0.55rem;
+    font: inherit;
+    font-size: 0.92rem;
+    color: var(--ink);
+    background: #FFFFFF;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+}
+
+.lineitem__cell input:focus,
+.lineitem__cell select:focus {
+    border-color: var(--herb);
+    outline: 2px solid var(--herb-wash);
+}
+
+.lineitem__cell--action { text-align: right; }
+
+.lineitem .field__error { margin-left: 0.1rem; }
+
+@media (max-width: 46rem) {
+    .lineitem__grid { grid-template-columns: 1fr 1fr; }
+    .lineitem__cell--wide { grid-column: 1 / -1; }
+    .lineitem__cell--action { grid-column: 1 / -1; text-align: left; }
+}

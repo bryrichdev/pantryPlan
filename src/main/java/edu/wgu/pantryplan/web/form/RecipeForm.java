@@ -6,15 +6,19 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Backing object for the recipe form.
  *
  * <p>Tags arrive as one comma-separated field because that is far easier to
- * type than a repeating control, and {@link #parsedTags()} turns the string
- * into the normalised set the entity stores.
+ * type than a repeating control. Ingredient lines arrive as an indexed list —
+ * {@code lines[0].quantity}, {@code lines[1].quantity} and so on — which Spring
+ * grows automatically as it binds, so the browser can add rows without the
+ * server knowing in advance how many there will be.
  */
 public class RecipeForm {
 
@@ -46,6 +50,8 @@ public class RecipeForm {
     @Size(max = 300, message = "Tags must be 300 characters or fewer")
     private String tagsCsv;
 
+    private List<RecipeLineForm> lines = new ArrayList<>();
+
     public static RecipeForm from(Recipe recipe) {
         RecipeForm form = new RecipeForm();
         form.setId(recipe.getId());
@@ -56,12 +62,31 @@ public class RecipeForm {
         form.setDescription(recipe.getDescription());
         form.setInstructions(recipe.getInstructions());
         form.setTagsCsv(String.join(", ", recipe.getTags()));
+        recipe.getLines().forEach(line -> form.getLines().add(RecipeLineForm.from(line)));
+        form.ensureOneEmptyRow();
         return form;
     }
 
     /**
-     * Splits the comma-separated field, trims and lowercases each entry, drops
-     * blanks and anything over the column length, and keeps typing order.
+     * Guarantees the form renders with something to type into.
+     */
+    public void ensureOneEmptyRow() {
+        if (lines.isEmpty()) {
+            lines.add(new RecipeLineForm());
+        }
+    }
+
+    /**
+     * Discards rows nobody touched, so an untouched trailing row never becomes
+     * a validation error.
+     */
+    public void removeBlankLines() {
+        lines.removeIf(RecipeLineForm::isBlank);
+    }
+
+    /**
+     * Splits the comma-separated tag field, trims and lowercases each entry,
+     * drops blanks and anything over the column length, and keeps typing order.
      */
     public Set<String> parsedTags() {
         Set<String> tags = new LinkedHashSet<>();
@@ -143,5 +168,13 @@ public class RecipeForm {
 
     public void setTagsCsv(String tagsCsv) {
         this.tagsCsv = tagsCsv;
+    }
+
+    public List<RecipeLineForm> getLines() {
+        return lines;
+    }
+
+    public void setLines(List<RecipeLineForm> lines) {
+        this.lines = lines == null ? new ArrayList<>() : lines;
     }
 }
