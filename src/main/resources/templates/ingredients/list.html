@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Ingredients')}"></head>
+<body th:attr="data-open-dialog=${openDialog}">
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Ingredients</h1>
+            <p class="pagehead__note">
+                Everything your recipes and pantry can refer to. Set a weight per cup
+                for anything you measure both ways, like flour or sugar.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="toolbar">
+        <form class="searchbar" th:action="@{/ingredients}" method="get">
+            <label class="visually-hidden" for="q">Search ingredients</label>
+            <input type="search" id="q" name="q" th:value="${query}" placeholder="Search by name">
+            <button type="submit" class="button button--quiet">Search</button>
+            <a th:if="${searching}" th:href="@{/ingredients}" class="searchbar__clear">Clear</a>
+        </form>
+
+        <button type="button" class="button button--primary"
+                data-dialog-open="ingredient-dialog"
+                data-mode="create">Add ingredient</button>
+    </div>
+
+    <p class="resultcount" th:if="${searching}">
+        <span th:text="${#lists.size(ingredients)}">0</span> matching
+        <span th:text="${#lists.size(ingredients) == 1 ? 'ingredient' : 'ingredients'}">ingredients</span>
+        for <span th:text="|&quot;${query}&quot;|">""</span>
+    </p>
+
+    <div class="empty" th:if="${#lists.isEmpty(ingredients)}">
+        <p th:if="${searching}">Nothing matched that search.</p>
+        <p th:unless="${searching}">
+            No ingredients yet. Add the first one and it becomes available to every
+            recipe and pantry shelf.
+        </p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(ingredients)}">
+        <caption class="visually-hidden">Ingredients on this account</caption>
+        <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Category</th>
+            <th scope="col">Weight per cup</th>
+            <th scope="col">Added</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${ingredients}">
+            <td th:text="${item.name}">Flour</td>
+            <td><span class="badge" th:text="${@fmt.label(item.category)}">Pantry staple</span></td>
+            <td>
+                <span th:if="${item.gramsPerCup != null}"
+                      th:text="|${@fmt.quantity(item.gramsPerCup)} g|">120 g</span>
+                <span th:if="${item.gramsPerCup == null}" class="muted">not set</span>
+            </td>
+            <td th:text="${@fmt.date(item.createdAt)}">Sep 9, 2026</td>
+            <td class="table__actions">
+                <button type="button" class="linkbutton"
+                        data-dialog-open="ingredient-dialog"
+                        data-mode="edit"
+                        th:attr="data-id=${item.id},
+                                 data-name=${item.name},
+                                 data-category=${item.category},
+                                 data-grams=${item.gramsPerCup}">Edit</button>
+                <button type="button" class="linkbutton linkbutton--danger"
+                        data-dialog-open="delete-dialog"
+                        th:attr="data-id=${item.id},
+                                 data-name=${item.name},
+                                 data-blocked=${blockReasons.get(item.id)}">Delete</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<!-- Add and edit ------------------------------------------------------- -->
+<dialog id="ingredient-dialog" class="dialog" aria-labelledby="ingredient-dialog-title">
+    <form th:action="@{/ingredients}" th:object="${form}" method="post" class="dialog__form">
+        <input type="hidden" name="q" th:value="${query}">
+        <input type="hidden" th:field="*{id}">
+
+        <div class="dialog__head">
+            <h2 id="ingredient-dialog-title" data-dialog-title>Add ingredient</h2>
+            <button type="button" class="dialog__close" data-dialog-close
+                    aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <div class="field">
+                <label for="dialog-name">Name</label>
+                <input type="text" id="dialog-name" th:field="*{name}" maxlength="120">
+                <p class="field__error" th:if="${#fields.hasErrors('name')}"
+                   th:errors="*{name}">Name error</p>
+            </div>
+
+            <div class="field">
+                <label for="dialog-category">Category</label>
+                <select id="dialog-category" th:field="*{category}">
+                    <option th:each="option : ${categories}"
+                            th:value="${option}"
+                            th:text="${@fmt.label(option)}">Produce</option>
+                </select>
+                <p class="field__hint">Groups this ingredient on your grocery list.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('category')}"
+                   th:errors="*{category}">Category error</p>
+            </div>
+
+            <div class="field">
+                <label for="dialog-grams">Weight per cup, in grams</label>
+                <input type="number" id="dialog-grams" th:field="*{gramsPerCup}"
+                       step="0.001" min="0.001" inputmode="decimal">
+                <p class="field__hint">
+                    Optional. Needed only when a recipe measures this by volume and
+                    your pantry stores it by weight.
+                </p>
+                <p class="field__error" th:if="${#fields.hasErrors('gramsPerCup')}"
+                   th:errors="*{gramsPerCup}">Weight error</p>
+            </div>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary">Save ingredient</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- Delete ------------------------------------------------------------- -->
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form
+          th:action="@{/ingredients}"
+          th:attr="data-action-base=@{/ingredients}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title">Delete ingredient?</h2>
+            <button type="button" class="dialog__close" data-dialog-close
+                    aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <p data-delete-message>Delete this ingredient?</p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

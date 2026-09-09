@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="|${pageTitle} — PantryPlan|">PantryPlan</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/tables.css}">
+    <link rel="stylesheet" th:href="@{/css/dialog.css}">
+    <script th:src="@{/js/app.js}" defer></script>
 </head>
 
 <body>
@@ -17,6 +20,7 @@
 
         <nav class="topnav__links" sec:authorize="isAuthenticated()">
             <a th:href="@{/recipes}">Recipes</a>
+            <a th:href="@{/ingredients}">Ingredients</a>
             <a th:href="@{/pantry}">Pantry</a>
             <a th:href="@{/meal-plans}">Meal plans</a>
             <a th:href="@{/grocery-lists}">Grocery lists</a>
@@ -33,6 +37,11 @@
         </div>
     </div>
 </header>
+
+<div th:fragment="flash" class="flash">
+    <p class="notice notice--good" th:if="${message}" th:text="${message}">Saved.</p>
+    <p class="notice notice--bad" th:if="${error}" th:text="${error}">Something went wrong.</p>
+</div>
 
 <footer th:fragment="sitefooter" class="sitefooter">
     <p>PantryPlan — plan the week, shop for what is missing.</p>

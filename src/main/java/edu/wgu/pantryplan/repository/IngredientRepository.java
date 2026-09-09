@@ -10,6 +10,8 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Long> {
 
     Optional<Ingredient> findByIdAndUser(Long id, User user);
 
+    Optional<Ingredient> findByUserAndNameIgnoreCase(User user, String name);
+
     List<Ingredient> findAllByUserOrderByNameAsc(User user);
 
     List<Ingredient> findAllByUserAndNameContainingIgnoreCaseOrderByNameAsc(User user, String name);

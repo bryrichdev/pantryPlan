@@ -1,0 +1,85 @@
+/* PantryPlan — modal dialogs built on the native <dialog> element. */
+
+.dialog {
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: var(--paper);
+    color: var(--ink);
+    width: min(32rem, calc(100vw - 2rem));
+    box-shadow: 0 14px 40px rgba(27, 42, 32, 0.22);
+}
+
+.dialog--narrow { width: min(26rem, calc(100vw - 2rem)); }
+
+.dialog::backdrop {
+    background: rgba(27, 42, 32, 0.45);
+}
+
+.dialog__form { margin: 0; }
+
+.dialog__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.35rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.dialog__head h2 {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.dialog__close {
+    background: none;
+    border: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+    border-radius: var(--radius);
+}
+
+.dialog__close:hover { color: var(--ink); }
+
+.dialog__body { padding: 1.25rem 1.35rem 0.5rem; }
+
+.dialog__body .field:last-of-type { margin-bottom: 0.9rem; }
+
+.dialog__body p:first-child { margin-top: 0; }
+
+.dialog__foot {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.35rem 1.25rem;
+    border-top: 1px solid var(--rule);
+}
+
+/* Buttons that sit inline in a table row and read as links. */
+
+.linkbutton {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin-left: 0.85rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--herb-deep);
+    text-decoration: underline;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.linkbutton:hover { color: var(--herb); }
+
+.linkbutton--danger { color: var(--rust); }
+.linkbutton--danger:hover { color: #7C2B1A; }
+
+@media (max-width: 40rem) {
+    .linkbutton { margin-left: 0; margin-right: 0.85rem; }
+}
