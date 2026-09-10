@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Shared add/edit ingredient dialog.
+
+  Included by any page that needs it. The host page must put an
+  `ingredientForm` and `categories` in the model, and may pass a `returnTo`
+  path so the save comes back to where it started instead of the ingredient
+  list.
+-->
+<dialog th:fragment="dialog" id="ingredient-dialog" class="dialog"
+        aria-labelledby="ingredient-dialog-title">
+    <form th:action="@{/ingredients}" th:object="${ingredientForm}" method="post" class="dialog__form">
+        <input type="hidden" name="q" th:value="${query}">
+        <input type="hidden" name="returnTo" th:value="${returnTo}">
+        <input type="hidden" th:field="*{id}">
+
+        <div class="dialog__head">
+            <h2 id="ingredient-dialog-title" data-dialog-title>Add ingredient</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <div class="field">
+                <label for="dialog-name">Name</label>
+                <input type="text" id="dialog-name" th:field="*{name}" maxlength="120">
+                <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</p>
+            </div>
+
+            <div class="field">
+                <label for="dialog-category">Category</label>
+                <select id="dialog-category" th:field="*{category}">
+                    <option th:each="option : ${categories}"
+                            th:value="${option}" th:text="${@fmt.label(option)}">Produce</option>
+                </select>
+                <p class="field__hint">Groups this ingredient on your grocery list.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('category')}"
+                   th:errors="*{category}">Category error</p>
+            </div>
+
+            <div class="field">
+                <label for="dialog-grams">Weight per cup, in grams</label>
+                <input type="number" id="dialog-grams" th:field="*{gramsPerCup}"
+                       step="0.001" min="0.001" inputmode="decimal">
+                <p class="field__hint">
+                    Optional. Needed only when a recipe measures this by volume and
+                    your pantry stores it by weight.
+                </p>
+                <p class="field__error" th:if="${#fields.hasErrors('gramsPerCup')}"
+                   th:errors="*{gramsPerCup}">Weight error</p>
+            </div>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary">Save ingredient</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+</body>
+</html>

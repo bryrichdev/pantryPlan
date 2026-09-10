@@ -1,6 +1,7 @@
 package edu.wgu.pantryplan.web;
 
 import edu.wgu.pantryplan.domain.Ingredient;
+import edu.wgu.pantryplan.domain.IngredientCategory;
 import edu.wgu.pantryplan.domain.Recipe;
 import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
@@ -9,6 +10,7 @@ import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.RecipeInUseException;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
+import edu.wgu.pantryplan.web.form.IngredientForm;
 import edu.wgu.pantryplan.web.form.RecipeForm;
 import edu.wgu.pantryplan.web.form.RecipeLineForm;
 import jakarta.validation.Valid;
@@ -54,6 +56,11 @@ public class RecipeController {
         return Unit.values();
     }
 
+    @ModelAttribute("categories")
+    public IngredientCategory[] categories() {
+        return IngredientCategory.values();
+    }
+
     private User currentUser(AppUserDetails principal) {
         return userService.requireById(principal.getId());
     }
@@ -93,6 +100,11 @@ public class RecipeController {
         return value == null ? "" : value;
     }
 
+    /**
+     * Recipe detail. Carries the shared ingredient dialog so a density or
+     * category can be corrected without leaving the page, and tells that dialog
+     * to come back here after saving.
+     */
     @GetMapping("/{id}")
     public String detail(@AuthenticationPrincipal AppUserDetails principal,
                          @PathVariable Long id,
@@ -100,6 +112,10 @@ public class RecipeController {
         Recipe recipe = recipeService.requireOwned(id, currentUser(principal));
         model.addAttribute("recipe", recipe);
         model.addAttribute("blockedReason", recipeService.describeReferences(recipe));
+        model.addAttribute("returnTo", "/recipes/" + id);
+        if (!model.containsAttribute("ingredientForm")) {
+            model.addAttribute("ingredientForm", new IngredientForm());
+        }
         return "recipes/detail";
     }
 

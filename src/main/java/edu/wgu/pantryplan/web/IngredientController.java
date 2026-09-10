@@ -25,12 +25,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Ingredient catalogue. Add, edit, and delete all happen in dialogs on the list
- * page, so every route here either renders that page or redirects back to it.
+ * Ingredient catalogue. Add, edit, and delete happen in dialogs, which can be
+ * opened either from the ingredient list or from a recipe that uses them.
  */
 @Controller
 @RequestMapping("/ingredients")
 public class IngredientController {
+
+    private static final String BINDING_RESULT_KEY =
+            "org.springframework.validation.BindingResult.ingredientForm";
 
     private final IngredientService ingredientService;
     private final UserService userService;
@@ -47,6 +50,25 @@ public class IngredientController {
 
     private User currentUser(AppUserDetails principal) {
         return userService.requireById(principal.getId());
+    }
+
+    /**
+     * Accepts a redirect target only when it is a path on this site.
+     *
+     * <p>The value arrives in a form field, so a caller could put anything in
+     * it. Anything absolute, protocol-relative, or backslash-escaped is thrown
+     * away, which keeps this from becoming an open redirect that bounces a
+     * signed-in cook to somebody else's page.
+     */
+    private String safeReturnTo(String candidate) {
+        if (candidate == null || candidate.isBlank()) {
+            return null;
+        }
+        String trimmed = candidate.trim();
+        if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.contains("\\")) {
+            return null;
+        }
+        return trimmed;
     }
 
     /**
@@ -73,20 +95,22 @@ public class IngredientController {
                        @RequestParam(name = "q", required = false) String query,
                        Model model) {
         populateList(model, currentUser(principal), query);
-        if (!model.containsAttribute("form")) {
-            model.addAttribute("form", new IngredientForm());
+        if (!model.containsAttribute("ingredientForm")) {
+            model.addAttribute("ingredientForm", new IngredientForm());
         }
         return "ingredients/list";
     }
 
     @PostMapping
     public String save(@AuthenticationPrincipal AppUserDetails principal,
-                       @Valid @ModelAttribute("form") IngredientForm form,
+                       @Valid @ModelAttribute("ingredientForm") IngredientForm form,
                        BindingResult result,
                        @RequestParam(name = "q", required = false) String query,
+                       @RequestParam(name = "returnTo", required = false) String returnTo,
                        Model model,
                        RedirectAttributes redirectAttributes) {
         User user = currentUser(principal);
+        String destination = safeReturnTo(returnTo);
 
         if (ingredientService.nameCollides(user, form.getName(), form.getId())) {
             result.rejectValue("name", "name.duplicate",
@@ -94,6 +118,15 @@ public class IngredientController {
         }
 
         if (result.hasErrors()) {
+            if (destination != null) {
+                /* Carry the rejected form and its errors across the redirect so
+                   the dialog can reopen on the page the cook started from with
+                   their typing and the messages both intact. */
+                redirectAttributes.addFlashAttribute(BINDING_RESULT_KEY, result);
+                redirectAttributes.addFlashAttribute("ingredientForm", form);
+                redirectAttributes.addFlashAttribute("openDialog", "ingredient");
+                return "redirect:" + destination;
+            }
             populateList(model, user, query);
             model.addAttribute("openDialog", "ingredient");
             return "ingredients/list";
@@ -106,7 +139,7 @@ public class IngredientController {
             ingredientService.update(form.getId(), form, user);
             redirectAttributes.addFlashAttribute("message", "Ingredient updated.");
         }
-        return "redirect:/ingredients";
+        return "redirect:" + (destination != null ? destination : "/ingredients");
     }
 
     @PostMapping("/{id}/delete")

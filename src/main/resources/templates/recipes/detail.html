@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${recipe.name})}"></head>
-<body>
+<body th:attr="data-open-dialog=${openDialog}">
 <header th:replace="~{fragments/layout :: topnav}"></header>
 
 <main class="page">
@@ -16,7 +16,7 @@
                th:text="${recipe.description}">A quick weeknight dinner.</p>
         </div>
         <div class="actions">
-            <a class="button button--quiet" th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Edit</a>
+            <a class="button button--quiet" th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Edit recipe</a>
             <button type="button" class="button button--danger"
                     data-dialog-open="delete-dialog"
                     th:attr="data-name=${recipe.name},
@@ -55,22 +55,48 @@
 
     <section class="section">
         <h2>Ingredients</h2>
+
         <div class="empty empty--tight" th:if="${#lists.isEmpty(recipe.lines)}">
-            <p>No ingredients on this recipe yet.</p>
+            <p>
+                No ingredients on this recipe yet.
+                <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Add some</a>.
+            </p>
         </div>
+
         <table class="table" th:unless="${#lists.isEmpty(recipe.lines)}">
+            <caption class="visually-hidden">Ingredients this recipe calls for</caption>
             <thead>
             <tr>
                 <th scope="col">Ingredient</th>
                 <th scope="col">Amount</th>
+                <th scope="col">Category</th>
+                <th scope="col">Weight per cup</th>
                 <th scope="col">Note</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="line : ${recipe.lines}">
                 <td th:text="${line.ingredient.name}">Basil</td>
                 <td th:text="${@fmt.amount(line.quantity, line.unit)}">1 cup</td>
+                <td>
+                    <span class="badge" th:text="${@fmt.label(line.ingredient.category)}">Produce</span>
+                </td>
+                <td>
+                    <span th:if="${line.ingredient.gramsPerCup != null}"
+                          th:text="|${@fmt.quantity(line.ingredient.gramsPerCup)} g|">120 g</span>
+                    <span th:if="${line.ingredient.gramsPerCup == null}" class="muted">not set</span>
+                </td>
                 <td th:text="${line.note}"></td>
+                <td class="table__actions">
+                    <button type="button" class="linkbutton"
+                            data-dialog-open="ingredient-dialog"
+                            data-mode="edit"
+                            th:attr="data-id=${line.ingredient.id},
+                                     data-name=${line.ingredient.name},
+                                     data-category=${line.ingredient.category},
+                                     data-grams=${line.ingredient.gramsPerCup}">Edit ingredient</button>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -81,6 +107,8 @@
         <p class="prose" th:text="${recipe.instructions}">Step one.</p>
     </section>
 </main>
+
+<div th:replace="~{fragments/ingredient-dialog :: dialog}"></div>
 
 <dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
     <form method="post" class="dialog__form" data-delete-form th:action="@{/recipes}">
