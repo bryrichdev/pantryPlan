@@ -183,6 +183,31 @@
            backdrop, since the panel's contents are its children. */
         if (event.target.tagName === "DIALOG") {
             event.target.close();
+            return;
+        }
+
+        /*
+         * Whole-row activation. Anything already interactive keeps its own
+         * behaviour, so the Edit link, the Delete button, and any form control
+         * inside a row are untouched. Rows either navigate somewhere or stand in
+         * for a button already present in the row.
+         */
+        if (event.target.closest("a, button, input, select, textarea, label")) {
+            return;
+        }
+
+        var navRow = event.target.closest("[data-row-href]");
+        if (navRow) {
+            window.location.href = navRow.getAttribute("data-row-href");
+            return;
+        }
+
+        var activateRow = event.target.closest("[data-row-activate]");
+        if (activateRow) {
+            var proxy = activateRow.querySelector(activateRow.getAttribute("data-row-activate"));
+            if (proxy) {
+                proxy.click();
+            }
         }
     });
 

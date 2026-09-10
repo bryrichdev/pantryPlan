@@ -70,7 +70,8 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="recipe : ${recipes}">
+        <tr th:each="recipe : ${recipes}" class="table__row--link"
+            th:attr="data-row-href=@{/recipes/{id}(id=${recipe.id})}">
             <td><a th:href="@{/recipes/{id}(id=${recipe.id})}" th:text="${recipe.name}">Pesto pasta</a></td>
             <td th:text="${recipe.servings}">4</td>
             <td>

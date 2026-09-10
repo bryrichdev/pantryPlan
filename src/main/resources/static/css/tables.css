@@ -1,4 +1,4 @@
-/* PantryPlan — list, table, and form-page styles.
+/* PantryPlan — list, table, toolbar, and form-page styles.
    Loaded after app.css; see fragments/layout.html. */
 
 .pagehead {
@@ -28,7 +28,18 @@
 
 .flash:empty { display: none; }
 
-/* ---------- search ---------- */
+/* ---------- toolbar and search ---------- */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: nowrap;
+    margin: 0 0 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--rule);
+}
 
 .searchbar {
     display: flex;
@@ -49,7 +60,12 @@
     background: #FFFFFF;
 }
 
-.searchbar__clear { font-size: 0.9rem; }
+.searchbar input[type="search"]:focus {
+    border-color: var(--herb);
+    outline: 2px solid var(--herb-wash);
+}
+
+.searchbar__clear { font-size: 0.9rem; white-space: nowrap; }
 
 .resultcount {
     margin: 0 0 1rem;
@@ -80,7 +96,15 @@
     vertical-align: baseline;
 }
 
+.table tbody td a {
+    text-decoration: none;
+}
+
 .table tbody tr:hover { background: var(--paper-sunk); }
+
+/* Rows that navigate or open an editor when clicked. The cursor is the only
+   affordance needed; the hover background already exists. */
+.table__row--link { cursor: pointer; }
 
 .table__actions {
     text-align: right;
@@ -143,7 +167,13 @@
     border: 0;
 }
 
-/* ---------- responsive tables ---------- */
+/* ---------- responsive ---------- */
+
+@media (max-width: 34rem) {
+    .toolbar { flex-wrap: wrap; }
+    .searchbar { width: 100%; }
+    .searchbar input[type="search"] { flex: 1 1 auto; }
+}
 
 @media (max-width: 40rem) {
     .table thead { display: none; }
@@ -166,13 +196,3 @@
     .table__actions { text-align: left; }
     .table__actions a { margin-left: 0; margin-right: 0.85rem; }
 }
-
-.toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    flex-wrap: nowrap;
-    margin: 0 0 1.25rem;
-}
-
