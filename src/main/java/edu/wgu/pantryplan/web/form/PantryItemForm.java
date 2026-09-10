@@ -29,8 +29,8 @@ public class PantryItemForm {
     @NotNull(message = "Choose where it is stored")
     private StorageLocation location = StorageLocation.PANTRY;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate purchasedOn;
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate purchasedOn = LocalDate.now();
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate expiresOn;
@@ -41,7 +41,7 @@ public class PantryItemForm {
         form.setIngredientId(item.getIngredient().getId());
         form.setQuantity(item.getQuantity());
         form.setLocation(item.getLocation());
-        form.setPurchasedOn(item.getPurchasedOn());
+        form.setPurchasedOn(item.getPurchasedOn() != null ? item.getPurchasedOn() : LocalDate.now());
         form.setExpiresOn(item.getExpiresOn());
         return form;
     }

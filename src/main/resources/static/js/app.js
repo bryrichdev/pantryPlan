@@ -91,7 +91,7 @@
             "#pantry-ingredient": mode === "edit" ? trigger.getAttribute("data-ingredient") : "",
             "#pantry-quantity": mode === "edit" ? trigger.getAttribute("data-quantity") : "",
             "#pantry-location": mode === "edit" ? trigger.getAttribute("data-location") : "PANTRY",
-            "#pantry-purchased": mode === "edit" ? trigger.getAttribute("data-purchased") : "",
+            "#pantry-purchased": mode === "edit" ? trigger.getAttribute("data-purchased") : new Date().toISOString().split('T')[0],
             "#pantry-expires": mode === "edit" ? trigger.getAttribute("data-expires") : ""
         };
 
