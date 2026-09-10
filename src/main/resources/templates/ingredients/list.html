@@ -50,10 +50,17 @@
         </p>
     </div>
 
-    <table class="table" th:unless="${#lists.isEmpty(ingredients)}">
+    <div th:replace="~{fragments/bulkbar :: bar('ingredient')}"></div>
+
+    <form th:action="@{/ingredients/bulk-delete}" method="post" data-bulk-form
+          th:unless="${#lists.isEmpty(ingredients)}">
+    <table class="table">
         <caption class="visually-hidden">Ingredients on this account</caption>
         <thead>
         <tr>
+            <th scope="col" class="table__check">
+                <input type="checkbox" data-select-all aria-label="Select every ingredient">
+            </th>
             <th scope="col">Name</th>
             <th scope="col">Category</th>
             <th scope="col">Kept in</th>
@@ -65,6 +72,10 @@
         <tbody>
         <tr th:each="item : ${ingredients}" class="table__row--link"
             data-row-activate="[data-dialog-open='ingredient-dialog']">
+            <td class="table__check">
+                <input type="checkbox" name="ids" th:value="${item.id}" data-select-row
+                       th:attr="aria-label=|Select ${item.name}|">
+            </td>
             <td th:text="${item.name}">Flour</td>
             <td><span class="badge" th:text="${@fmt.label(item.category)}">Pantry staple</span></td>
             <td th:text="${item.stockUnit.abbreviation}">g</td>
@@ -94,7 +105,10 @@
         </tr>
         </tbody>
     </table>
+    </form>
 </main>
+
+<div th:replace="~{fragments/bulkbar :: dialog}"></div>
 
 <div th:replace="~{fragments/ingredient-dialog :: dialog}"></div>
 

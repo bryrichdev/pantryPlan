@@ -51,10 +51,17 @@
         </p>
     </div>
 
-    <table class="table" th:unless="${#lists.isEmpty(items)}">
+    <div th:replace="~{fragments/bulkbar :: bar('item')}"></div>
+
+    <form th:action="@{/pantry/bulk-delete}" method="post" data-bulk-form
+          th:unless="${#lists.isEmpty(items)}">
+    <table class="table">
         <caption class="visually-hidden">Pantry items on this account</caption>
         <thead>
         <tr>
+            <th scope="col" class="table__check">
+                <input type="checkbox" data-select-all aria-label="Select every item">
+            </th>
             <th scope="col">Ingredient</th>
             <th scope="col">On hand</th>
             <th scope="col">Location</th>
@@ -66,6 +73,10 @@
         <tbody>
         <tr th:each="item : ${items}" class="table__row--link"
             data-row-activate="[data-dialog-open='pantry-dialog']">
+            <td class="table__check">
+                <input type="checkbox" name="ids" th:value="${item.id}" data-select-row
+                       th:attr="aria-label=|Select ${item.ingredient.name}|">
+            </td>
             <td th:text="${item.ingredient.name}">Flour</td>
             <td>
                 <span th:text="${@fmt.amount(item.quantity, item.unit)}">500 g</span>
@@ -98,7 +109,10 @@
         </tr>
         </tbody>
     </table>
+    </form>
 </main>
+
+<div th:replace="~{fragments/bulkbar :: dialog}"></div>
 
 <dialog id="pantry-dialog" class="dialog" aria-labelledby="pantry-dialog-title">
     <form th:action="@{/pantry}" th:object="${pantryForm}" method="post" class="dialog__form">

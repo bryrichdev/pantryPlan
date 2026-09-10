@@ -8,6 +8,7 @@ import edu.wgu.pantryplan.repository.IngredientRepository;
 import edu.wgu.pantryplan.repository.PantryItemRepository;
 import edu.wgu.pantryplan.web.form.PantryItemForm;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
@@ -126,6 +127,32 @@ public class PantryService {
         return ingredientRepository.findByIdAndUser(ingredientId, user)
                 .orElseThrow(() -> new NoSuchElementException(
                         "No ingredient " + ingredientId + " for this account"));
+    }
+
+
+    /**
+     * Removes several shelf entries at once.
+     *
+     * <p>Nothing references a pantry item, so none of these can be blocked. Ids
+     * that do not belong to this account are counted as missing rather than
+     * raising, since a stale page can easily submit one.
+     */
+    @Transactional
+    public BulkDeleteResult deleteAll(Collection<Long> ids, User user) {
+        BulkDeleteResult result = new BulkDeleteResult();
+        if (ids == null || ids.isEmpty()) {
+            return result;
+        }
+        for (Long id : ids) {
+            PantryItem item = pantryItemRepository.findByIdAndUser(id, user).orElse(null);
+            if (item == null) {
+                result.recordMissing();
+                continue;
+            }
+            pantryItemRepository.delete(item);
+            result.recordDeleted();
+        }
+        return result;
     }
 
     /**

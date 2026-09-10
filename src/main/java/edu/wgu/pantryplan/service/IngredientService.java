@@ -9,6 +9,7 @@ import edu.wgu.pantryplan.repository.IngredientRepository;
 import edu.wgu.pantryplan.repository.PantryItemRepository;
 import edu.wgu.pantryplan.repository.RecipeLineRepository;
 import edu.wgu.pantryplan.web.form.IngredientForm;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -155,6 +156,36 @@ public class IngredientService {
             throw new IngredientInUseException(ingredient.getName(), reason);
         }
         ingredientRepository.delete(ingredient);
+    }
+
+
+    /**
+     * Deletes several ingredients, keeping back any that are still referenced.
+     *
+     * <p>Each is checked and removed on its own, so one blocked ingredient does
+     * not stop the rest. Ids that do not belong to this account are counted as
+     * missing rather than raising, since a stale page can easily submit one.
+     */
+    @Transactional
+    public BulkDeleteResult deleteAll(Collection<Long> ids, User user) {
+        BulkDeleteResult result = new BulkDeleteResult();
+        if (ids == null || ids.isEmpty()) {
+            return result;
+        }
+        for (Long id : ids) {
+            Ingredient ingredient = ingredientRepository.findByIdAndUser(id, user).orElse(null);
+            if (ingredient == null) {
+                result.recordMissing();
+                continue;
+            }
+            if (describeReferences(ingredient) != null) {
+                result.recordBlocked(ingredient.getName());
+                continue;
+            }
+            ingredientRepository.delete(ingredient);
+            result.recordDeleted();
+        }
+        return result;
     }
 
     /**

@@ -8,6 +8,7 @@ import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.IngredientInUseException;
 import edu.wgu.pantryplan.service.IngredientService;
+import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.IngredientForm;
 import jakarta.validation.Valid;
@@ -169,6 +170,35 @@ public class IngredientController {
         } else {
             redirectAttributes.addFlashAttribute("message",
                     "Added " + added + " starter " + (added == 1 ? "ingredient." : "ingredients."));
+        }
+        return "redirect:/ingredients";
+    }
+
+
+    /**
+     * Deletes everything ticked on the list page.
+     *
+     * <p>Reports the outcome in two parts, because a batch can partly succeed:
+     * how many went, and separately what was kept back and why.
+     */
+    @PostMapping("/bulk-delete")
+    public String bulkDelete(@AuthenticationPrincipal AppUserDetails principal,
+                             @RequestParam(name = "ids", required = false) List<Long> ids,
+                             RedirectAttributes redirectAttributes) {
+        if (ids == null || ids.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Nothing was selected.");
+            return "redirect:/ingredients";
+        }
+
+        BulkDeleteResult result = ingredientService.deleteAll(ids, currentUser(principal));
+
+        if (!result.deletedNothing()) {
+            redirectAttributes.addFlashAttribute("message",
+                    "Deleted " + result.getDeletedCount() + " "
+                            + (result.getDeletedCount() == 1 ? "ingredient." : "ingredients."));
+        }
+        if (result.hasBlocked()) {
+            redirectAttributes.addFlashAttribute("error", result.describeBlocked());
         }
         return "redirect:/ingredients";
     }

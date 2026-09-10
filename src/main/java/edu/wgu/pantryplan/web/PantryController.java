@@ -2,10 +2,12 @@ package edu.wgu.pantryplan.web;
 
 import edu.wgu.pantryplan.domain.PantryItem;
 import edu.wgu.pantryplan.domain.StorageLocation;
+import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.PantryService;
+import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.PantryItemForm;
 import jakarta.validation.Valid;
@@ -43,6 +45,11 @@ public class PantryController {
         this.pantryService = pantryService;
         this.ingredientService = ingredientService;
         this.userService = userService;
+    }
+
+    @ModelAttribute("units")
+    public Unit[] units() {
+        return Unit.values();
     }
 
     @ModelAttribute("locations")
@@ -125,6 +132,35 @@ public class PantryController {
             redirectAttributes.addFlashAttribute("openDialog", "pantry");
         }
 
+        return "redirect:/pantry";
+    }
+
+
+    /**
+     * Deletes everything ticked on the list page.
+     *
+     * <p>Reports the outcome in two parts, because a batch can partly succeed:
+     * how many went, and separately what was kept back and why.
+     */
+    @PostMapping("/bulk-delete")
+    public String bulkDelete(@AuthenticationPrincipal AppUserDetails principal,
+                             @RequestParam(name = "ids", required = false) List<Long> ids,
+                             RedirectAttributes redirectAttributes) {
+        if (ids == null || ids.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Nothing was selected.");
+            return "redirect:/pantry";
+        }
+
+        BulkDeleteResult result = pantryService.deleteAll(ids, currentUser(principal));
+
+        if (!result.deletedNothing()) {
+            redirectAttributes.addFlashAttribute("message",
+                    "Deleted " + result.getDeletedCount() + " "
+                            + (result.getDeletedCount() == 1 ? "item." : "items."));
+        }
+        if (result.hasBlocked()) {
+            redirectAttributes.addFlashAttribute("error", result.describeBlocked());
+        }
         return "redirect:/pantry";
     }
 

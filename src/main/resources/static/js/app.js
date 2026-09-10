@@ -216,6 +216,61 @@
         }
     }
 
+    /* --------------------------------------------------------- bulk select */
+
+    function bulkForm() {
+        return document.querySelector("[data-bulk-form]");
+    }
+
+    function selectedBoxes() {
+        var form = bulkForm();
+        if (!form) {
+            return [];
+        }
+        return Array.prototype.slice.call(form.querySelectorAll("[data-select-row]"))
+            .filter(function (box) {
+                return box.checked;
+            });
+    }
+
+    /*
+     * Keeps the bar, the count, and the header checkbox in step with the rows.
+     * The header box shows an indeterminate state when only some are ticked,
+     * which is what makes "select all" unambiguous either way.
+     */
+    function refreshSelection() {
+        var form = bulkForm();
+        var bar = document.querySelector("[data-bulk-bar]");
+        if (!form || !bar) {
+            return;
+        }
+        var boxes = form.querySelectorAll("[data-select-row]");
+        var chosen = selectedBoxes().length;
+
+        bar.hidden = chosen === 0;
+        var counter = bar.querySelector("[data-bulk-count]");
+        if (counter) {
+            counter.textContent = String(chosen);
+        }
+
+        var master = form.querySelector("[data-select-all]");
+        if (master) {
+            master.checked = chosen > 0 && chosen === boxes.length;
+            master.indeterminate = chosen > 0 && chosen < boxes.length;
+        }
+    }
+
+    function setAllRows(checked) {
+        var form = bulkForm();
+        if (!form) {
+            return;
+        }
+        form.querySelectorAll("[data-select-row]").forEach(function (box) {
+            box.checked = checked;
+        });
+        refreshSelection();
+    }
+
     /* ---------------------------------------------------------------- wiring */
 
     document.addEventListener("click", function (event) {
@@ -254,6 +309,39 @@
             if (addContainer) {
                 addLineRow(addContainer);
             }
+            return;
+        }
+
+        var confirmer = event.target.closest("[data-bulk-confirm]");
+        if (confirmer) {
+            var chosen = selectedBoxes().length;
+            if (chosen === 0) {
+                return;
+            }
+            var dialog = document.getElementById("bulk-dialog");
+            if (!dialog) {
+                return;
+            }
+            var noun = confirmer.getAttribute("data-noun") || "record";
+            var message = dialog.querySelector("[data-bulk-message]");
+            if (message) {
+                message.textContent = "Delete " + chosen + " " + noun
+                    + (chosen === 1 ? "?" : "s?") + " This cannot be undone.";
+            }
+            openDialog(dialog);
+            return;
+        }
+
+        if (event.target.closest("[data-bulk-submit]")) {
+            var form = bulkForm();
+            if (form) {
+                form.submit();
+            }
+            return;
+        }
+
+        if (event.target.closest("[data-bulk-clear]")) {
+            setAllRows(false);
             return;
         }
 
@@ -316,6 +404,14 @@
      * deliberately.
      */
     document.addEventListener("change", function (event) {
+        if (event.target.matches && event.target.matches("[data-select-all]")) {
+            setAllRows(event.target.checked);
+            return;
+        }
+        if (event.target.matches && event.target.matches("[data-select-row]")) {
+            refreshSelection();
+            return;
+        }
         if (event.target.matches && event.target.matches("#entry-recipe")) {
             var servingsField = document.getElementById("entry-servings");
             var picked = event.target.options[event.target.selectedIndex];
@@ -344,6 +440,8 @@
 
     /* Reopen a dialog after a rejected submission so the errors are visible. */
     document.addEventListener("DOMContentLoaded", function () {
+        refreshSelection();
+
         var requested = document.body.getAttribute("data-open-dialog");
         if (!requested) {
             return;

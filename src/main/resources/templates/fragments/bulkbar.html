@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Selection bar shown above a list that supports bulk delete. Hidden until
+  something is ticked, so it never takes space it has not earned.
+-->
+<div th:fragment="bar(noun)" class="bulkbar" data-bulk-bar hidden>
+    <span class="bulkbar__count">
+        <span data-bulk-count>0</span> selected
+    </span>
+    <button type="button" class="button button--danger button--small" data-bulk-confirm
+            th:attr="data-noun=${noun}">Delete selected</button>
+    <button type="button" class="linkbutton" data-bulk-clear>Clear selection</button>
+</div>
+
+<dialog th:fragment="dialog" id="bulk-dialog" class="dialog dialog--narrow"
+        aria-labelledby="bulk-dialog-title">
+    <div class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="bulk-dialog-title">Delete selected?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-bulk-message>Delete the selected records?</p>
+            <p class="field__hint">
+                Anything still referenced elsewhere is kept back, and you will be
+                told which.
+            </p>
+        </div>
+        <div class="dialog__foot">
+            <button type="button" class="button button--danger" data-bulk-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </div>
+</dialog>
+
+</body>
+</html>
