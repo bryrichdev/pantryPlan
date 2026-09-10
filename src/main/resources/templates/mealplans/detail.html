@@ -24,6 +24,8 @@
                     data-dialog-open="entry-dialog"
                     th:attr="data-date=${plan.weekStartDate}">Add a meal</button>
             <button type="button" class="button button--quiet"
+                    data-dialog-open="autofill-dialog">Fill the week for me</button>
+            <button type="button" class="button button--quiet"
                     data-dialog-open="plan-dialog" data-mode="edit"
                     th:attr="data-id=${plan.id},
                              data-name=${plan.name},
@@ -122,6 +124,66 @@
 
         <div class="dialog__foot">
             <button type="submit" class="button button--primary">Add meal</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+
+<dialog id="autofill-dialog" class="dialog" aria-labelledby="autofill-dialog-title">
+    <form th:action="@{/meal-plans/{id}/auto-fill(id=${plan.id})}" th:object="${autoFillForm}"
+          method="post" class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="autofill-dialog-title">Fill the week for me</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <fieldset class="checkset">
+                <legend>Which meals</legend>
+                <label class="checkset__item" th:each="option : ${slots}">
+                    <input type="checkbox" th:field="*{slots}" th:value="${option}">
+                    <span th:text="${@fmt.label(option)}">Dinner</span>
+                </label>
+                <p class="field__error" th:if="${#fields.hasErrors('slots')}"
+                   th:errors="*{slots}">Meals error</p>
+            </fieldset>
+
+            <div class="field">
+                <label for="autofill-servings">Cooking for</label>
+                <input type="number" id="autofill-servings" th:field="*{servings}" min="1" max="100">
+                <p class="field__error" th:if="${#fields.hasErrors('servings')}"
+                   th:errors="*{servings}">Servings error</p>
+            </div>
+
+            <fieldset class="checkset">
+                <legend>How to choose</legend>
+                <label class="checkset__item checkset__item--wide">
+                    <input type="checkbox" th:field="*{favorPantry}">
+                    <span>
+                        Favour what is in the pantry
+                        <small>Ranks recipes by how much of each you already have on the shelf.</small>
+                    </span>
+                </label>
+                <label class="checkset__item checkset__item--wide">
+                    <input type="checkbox" th:field="*{avoidRepeats}">
+                    <span>
+                        Work through every recipe before repeating
+                        <small>With fewer recipes than meals, some will still come round again.</small>
+                    </span>
+                </label>
+                <label class="checkset__item checkset__item--wide">
+                    <input type="checkbox" th:field="*{replaceExisting}">
+                    <span>
+                        Replace meals already scheduled
+                        <small>Off by default, so only empty slots get filled.</small>
+                    </span>
+                </label>
+            </fieldset>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary">Fill the week</button>
             <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
         </div>
     </form>

@@ -7,12 +7,18 @@ import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.repository.MealPlanRepository;
 import edu.wgu.pantryplan.repository.PlanEntryRepository;
 import edu.wgu.pantryplan.repository.RecipeRepository;
+import edu.wgu.pantryplan.web.form.AutoFillForm;
 import edu.wgu.pantryplan.web.form.MealPlanForm;
+import edu.wgu.pantryplan.domain.MealSlot;
 import edu.wgu.pantryplan.web.form.PlanEntryForm;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Random;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +31,16 @@ public class MealPlanService {
     private final MealPlanRepository mealPlanRepository;
     private final PlanEntryRepository planEntryRepository;
     private final RecipeRepository recipeRepository;
+    private final PantryCoverageService coverageService;
 
     public MealPlanService(MealPlanRepository mealPlanRepository,
                            PlanEntryRepository planEntryRepository,
-                           RecipeRepository recipeRepository) {
+                           RecipeRepository recipeRepository,
+                           PantryCoverageService coverageService) {
         this.mealPlanRepository = mealPlanRepository;
         this.planEntryRepository = planEntryRepository;
         this.recipeRepository = recipeRepository;
+        this.coverageService = coverageService;
     }
 
     @Transactional(readOnly = true)
@@ -131,6 +140,110 @@ public class MealPlanService {
                         "No entry " + entryId + " on this plan"));
         plan.removeEntry(entry);
         mealPlanRepository.save(plan);
+    }
+
+
+    /**
+     * Fills a week with recipes chosen for the cook.
+     *
+     * @return how many meals were scheduled
+     */
+    @Transactional
+    public int autoFill(Long planId, AutoFillForm form, User user) {
+        return autoFill(planId, form, user, new Random());
+    }
+
+    /**
+     * Fills a week, taking the source of randomness as an argument.
+     *
+     * <p>Two knobs shape the result. Favouring the pantry ranks candidates by
+     * how much of each the shelf already covers, so a week gets planned around
+     * what is in the house. Avoiding repeats works through every recipe before
+     * any comes round again, which matters because seven dinners and three
+     * recipes must repeat eventually — the question is only when.
+     *
+     * <p>The seeded overload exists so tests can assert on an exact outcome
+     * rather than on properties of a shuffle.
+     */
+    @Transactional
+    public int autoFill(Long planId, AutoFillForm form, User user, Random random) {
+        MealPlan plan = requireOwned(planId, user);
+        List<Recipe> candidates = recipeRepository.findAllByUserOrderByNameAsc(user);
+        if (candidates.isEmpty()) {
+            return 0;
+        }
+
+        List<PlanEntry> existing = entriesInOrder(plan);
+        Set<String> taken = new HashSet<>();
+        for (PlanEntry entry : existing) {
+            taken.add(slotKey(entry.getPlanDate(), entry.getMealSlot()));
+        }
+
+        if (form.isReplaceExisting()) {
+            for (PlanEntry entry : existing) {
+                if (form.getSlots().contains(entry.getMealSlot())) {
+                    plan.removeEntry(entry);
+                    taken.remove(slotKey(entry.getPlanDate(), entry.getMealSlot()));
+                }
+            }
+            planEntryRepository.flush();
+        }
+
+        int servings = form.getServings() == null ? 4 : form.getServings();
+        List<Recipe> pool = orderedPool(candidates, user, servings, form.isFavorPantry(), random);
+        int cursor = 0;
+        int added = 0;
+
+        for (LocalDate date : weekDates(plan)) {
+            for (MealSlot slot : MealSlot.values()) {
+                if (!form.getSlots().contains(slot)) {
+                    continue;
+                }
+                if (taken.contains(slotKey(date, slot))) {
+                    continue;
+                }
+
+                if (cursor >= pool.size()) {
+                    /* Every recipe has had a turn. Rebuild the order so the next
+                       pass through is a different sequence. */
+                    pool = orderedPool(candidates, user, servings, form.isFavorPantry(), random);
+                    cursor = 0;
+                }
+
+                Recipe chosen = form.isAvoidRepeats()
+                        ? pool.get(cursor++)
+                        : pool.get(random.nextInt(pool.size()));
+
+                PlanEntry entry = new PlanEntry(chosen, date, slot, servings);
+                plan.addEntry(entry);
+                planEntryRepository.save(entry);
+                taken.add(slotKey(date, slot));
+                added++;
+            }
+        }
+        return added;
+    }
+
+    /**
+     * Shuffles the candidates, then optionally sorts by pantry coverage.
+     *
+     * <p>The shuffle happens first and the sort is stable, so recipes the pantry
+     * covers equally well still come out in a different order each time. Sorting
+     * alone would produce the same week on every run.
+     */
+    private List<Recipe> orderedPool(List<Recipe> candidates, User user, int servings,
+                                     boolean favorPantry, Random random) {
+        List<Recipe> pool = new ArrayList<>(candidates);
+        java.util.Collections.shuffle(pool, random);
+        if (favorPantry) {
+            pool.sort(Comparator.comparing(
+                    (Recipe recipe) -> coverageService.coverageOf(user, recipe, servings)).reversed());
+        }
+        return pool;
+    }
+
+    private String slotKey(LocalDate date, MealSlot slot) {
+        return date + "/" + slot;
     }
 
     /**

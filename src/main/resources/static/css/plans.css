@@ -110,3 +110,38 @@
     color: var(--herb-deep);
     border: 1px solid #CBDCCE;
 }
+/* Append to src/main/resources/static/css/plans.css */
+
+.checkset {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.7rem 0.9rem 0.9rem;
+    margin: 0 0 1.15rem;
+}
+
+.checkset legend {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    padding: 0 0.35rem;
+}
+
+.checkset__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    font-size: 0.93rem;
+    cursor: pointer;
+}
+
+.checkset__item input { margin-top: 0.25rem; }
+
+.checkset__item--wide span { display: block; }
+
+.checkset__item small {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-top: 0.1rem;
+}

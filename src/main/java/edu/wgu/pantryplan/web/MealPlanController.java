@@ -8,6 +8,7 @@ import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
+import edu.wgu.pantryplan.web.form.AutoFillForm;
 import edu.wgu.pantryplan.web.form.MealPlanForm;
 import edu.wgu.pantryplan.web.form.PlanEntryForm;
 import jakarta.validation.Valid;
@@ -126,6 +127,9 @@ public class MealPlanController {
         if (!model.containsAttribute("planForm")) {
             model.addAttribute("planForm", MealPlanForm.from(plan));
         }
+        if (!model.containsAttribute("autoFillForm")) {
+            model.addAttribute("autoFillForm", new AutoFillForm());
+        }
         return "mealplans/detail";
     }
 
@@ -155,6 +159,41 @@ public class MealPlanController {
 
         mealPlanService.addEntry(id, form, user);
         redirectAttributes.addFlashAttribute("message", "Meal added to the plan.");
+        return "redirect:/meal-plans/" + id;
+    }
+
+
+    /**
+     * Fills the week automatically. Reports how many meals landed, and says so
+     * plainly when nothing did, since "no recipes yet" and "every slot was
+     * already full" both look like nothing happening.
+     */
+    @PostMapping("/{id}/auto-fill")
+    public String autoFill(@AuthenticationPrincipal AppUserDetails principal,
+                           @PathVariable Long id,
+                           @Valid @ModelAttribute("autoFillForm") AutoFillForm form,
+                           BindingResult result,
+                           RedirectAttributes redirectAttributes) {
+        User user = currentUser(principal);
+
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute(
+                    "org.springframework.validation.BindingResult.autoFillForm", result);
+            redirectAttributes.addFlashAttribute("autoFillForm", form);
+            redirectAttributes.addFlashAttribute("openDialog", "autofill");
+            return "redirect:/meal-plans/" + id;
+        }
+
+        int added = mealPlanService.autoFill(id, form, user);
+
+        if (added == 0) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Nothing was added. Either you have no recipes yet, or every meal "
+                            + "you chose is already scheduled.");
+        } else {
+            redirectAttributes.addFlashAttribute("message",
+                    "Filled " + added + (added == 1 ? " meal." : " meals."));
+        }
         return "redirect:/meal-plans/" + id;
     }
 
