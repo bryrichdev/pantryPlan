@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Meal plans')}"></head>
+<body th:attr="data-open-dialog=${openDialog}">
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Meal plans</h1>
+            <p class="pagehead__note">
+                A plan covers one week. Drop recipes onto days, then build a
+                grocery list from what the week needs.
+            </p>
+        </div>
+        <button type="button" class="button button--primary"
+                data-dialog-open="plan-dialog" data-mode="create">New plan</button>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="empty" th:if="${#lists.isEmpty(plans)}">
+        <p>
+            No plans yet. Create one for the week ahead and start dropping
+            recipes onto days.
+        </p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(plans)}">
+        <caption class="visually-hidden">Meal plans on this account</caption>
+        <thead>
+        <tr>
+            <th scope="col">Plan</th>
+            <th scope="col">Week of</th>
+            <th scope="col">Meals scheduled</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="plan : ${plans}" class="table__row--link"
+            th:attr="data-row-href=@{/meal-plans/{id}(id=${plan.id})}">
+            <td>
+                <a th:href="@{/meal-plans/{id}(id=${plan.id})}" th:text="${plan.name}">This week</a>
+                <span class="pill pill--warn"
+                      th:if="${!plan.weekStartDate.isAfter(today) and !plan.weekEndDate().isBefore(today)}">Current</span>
+            </td>
+            <td th:text="${@fmt.date(plan.weekStartDate)}">Sep 14, 2026</td>
+            <td th:text="${#lists.size(plan.entries)}">5</td>
+            <td class="table__actions">
+                <button type="button" class="linkbutton linkbutton--danger"
+                        data-dialog-open="delete-dialog"
+                        th:attr="data-name=${plan.name},
+                                 data-entity='meal plan',
+                                 data-delete-url=@{/meal-plans/{id}/delete(id=${plan.id})}">Delete</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<dialog id="plan-dialog" class="dialog" aria-labelledby="plan-dialog-title">
+    <form th:action="@{/meal-plans}" th:object="${planForm}" method="post" class="dialog__form">
+        <input type="hidden" th:field="*{id}">
+
+        <div class="dialog__head">
+            <h2 id="plan-dialog-title" data-dialog-title>New plan</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <div class="field">
+                <label for="plan-name">Name</label>
+                <input type="text" id="plan-name" th:field="*{name}" maxlength="120"
+                       placeholder="Week of the 14th">
+                <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</p>
+            </div>
+
+            <div class="field">
+                <label for="plan-week">Week starts</label>
+                <input type="date" id="plan-week" th:field="*{weekStartDate}">
+                <p class="field__hint">The plan covers this day and the six that follow.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('weekStartDate')}"
+                   th:errors="*{weekStartDate}">Week error</p>
+            </div>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary">Save plan</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form th:action="@{/meal-plans}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title" data-delete-heading>Delete plan?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-delete-message>Delete this plan?</p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

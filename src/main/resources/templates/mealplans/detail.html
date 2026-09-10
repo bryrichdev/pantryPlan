@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${plan.name})}"></head>
+<body th:attr="data-open-dialog=${openDialog}">
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <p class="crumb"><a th:href="@{/meal-plans}">Meal plans</a></p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="pagehead">
+        <div>
+            <h1 th:text="${plan.name}">Week of the 14th</h1>
+            <p class="pagehead__note">
+                <span th:text="${@fmt.date(plan.weekStartDate)}">Sep 14</span>
+                to <span th:text="${@fmt.date(plan.weekEndDate())}">Sep 20</span>,
+                <span th:text="${entryCount}">5</span>
+                <span th:text="${entryCount == 1 ? 'meal' : 'meals'}">meals</span> scheduled.
+            </p>
+        </div>
+        <div class="actions">
+            <button type="button" class="button button--primary"
+                    data-dialog-open="entry-dialog"
+                    th:attr="data-date=${plan.weekStartDate}">Add a meal</button>
+            <button type="button" class="button button--quiet"
+                    data-dialog-open="plan-dialog" data-mode="edit"
+                    th:attr="data-id=${plan.id},
+                             data-name=${plan.name},
+                             data-week=${plan.weekStartDate}">Rename</button>
+        </div>
+    </div>
+
+    <p class="notice notice--good" th:if="${#lists.isEmpty(recipeOptions)}">
+        You have no recipes yet. <a th:href="@{/recipes/new}">Write one first</a>,
+        then come back and schedule it.
+    </p>
+
+    <div class="week">
+        <section class="day" th:each="day : ${days}"
+                 th:classappend="${day.date.equals(today)} ? 'day--today' : ''">
+            <header class="day__head">
+                <h2 class="day__name" th:text="${#temporals.format(day.date, 'EEEE')}">Monday</h2>
+                <span class="day__date" th:text="${@fmt.date(day.date)}">Sep 14, 2026</span>
+            </header>
+
+            <p class="day__empty" th:if="${day.empty}">Nothing planned</p>
+
+            <ul class="meals" th:unless="${day.empty}">
+                <li class="meal" th:each="entry : ${day.entries}">
+                    <div class="meal__slot" th:text="${@fmt.label(entry.mealSlot)}">Dinner</div>
+                    <div class="meal__body">
+                        <a class="meal__recipe" th:href="@{/recipes/{id}(id=${entry.recipe.id})}"
+                           th:text="${entry.recipe.name}">Pesto pasta</a>
+                        <span class="meal__servings"
+                              th:text="|for ${entry.servings}|">for 4</span>
+                        <span class="pill pill--good" th:if="${entry.cooked}">Cooked</span>
+                    </div>
+                    <form th:action="@{/meal-plans/{id}/entries/{entryId}/delete(id=${plan.id},entryId=${entry.id})}"
+                          method="post" class="meal__remove">
+                        <button type="submit" class="linkbutton linkbutton--danger">Remove</button>
+                    </form>
+                </li>
+            </ul>
+
+            <button type="button" class="day__add" data-dialog-open="entry-dialog"
+                    th:attr="data-date=${day.date}">Add to this day</button>
+        </section>
+    </div>
+</main>
+
+<dialog id="entry-dialog" class="dialog" aria-labelledby="entry-dialog-title">
+    <form th:action="@{/meal-plans/{id}/entries(id=${plan.id})}" th:object="${entryForm}"
+          method="post" class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="entry-dialog-title">Add a meal</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <div class="field">
+                <label for="entry-recipe">Recipe</label>
+                <select id="entry-recipe" th:field="*{recipeId}">
+                    <option value="">Choose a recipe</option>
+                    <option th:each="option : ${recipeOptions}"
+                            th:value="${option.id}" th:text="${option.name}"
+                            th:attr="data-servings=${option.servings}">Pesto pasta</option>
+                </select>
+                <p class="field__error" th:if="${#fields.hasErrors('recipeId')}"
+                   th:errors="*{recipeId}">Recipe error</p>
+            </div>
+
+            <div class="fieldrow">
+                <div class="field">
+                    <label for="entry-date">Day</label>
+                    <input type="date" id="entry-date" th:field="*{planDate}"
+                           th:attr="min=${plan.weekStartDate},max=${plan.weekEndDate()}">
+                    <p class="field__error" th:if="${#fields.hasErrors('planDate')}"
+                       th:errors="*{planDate}">Day error</p>
+                </div>
+                <div class="field">
+                    <label for="entry-slot">Meal</label>
+                    <select id="entry-slot" th:field="*{mealSlot}">
+                        <option th:each="option : ${slots}"
+                                th:value="${option}" th:text="${@fmt.label(option)}">Dinner</option>
+                    </select>
+                    <p class="field__error" th:if="${#fields.hasErrors('mealSlot')}"
+                       th:errors="*{mealSlot}">Meal error</p>
+                </div>
+                <div class="field">
+                    <label for="entry-servings">Servings</label>
+                    <input type="number" id="entry-servings" th:field="*{servings}" min="1" max="100">
+                    <p class="field__error" th:if="${#fields.hasErrors('servings')}"
+                       th:errors="*{servings}">Servings error</p>
+                </div>
+            </div>
+            <p class="field__hint">
+                Servings default to what the recipe makes. Change it and the
+                grocery list scales the ingredients to match.
+            </p>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary">Add meal</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="plan-dialog" class="dialog" aria-labelledby="plan-dialog-title">
+    <form th:action="@{/meal-plans}" th:object="${planForm}" method="post" class="dialog__form">
+        <input type="hidden" th:field="*{id}">
+        <div class="dialog__head">
+            <h2 id="plan-dialog-title" data-dialog-title>Rename plan</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <div class="field">
+                <label for="plan-name">Name</label>
+                <input type="text" id="plan-name" th:field="*{name}" maxlength="120">
+                <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</p>
+            </div>
+            <div class="field">
+                <label for="plan-week">Week starts</label>
+                <input type="date" id="plan-week" th:field="*{weekStartDate}">
+                <p class="field__error" th:if="${#fields.hasErrors('weekStartDate')}"
+                   th:errors="*{weekStartDate}">Week error</p>
+            </div>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary">Save plan</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

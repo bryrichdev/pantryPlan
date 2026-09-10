@@ -107,6 +107,37 @@
         title.textContent = mode === "edit" ? "Edit pantry item" : "Add pantry item";
     }
 
+    function fillPlanDialog(dialog, trigger) {
+        var mode = trigger.getAttribute("data-mode");
+        var title = dialog.querySelector("[data-dialog-title]");
+        var idField = dialog.querySelector("input[name='id']");
+        var nameField = dialog.querySelector("#plan-name");
+        var weekField = dialog.querySelector("#plan-week");
+
+        if (mode === "edit") {
+            title.textContent = "Rename plan";
+            idField.value = trigger.getAttribute("data-id") || "";
+            nameField.value = trigger.getAttribute("data-name") || "";
+            weekField.value = trigger.getAttribute("data-week") || "";
+        } else {
+            title.textContent = "New plan";
+            idField.value = "";
+            nameField.value = "";
+        }
+    }
+
+    /*
+     * Opening the entry dialog from a specific day prefills that date, so the
+     * common case is choosing a recipe and pressing add.
+     */
+    function fillEntryDialog(dialog, trigger) {
+        var dateField = dialog.querySelector("#entry-date");
+        var date = trigger.getAttribute("data-date");
+        if (dateField && date) {
+            dateField.value = date;
+        }
+    }
+
     /*
      * One delete dialog serves every list. The trigger supplies the URL to post
      * to, the display name, the noun for the copy, and — when the record cannot
@@ -198,6 +229,10 @@
                 fillIngredientDialog(dialog, opener);
             } else if (dialog.id === "pantry-dialog") {
                 fillPantryDialog(dialog, opener);
+            } else if (dialog.id === "plan-dialog") {
+                fillPlanDialog(dialog, opener);
+            } else if (dialog.id === "entry-dialog") {
+                fillEntryDialog(dialog, opener);
             } else if (dialog.id === "delete-dialog") {
                 fillDeleteDialog(dialog, opener);
             }
@@ -281,6 +316,15 @@
      * deliberately.
      */
     document.addEventListener("change", function (event) {
+        if (event.target.matches && event.target.matches("#entry-recipe")) {
+            var servingsField = document.getElementById("entry-servings");
+            var picked = event.target.options[event.target.selectedIndex];
+            var suggested = picked ? picked.getAttribute("data-servings") : null;
+            if (servingsField && suggested) {
+                servingsField.value = suggested;
+            }
+            return;
+        }
         if (!event.target.matches || !event.target.matches("#pantry-ingredient")) {
             return;
         }
