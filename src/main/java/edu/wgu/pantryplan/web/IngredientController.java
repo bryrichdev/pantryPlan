@@ -100,6 +100,7 @@ public class IngredientController {
         model.addAttribute("blockReasons", blockReasons);
         model.addAttribute("query", query == null ? "" : query);
         model.addAttribute("searching", query != null && !query.isBlank());
+        model.addAttribute("presetsAvailable", ingredientService.countMissingPresets(user));
     }
 
     @GetMapping
@@ -152,6 +153,24 @@ public class IngredientController {
             redirectAttributes.addFlashAttribute("message", "Ingredient updated.");
         }
         return "redirect:" + (destination != null ? destination : "/ingredients");
+    }
+
+
+    /**
+     * Copies the shared starter catalogue into this account.
+     */
+    @PostMapping("/import-presets")
+    public String importPresets(@AuthenticationPrincipal AppUserDetails principal,
+                                RedirectAttributes redirectAttributes) {
+        int added = ingredientService.importPresets(currentUser(principal));
+        if (added == 0) {
+            redirectAttributes.addFlashAttribute("message",
+                    "You already have every starter ingredient.");
+        } else {
+            redirectAttributes.addFlashAttribute("message",
+                    "Added " + added + " starter " + (added == 1 ? "ingredient." : "ingredients."));
+        }
+        return "redirect:/ingredients";
     }
 
     @PostMapping("/{id}/delete")

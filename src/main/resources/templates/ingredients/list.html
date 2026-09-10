@@ -10,7 +10,7 @@
             <h1>Ingredients</h1>
             <p class="pagehead__note">
                 Everything your recipes and pantry can refer to. Set a weight per cup
-                for anything you measure by both weight or volume, like flour or sugar.
+                for anything you measure both ways, like flour or sugar.
             </p>
         </div>
     </div>
@@ -24,9 +24,16 @@
             <button type="submit" class="button button--quiet">Search</button>
             <a th:if="${searching}" th:href="@{/ingredients}" class="searchbar__clear">Clear</a>
         </form>
-        <button type="button" class="button button--primary"
-                data-dialog-open="ingredient-dialog"
-                data-mode="create">Add ingredient</button>
+        <div class="toolbar__actions">
+            <form th:action="@{/ingredients/import-presets}" method="post" class="inline-form"
+                  th:if="${presetsAvailable > 0}">
+                <button type="submit" class="button button--quiet"
+                        th:text="|Add ${presetsAvailable} starter ingredients|">Add starter ingredients</button>
+            </form>
+            <button type="button" class="button button--primary"
+                    data-dialog-open="ingredient-dialog"
+                    data-mode="create">Add ingredient</button>
+        </div>
     </div>
 
     <p class="resultcount" th:if="${searching}">

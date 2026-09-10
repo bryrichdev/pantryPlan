@@ -41,6 +41,12 @@
     border-bottom: 1px solid var(--rule);
 }
 
+.toolbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
 .searchbar {
     display: flex;
     align-items: center;
