@@ -173,7 +173,7 @@ class PersistenceRoundTripTests {
                 new Ingredient(user, "Oats", IngredientCategory.PANTRY_STAPLE));
 
         PantryItem item = pantryItemRepository.save(
-                new PantryItem(user, oats, new BigDecimal("500.000"), Unit.GRAM));
+                new PantryItem(user, oats, new BigDecimal("500.000")));
         entityManager.flush();
 
         item.deduct(new BigDecimal("120.000"));

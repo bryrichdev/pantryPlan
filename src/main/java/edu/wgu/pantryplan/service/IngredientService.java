@@ -64,7 +64,7 @@ public class IngredientService {
     @Transactional
     public Ingredient create(IngredientForm form, User user) {
         Ingredient ingredient = new Ingredient(user, form.getName().trim(), form.getCategory());
-        ingredient.setGramsPerCup(form.getGramsPerCup());
+        applyForm(ingredient, form);
         return ingredientRepository.save(ingredient);
     }
 
@@ -73,8 +73,14 @@ public class IngredientService {
         Ingredient ingredient = requireOwned(id, user);
         ingredient.setName(form.getName().trim());
         ingredient.setCategory(form.getCategory());
-        ingredient.setGramsPerCup(form.getGramsPerCup());
+        applyForm(ingredient, form);
         return ingredientRepository.save(ingredient);
+    }
+
+    private void applyForm(Ingredient ingredient, IngredientForm form) {
+        ingredient.setStockUnit(form.getStockUnit());
+        ingredient.setDefaultLocation(form.getDefaultLocation());
+        ingredient.setGramsPerCup(form.getGramsPerCup());
     }
 
     /**

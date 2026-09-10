@@ -31,19 +31,51 @@
             node.remove();
         });
 
+        var unitField = dialog.querySelector("#dialog-stock-unit");
+        var locationField = dialog.querySelector("#dialog-default-location");
+
         if (mode === "edit") {
             title.textContent = "Edit ingredient";
             idField.value = trigger.getAttribute("data-id") || "";
             nameField.value = trigger.getAttribute("data-name") || "";
             categoryField.value = trigger.getAttribute("data-category") || "OTHER";
             gramsField.value = trigger.getAttribute("data-grams") || "";
+            if (unitField) {
+                unitField.value = trigger.getAttribute("data-stock-unit") || "GRAM";
+            }
+            if (locationField) {
+                locationField.value = trigger.getAttribute("data-default-location") || "PANTRY";
+            }
         } else {
             title.textContent = "Add ingredient";
             idField.value = "";
             nameField.value = "";
             categoryField.value = "OTHER";
             gramsField.value = "";
+            if (unitField) {
+                unitField.value = "GRAM";
+            }
+            if (locationField) {
+                locationField.value = "PANTRY";
+            }
         }
+    }
+
+    /*
+     * Shows the stocking unit of whichever ingredient is selected. The unit is
+     * a property of the ingredient now, so the pantry dialog reports it rather
+     * than asking for it.
+     */
+    function syncPantryUnit(dialog) {
+        var select = dialog.querySelector("#pantry-ingredient");
+        var label = dialog.querySelector("[data-pantry-unit]");
+        if (!select || !label) {
+            return null;
+        }
+        var chosen = select.options[select.selectedIndex];
+        var unit = chosen ? chosen.getAttribute("data-unit") : null;
+        label.textContent = unit || "\u2014";
+        return chosen;
     }
 
     function fillPantryDialog(dialog, trigger) {
@@ -58,7 +90,6 @@
             "input[name='id']": mode === "edit" ? trigger.getAttribute("data-id") : "",
             "#pantry-ingredient": mode === "edit" ? trigger.getAttribute("data-ingredient") : "",
             "#pantry-quantity": mode === "edit" ? trigger.getAttribute("data-quantity") : "",
-            "#pantry-unit": mode === "edit" ? trigger.getAttribute("data-unit") : "",
             "#pantry-location": mode === "edit" ? trigger.getAttribute("data-location") : "PANTRY",
             "#pantry-purchased": mode === "edit" ? trigger.getAttribute("data-purchased") : "",
             "#pantry-expires": mode === "edit" ? trigger.getAttribute("data-expires") : ""
@@ -71,6 +102,8 @@
             }
         });
 
+        dialog.setAttribute("data-mode", mode || "create");
+        syncPantryUnit(dialog);
         title.textContent = mode === "edit" ? "Edit pantry item" : "Add pantry item";
     }
 
@@ -241,6 +274,30 @@
         }
     });
 
+    /*
+     * Choosing an ingredient updates the unit shown beside the amount. On a new
+     * row it also preselects that ingredient's usual shelf; while editing it
+     * leaves the shelf alone, since the cook may have put this one elsewhere
+     * deliberately.
+     */
+    document.addEventListener("change", function (event) {
+        if (!event.target.matches || !event.target.matches("#pantry-ingredient")) {
+            return;
+        }
+        var dialog = event.target.closest("dialog");
+        if (!dialog) {
+            return;
+        }
+        var chosen = syncPantryUnit(dialog);
+        if (chosen && dialog.getAttribute("data-mode") !== "edit") {
+            var locationField = dialog.querySelector("#pantry-location");
+            var preferred = chosen.getAttribute("data-location");
+            if (locationField && preferred) {
+                locationField.value = preferred;
+            }
+        }
+    });
+
     /* Reopen a dialog after a rejected submission so the errors are visible. */
     document.addEventListener("DOMContentLoaded", function () {
         var requested = document.body.getAttribute("data-open-dialog");
@@ -256,6 +313,10 @@
         if (title && idField) {
             var noun = requested === "pantry" ? "pantry item" : requested;
             title.textContent = (idField.value ? "Edit " : "Add ") + noun;
+        }
+        if (requested === "pantry") {
+            dialog.setAttribute("data-mode", idField && idField.value ? "edit" : "create");
+            syncPantryUnit(dialog);
         }
         openDialog(dialog);
     });

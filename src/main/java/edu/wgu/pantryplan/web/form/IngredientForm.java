@@ -2,6 +2,8 @@ package edu.wgu.pantryplan.web.form;
 
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientCategory;
+import edu.wgu.pantryplan.domain.StorageLocation;
+import edu.wgu.pantryplan.domain.Unit;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 /**
- * Backing object for the ingredient form.
+ * Backing object for the ingredient dialog.
  */
 public class IngredientForm {
 
@@ -23,6 +25,12 @@ public class IngredientForm {
     @NotNull(message = "Choose a category")
     private IngredientCategory category = IngredientCategory.OTHER;
 
+    @NotNull(message = "Choose the unit you keep this in")
+    private Unit stockUnit = Unit.GRAM;
+
+    @NotNull(message = "Choose where this usually lives")
+    private StorageLocation defaultLocation = StorageLocation.PANTRY;
+
     @DecimalMin(value = "0.001", message = "Weight per cup must be greater than zero")
     @Digits(integer = 7, fraction = 3, message = "Use up to three decimal places")
     private BigDecimal gramsPerCup;
@@ -32,6 +40,8 @@ public class IngredientForm {
         form.setId(ingredient.getId());
         form.setName(ingredient.getName());
         form.setCategory(ingredient.getCategory());
+        form.setStockUnit(ingredient.getStockUnit());
+        form.setDefaultLocation(ingredient.getDefaultLocation());
         form.setGramsPerCup(ingredient.getGramsPerCup());
         return form;
     }
@@ -62,6 +72,22 @@ public class IngredientForm {
 
     public void setCategory(IngredientCategory category) {
         this.category = category;
+    }
+
+    public Unit getStockUnit() {
+        return stockUnit;
+    }
+
+    public void setStockUnit(Unit stockUnit) {
+        this.stockUnit = stockUnit;
+    }
+
+    public StorageLocation getDefaultLocation() {
+        return defaultLocation;
+    }
+
+    public void setDefaultLocation(StorageLocation defaultLocation) {
+        this.defaultLocation = defaultLocation;
     }
 
     public BigDecimal getGramsPerCup() {

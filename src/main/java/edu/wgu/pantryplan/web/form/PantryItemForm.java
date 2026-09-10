@@ -2,7 +2,6 @@ package edu.wgu.pantryplan.web.form;
 
 import edu.wgu.pantryplan.domain.PantryItem;
 import edu.wgu.pantryplan.domain.StorageLocation;
-import edu.wgu.pantryplan.domain.Unit;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +11,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * Backing object for the pantry item dialog.
+ *
+ * <p>No unit field: the amount is always in the ingredient's stocking unit.
  */
 public class PantryItemForm {
 
@@ -24,9 +25,6 @@ public class PantryItemForm {
     @DecimalMin(value = "0.000", message = "Amount cannot be negative")
     @Digits(integer = 7, fraction = 3, message = "Use up to three decimal places")
     private BigDecimal quantity;
-
-    @NotNull(message = "Choose a unit")
-    private Unit unit;
 
     @NotNull(message = "Choose where it is stored")
     private StorageLocation location = StorageLocation.PANTRY;
@@ -42,7 +40,6 @@ public class PantryItemForm {
         form.setId(item.getId());
         form.setIngredientId(item.getIngredient().getId());
         form.setQuantity(item.getQuantity());
-        form.setUnit(item.getUnit());
         form.setLocation(item.getLocation());
         form.setPurchasedOn(item.getPurchasedOn());
         form.setExpiresOn(item.getExpiresOn());
@@ -83,14 +80,6 @@ public class PantryItemForm {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
-    }
-
-    public Unit getUnit() {
-        return unit;
-    }
-
-    public void setUnit(Unit unit) {
-        this.unit = unit;
     }
 
     public StorageLocation getLocation() {

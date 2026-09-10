@@ -27,10 +27,6 @@ public class PantryItem extends BaseEntity {
     private BigDecimal quantity;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "unit", nullable = false, length = 20)
-    private Unit unit;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "location", nullable = false, length = 30)
     private StorageLocation location = StorageLocation.PANTRY;
 
@@ -43,11 +39,19 @@ public class PantryItem extends BaseEntity {
     protected PantryItem() {
     }
 
-    public PantryItem(User user, Ingredient ingredient, BigDecimal quantity, Unit unit) {
+    public PantryItem(User user, Ingredient ingredient, BigDecimal quantity) {
         this.user = user;
         this.ingredient = ingredient;
         this.quantity = quantity;
-        this.unit = unit;
+        this.location = ingredient.getDefaultLocation();
+    }
+
+    /**
+     * Derived from the ingredient rather than stored per row. Hibernate maps
+     * fields, not getters, so this is invisible to persistence.
+     */
+    public Unit getUnit() {
+        return ingredient.getStockUnit();
     }
 
     public boolean isExpiringWithin(int days, LocalDate today) {
@@ -98,14 +102,6 @@ public class PantryItem extends BaseEntity {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
-    }
-
-    public Unit getUnit() {
-        return unit;
-    }
-
-    public void setUnit(Unit unit) {
-        this.unit = unit;
     }
 
     public StorageLocation getLocation() {

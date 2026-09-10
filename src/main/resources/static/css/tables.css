@@ -218,3 +218,17 @@
     border-radius: var(--radius);
     background: #FFFFFF;
 }
+
+.measure {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.measure input { flex: 1 1 auto; }
+
+.measure__unit {
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    min-width: 2.5rem;
+}

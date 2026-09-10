@@ -3,6 +3,7 @@ package edu.wgu.pantryplan.web;
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientCategory;
 import edu.wgu.pantryplan.domain.Recipe;
+import edu.wgu.pantryplan.domain.StorageLocation;
 import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
@@ -59,6 +60,11 @@ public class RecipeController {
     @ModelAttribute("categories")
     public IngredientCategory[] categories() {
         return IngredientCategory.values();
+    }
+
+    @ModelAttribute("locations")
+    public StorageLocation[] locations() {
+        return StorageLocation.values();
     }
 
     private User currentUser(AppUserDetails principal) {

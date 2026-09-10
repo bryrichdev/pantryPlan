@@ -51,19 +51,20 @@ class PantryServiceTests {
         return userService.register(form);
     }
 
-    private Ingredient ingredient(User user, String name) {
+    private Ingredient ingredient(User user, String name, Unit stockUnit) {
         IngredientForm form = new IngredientForm();
         form.setName(name);
         form.setCategory(IngredientCategory.OTHER);
+        form.setStockUnit(stockUnit);
+        form.setDefaultLocation(StorageLocation.PANTRY);
         return ingredientService.create(form, user);
     }
 
-    private PantryItemForm formFor(Ingredient ingredient, String quantity, Unit unit,
+    private PantryItemForm formFor(Ingredient ingredient, String quantity,
                                    StorageLocation location) {
         PantryItemForm form = new PantryItemForm();
         form.setIngredientId(ingredient.getId());
         form.setQuantity(new BigDecimal(quantity));
-        form.setUnit(unit);
         form.setLocation(location);
         return form;
     }
@@ -71,10 +72,8 @@ class PantryServiceTests {
     @Test
     void createsAndListsItemsSortedByIngredientName() {
         User user = cook("pan-create@example.com");
-        pantryService.create(formFor(ingredient(user, "Rice"), "500.000", Unit.GRAM,
-                StorageLocation.PANTRY), user);
-        pantryService.create(formFor(ingredient(user, "Butter"), "225.000", Unit.GRAM,
-                StorageLocation.FRIDGE), user);
+        pantryService.create(formFor(ingredient(user, "Rice", Unit.GRAM), "500.000", StorageLocation.PANTRY), user);
+        pantryService.create(formFor(ingredient(user, "Butter", Unit.GRAM), "225.000", StorageLocation.FRIDGE), user);
 
         var all = pantryService.findAll(user);
         assertEquals(2, all.size());
@@ -86,7 +85,7 @@ class PantryServiceTests {
         User mine = cook("pan-mine@example.com");
         User theirs = cook("pan-theirs@example.com");
         PantryItem item = pantryService.create(
-                formFor(ingredient(mine, "Saffron"), "2.000", Unit.GRAM, StorageLocation.SPICE_RACK), mine);
+                formFor(ingredient(mine, "Saffron", Unit.GRAM), "2.000", StorageLocation.SPICE_RACK), mine);
 
         assertTrue(pantryService.findAll(theirs).isEmpty());
         assertThrows(NoSuchElementException.class,
@@ -96,12 +95,9 @@ class PantryServiceTests {
     @Test
     void searchCombinesTermAndLocation() {
         User user = cook("pan-search@example.com");
-        pantryService.create(formFor(ingredient(user, "Cheddar cheese"), "200.000", Unit.GRAM,
-                StorageLocation.FRIDGE), user);
-        pantryService.create(formFor(ingredient(user, "Cream cheese"), "150.000", Unit.GRAM,
-                StorageLocation.FRIDGE), user);
-        pantryService.create(formFor(ingredient(user, "Cheese crackers"), "1.000", Unit.PIECE,
-                StorageLocation.PANTRY), user);
+        pantryService.create(formFor(ingredient(user, "Cheddar cheese", Unit.GRAM), "200.000", StorageLocation.FRIDGE), user);
+        pantryService.create(formFor(ingredient(user, "Cream cheese", Unit.GRAM), "150.000", StorageLocation.FRIDGE), user);
+        pantryService.create(formFor(ingredient(user, "Cheese crackers", Unit.PIECE), "1.000", StorageLocation.PANTRY), user);
 
         assertEquals(3, pantryService.search(user, "cheese", null).size());
         assertEquals(2, pantryService.search(user, "cheese", StorageLocation.FRIDGE).size());
@@ -114,18 +110,15 @@ class PantryServiceTests {
     void findsItemsExpiringWithinAWindow() {
         User user = cook("pan-expiry@example.com");
 
-        PantryItemForm soon = formFor(ingredient(user, "Milk"), "1.000", Unit.LITER,
-                StorageLocation.FRIDGE);
+        PantryItemForm soon = formFor(ingredient(user, "Milk", Unit.LITER), "1.000", StorageLocation.FRIDGE);
         soon.setExpiresOn(TODAY.plusDays(3));
         pantryService.create(soon, user);
 
-        PantryItemForm later = formFor(ingredient(user, "Flour"), "1.000", Unit.KILOGRAM,
-                StorageLocation.PANTRY);
+        PantryItemForm later = formFor(ingredient(user, "Flour", Unit.KILOGRAM), "1.000", StorageLocation.PANTRY);
         later.setExpiresOn(TODAY.plusDays(60));
         pantryService.create(later, user);
 
-        PantryItemForm never = formFor(ingredient(user, "Salt"), "500.000", Unit.GRAM,
-                StorageLocation.PANTRY);
+        PantryItemForm never = formFor(ingredient(user, "Salt", Unit.GRAM), "500.000", StorageLocation.PANTRY);
         pantryService.create(never, user);
 
         assertEquals(1, pantryService.findExpiringWithin(user, 7, TODAY).size());
@@ -136,8 +129,7 @@ class PantryServiceTests {
     @Test
     void reportsExpiredAndExpiringStatusFromTheItem() {
         User user = cook("pan-status@example.com");
-        PantryItemForm form = formFor(ingredient(user, "Yogurt"), "500.000", Unit.GRAM,
-                StorageLocation.FRIDGE);
+        PantryItemForm form = formFor(ingredient(user, "Yogurt", Unit.GRAM), "500.000", StorageLocation.FRIDGE);
         form.setExpiresOn(TODAY.minusDays(1));
         PantryItem item = pantryService.create(form, user);
 
@@ -150,11 +142,11 @@ class PantryServiceTests {
     void rejectsAnIngredientBelongingToAnotherAccount() {
         User mine = cook("pan-foreign-mine@example.com");
         User theirs = cook("pan-foreign-theirs@example.com");
-        Ingredient theirSaffron = ingredient(theirs, "Saffron");
+        Ingredient theirSaffron = ingredient(theirs, "Saffron", Unit.GRAM);
 
         assertThrows(NoSuchElementException.class,
                 () -> pantryService.create(
-                        formFor(theirSaffron, "1.000", Unit.GRAM, StorageLocation.PANTRY), mine));
+                        formFor(theirSaffron, "1.000", StorageLocation.PANTRY), mine));
     }
 
     @Test
@@ -172,9 +164,34 @@ class PantryServiceTests {
     void deletesWithoutBlocking() {
         User user = cook("pan-delete@example.com");
         PantryItem item = pantryService.create(
-                formFor(ingredient(user, "Oats"), "1.000", Unit.KILOGRAM, StorageLocation.PANTRY), user);
+                formFor(ingredient(user, "Oats", Unit.KILOGRAM), "1.000", StorageLocation.PANTRY), user);
 
         pantryService.delete(item.getId(), user);
         assertTrue(pantryService.findAll(user).isEmpty());
+    }
+
+    @Test
+    void reportsTheIngredientStockingUnit() {
+        User user = cook("pan-unit@example.com");
+        Ingredient flour = ingredient(user, "Flour", Unit.KILOGRAM);
+        PantryItem item = pantryService.create(
+                formFor(flour, "2.000", StorageLocation.PANTRY), user);
+
+        assertEquals(Unit.KILOGRAM, item.getUnit(),
+                "the unit comes from the ingredient, not the shelf row");
+    }
+
+    @Test
+    void newItemsStartOnTheIngredientDefaultShelf() {
+        User user = cook("pan-shelf@example.com");
+        IngredientForm form = new IngredientForm();
+        form.setName("Frozen peas");
+        form.setCategory(IngredientCategory.FROZEN);
+        form.setStockUnit(Unit.GRAM);
+        form.setDefaultLocation(StorageLocation.FREEZER);
+        Ingredient peas = ingredientService.create(form, user);
+
+        PantryItem item = new PantryItem(peas.getUser(), peas, new BigDecimal("400.000"));
+        assertEquals(StorageLocation.FREEZER, item.getLocation());
     }
 }

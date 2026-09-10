@@ -98,7 +98,7 @@ public class PantryService {
     @Transactional
     public PantryItem create(PantryItemForm form, User user) {
         Ingredient ingredient = requireIngredient(form.getIngredientId(), user);
-        PantryItem item = new PantryItem(user, ingredient, form.getQuantity(), form.getUnit());
+        PantryItem item = new PantryItem(user, ingredient, form.getQuantity());
         applyForm(item, form);
         return pantryItemRepository.save(item);
     }
@@ -108,7 +108,6 @@ public class PantryService {
         PantryItem item = requireOwned(id, user);
         item.setIngredient(requireIngredient(form.getIngredientId(), user));
         item.setQuantity(form.getQuantity());
-        item.setUnit(form.getUnit());
         applyForm(item, form);
         return pantryItemRepository.save(item);
     }

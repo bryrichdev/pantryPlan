@@ -2,6 +2,8 @@ package edu.wgu.pantryplan.web;
 
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientCategory;
+import edu.wgu.pantryplan.domain.StorageLocation;
+import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.IngredientInUseException;
@@ -46,6 +48,16 @@ public class IngredientController {
     @ModelAttribute("categories")
     public IngredientCategory[] categories() {
         return IngredientCategory.values();
+    }
+
+    @ModelAttribute("units")
+    public Unit[] units() {
+        return Unit.values();
+    }
+
+    @ModelAttribute("locations")
+    public StorageLocation[] locations() {
+        return StorageLocation.values();
     }
 
     private User currentUser(AppUserDetails principal) {

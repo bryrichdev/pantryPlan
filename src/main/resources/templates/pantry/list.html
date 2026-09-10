@@ -122,30 +122,27 @@
                 <select id="pantry-ingredient" th:field="*{ingredientId}">
                     <option value="">Choose an ingredient</option>
                     <option th:each="option : ${ingredientOptions}"
-                            th:value="${option.id}" th:text="${option.name}">Flour</option>
+                            th:value="${option.id}" th:text="${option.name}"
+                            th:attr="data-unit=${option.stockUnit.abbreviation},
+                                     data-location=${option.defaultLocation}">Flour</option>
                 </select>
                 <p class="field__error" th:if="${#fields.hasErrors('ingredientId')}"
                    th:errors="*{ingredientId}">Ingredient error</p>
             </div>
 
-            <div class="fieldrow">
-                <div class="field">
-                    <label for="pantry-quantity">Amount</label>
+            <div class="field">
+                <label for="pantry-quantity">Amount</label>
+                <div class="measure">
                     <input type="number" id="pantry-quantity" th:field="*{quantity}"
                            step="0.001" min="0" inputmode="decimal">
-                    <p class="field__error" th:if="${#fields.hasErrors('quantity')}"
-                       th:errors="*{quantity}">Amount error</p>
+                    <span class="measure__unit" data-pantry-unit>&mdash;</span>
                 </div>
-                <div class="field">
-                    <label for="pantry-unit">Unit</label>
-                    <select id="pantry-unit" th:field="*{unit}">
-                        <option value="">Unit</option>
-                        <option th:each="option : ${units}"
-                                th:value="${option}" th:text="${option.abbreviation}">g</option>
-                    </select>
-                    <p class="field__error" th:if="${#fields.hasErrors('unit')}"
-                       th:errors="*{unit}">Unit error</p>
-                </div>
+                <p class="field__hint">
+                    Counted in the unit set on the ingredient. Change it there to
+                    change it everywhere.
+                </p>
+                <p class="field__error" th:if="${#fields.hasErrors('quantity')}"
+                   th:errors="*{quantity}">Amount error</p>
             </div>
 
             <div class="field">

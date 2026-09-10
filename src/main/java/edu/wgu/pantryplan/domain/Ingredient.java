@@ -25,6 +25,25 @@ public class Ingredient extends BaseEntity {
     @Column(name = "category", nullable = false, length = 30)
     private IngredientCategory category = IngredientCategory.OTHER;
 
+    /**
+     * The unit this ingredient is kept in. Every pantry row for it uses this,
+     * so adding up what is on hand is plain addition rather than a conversion
+     * per row. Recipe lines keep their own unit, since a recipe may call for
+     * cups of something stocked in grams.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stock_unit", nullable = false, length = 20)
+    private Unit stockUnit = Unit.GRAM;
+
+    /**
+     * Where this usually lives. Only the starting choice on a new pantry row —
+     * the row can be stored anywhere, so a backup block of butter in the freezer
+     * stays distinct from the one in the fridge.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_location", nullable = false, length = 30)
+    private StorageLocation defaultLocation = StorageLocation.PANTRY;
+
     @Column(name = "grams_per_cup", precision = 10, scale = 3)
     private BigDecimal gramsPerCup;
 
@@ -63,6 +82,22 @@ public class Ingredient extends BaseEntity {
 
     public void setCategory(IngredientCategory category) {
         this.category = category;
+    }
+
+    public Unit getStockUnit() {
+        return stockUnit;
+    }
+
+    public void setStockUnit(Unit stockUnit) {
+        this.stockUnit = stockUnit;
+    }
+
+    public StorageLocation getDefaultLocation() {
+        return defaultLocation;
+    }
+
+    public void setDefaultLocation(StorageLocation defaultLocation) {
+        this.defaultLocation = defaultLocation;
     }
 
     public BigDecimal getGramsPerCup() {

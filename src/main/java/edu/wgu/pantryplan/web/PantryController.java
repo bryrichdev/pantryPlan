@@ -2,7 +2,6 @@ package edu.wgu.pantryplan.web;
 
 import edu.wgu.pantryplan.domain.PantryItem;
 import edu.wgu.pantryplan.domain.StorageLocation;
-import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.IngredientService;
@@ -44,11 +43,6 @@ public class PantryController {
         this.pantryService = pantryService;
         this.ingredientService = ingredientService;
         this.userService = userService;
-    }
-
-    @ModelAttribute("units")
-    public Unit[] units() {
-        return Unit.values();
     }
 
     @ModelAttribute("locations")
