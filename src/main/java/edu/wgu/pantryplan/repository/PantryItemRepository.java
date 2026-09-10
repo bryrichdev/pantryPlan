@@ -8,34 +8,31 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
+/**
+ * Four separate finders rather than one query with optional parameters. A
+ * nullable enum parameter forces the driver to guess a type it cannot infer,
+ * so the service picks the finder that matches the filters in play instead.
+ */
 public interface PantryItemRepository extends JpaRepository<PantryItem, Long> {
 
     Optional<PantryItem> findByIdAndUser(Long id, User user);
 
     List<PantryItem> findAllByUserOrderByIngredientNameAsc(User user);
 
+    List<PantryItem> findAllByUserAndIngredientNameContainingIgnoreCaseOrderByIngredientNameAsc(
+            User user, String term);
+
+    List<PantryItem> findAllByUserAndLocationOrderByIngredientNameAsc(
+            User user, StorageLocation location);
+
+    List<PantryItem> findAllByUserAndLocationAndIngredientNameContainingIgnoreCaseOrderByIngredientNameAsc(
+            User user, StorageLocation location, String term);
+
     List<PantryItem> findAllByUserAndIngredient(User user, Ingredient ingredient);
 
-    List<PantryItem> findAllByUserAndExpiresOnLessThanEqualOrderByExpiresOnAsc(User user, LocalDate cutoff);
+    List<PantryItem> findAllByUserAndExpiresOnLessThanEqualOrderByExpiresOnAsc(
+            User user, LocalDate cutoff);
 
     boolean existsByIngredient(Ingredient ingredient);
-
-    /**
-     * Search by ingredient name and optional storage location. A null location
-     * means "any location"; a blank term matches every ingredient name.
-     */
-    @Query("""
-            SELECT p FROM PantryItem p
-            JOIN p.ingredient i
-            WHERE p.user = :user
-              AND LOWER(i.name) LIKE LOWER(CONCAT('%', :term, '%'))
-              AND (:location IS NULL OR p.location = :location)
-            ORDER BY i.name ASC
-            """)
-    List<PantryItem> search(@Param("user") User user,
-                            @Param("term") String term,
-                            @Param("location") StorageLocation location);
 }

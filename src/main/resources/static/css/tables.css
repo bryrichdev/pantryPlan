@@ -196,3 +196,25 @@
     .table__actions { text-align: left; }
     .table__actions a { margin-left: 0; margin-right: 0.85rem; }
 }
+
+.pill {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.pill--warn { background: #F7EBD8; color: #8A5610; border: 1px solid #E6CFA6; }
+.pill--bad  { background: #F7EAE6; color: #8A2F1C; border: 1px solid #E7C4B8; }
+
+.searchbar__select {
+    padding: 0.5rem 0.55rem;
+    font: inherit;
+    font-size: 0.92rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: #FFFFFF;
+}

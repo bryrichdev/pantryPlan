@@ -46,6 +46,34 @@
         }
     }
 
+    function fillPantryDialog(dialog, trigger) {
+        var mode = trigger.getAttribute("data-mode");
+        var title = dialog.querySelector("[data-dialog-title]");
+
+        dialog.querySelectorAll(".field__error").forEach(function (node) {
+            node.remove();
+        });
+
+        var values = {
+            "input[name='id']": mode === "edit" ? trigger.getAttribute("data-id") : "",
+            "#pantry-ingredient": mode === "edit" ? trigger.getAttribute("data-ingredient") : "",
+            "#pantry-quantity": mode === "edit" ? trigger.getAttribute("data-quantity") : "",
+            "#pantry-unit": mode === "edit" ? trigger.getAttribute("data-unit") : "",
+            "#pantry-location": mode === "edit" ? trigger.getAttribute("data-location") : "PANTRY",
+            "#pantry-purchased": mode === "edit" ? trigger.getAttribute("data-purchased") : "",
+            "#pantry-expires": mode === "edit" ? trigger.getAttribute("data-expires") : ""
+        };
+
+        Object.keys(values).forEach(function (selector) {
+            var field = dialog.querySelector(selector);
+            if (field) {
+                field.value = values[selector] || "";
+            }
+        });
+
+        title.textContent = mode === "edit" ? "Edit pantry item" : "Add pantry item";
+    }
+
     /*
      * One delete dialog serves every list. The trigger supplies the URL to post
      * to, the display name, the noun for the copy, and — when the record cannot
@@ -135,6 +163,8 @@
             }
             if (dialog.id === "ingredient-dialog") {
                 fillIngredientDialog(dialog, opener);
+            } else if (dialog.id === "pantry-dialog") {
+                fillPantryDialog(dialog, opener);
             } else if (dialog.id === "delete-dialog") {
                 fillDeleteDialog(dialog, opener);
             }
@@ -224,7 +254,8 @@
         var title = dialog.querySelector("[data-dialog-title]");
         var idField = dialog.querySelector("input[name='id']");
         if (title && idField) {
-            title.textContent = idField.value ? "Edit ingredient" : "Add ingredient";
+            var noun = requested === "pantry" ? "pantry item" : requested;
+            title.textContent = (idField.value ? "Edit " : "Add ") + noun;
         }
         openDialog(dialog);
     });
