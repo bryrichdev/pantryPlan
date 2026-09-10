@@ -4,6 +4,8 @@ import edu.wgu.pantryplan.service.EmailAlreadyUsedException;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.RegistrationForm;
 import jakarta.validation.Valid;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -38,7 +40,8 @@ public class AuthController {
     @PostMapping("/register")
     public String register(@Valid @ModelAttribute("form") RegistrationForm form,
                            BindingResult result,
-                           RedirectAttributes redirectAttributes) {
+                           RedirectAttributes redirectAttributes,
+                           HttpServletRequest request) {
         if (!form.passwordsMatch()) {
             result.rejectValue("confirmPassword", "passwords.mismatch",
                     "Passwords do not match");
@@ -48,12 +51,16 @@ public class AuthController {
         }
         try {
             userService.register(form);
+            request.login(form.getEmail(), form.getPassword());
         } catch (EmailAlreadyUsedException ex) {
             result.rejectValue("email", "email.taken",
                     "That email already has an account. Sign in instead.");
             return "auth/register";
+        } catch (ServletException e) {
+            result.reject("auth.failed", "Account created, but automatic login failed. Please sign in.");
+            return "auth/login";
         }
         redirectAttributes.addFlashAttribute("registered", true);
-        return "redirect:/login";
+        return "redirect:/dashboard";
     }
 }
