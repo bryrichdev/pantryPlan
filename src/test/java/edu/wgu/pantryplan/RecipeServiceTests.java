@@ -16,6 +16,7 @@ import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.repository.MealPlanRepository;
 import edu.wgu.pantryplan.repository.RecipeRepository;
+import edu.wgu.pantryplan.repository.RecipePresetRepository;
 import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.RecipeInUseException;
 import edu.wgu.pantryplan.service.RecipeService;
@@ -50,6 +51,9 @@ class RecipeServiceTests {
     private RecipeRepository recipeRepository;
 
     @Autowired
+    private RecipePresetRepository recipePresetRepository;
+
+    @Autowired
     private MealPlanRepository mealPlanRepository;
 
     private User cook(String email) {
@@ -82,6 +86,25 @@ class RecipeServiceTests {
         assertTrue(saved.getTags().contains("italian"));
         assertTrue(saved.getTags().contains("weeknight"));
         assertEquals(30, saved.totalMinutes());
+    }
+
+    @Test
+    void importsStarterRecipesWithTheirClassificationsAndIngredients() {
+        User user = cook("recipe-presets@example.com");
+
+        int added = recipeService.importPresets(user);
+
+        assertEquals(52, recipePresetRepository.count(),
+                "twelve original recipes plus forty additional starters");
+        assertEquals(recipePresetRepository.count(), added);
+        Recipe tacos = recipeService.findAll(user).stream()
+                .filter(recipe -> recipe.getName().equals("Black Bean Tacos"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Dinner", tacos.getMealType());
+        assertEquals("Mexican", tacos.getNationality());
+        assertFalse(tacos.getLines().isEmpty(), "preset ingredients are copied with the recipe");
+        assertEquals(0, recipeService.importPresets(user), "a second import skips duplicates");
     }
 
     @Test

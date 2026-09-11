@@ -31,6 +31,12 @@ public class Recipe extends BaseEntity {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
+    @Column(name = "meal_type", length = 40)
+    private String mealType;
+
+    @Column(name = "nationality", length = 60)
+    private String nationality;
+
     @Column(name = "servings", nullable = false)
     private int servings = 1;
 
@@ -113,6 +119,22 @@ public class Recipe extends BaseEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getMealType() {
+        return mealType;
+    }
+
+    public void setMealType(String mealType) {
+        this.mealType = mealType;
+    }
+
+    public String getNationality() {
+        return nationality;
+    }
+
+    public void setNationality(String nationality) {
+        this.nationality = nationality;
     }
 
     public int getServings() {

@@ -14,8 +14,10 @@ import edu.wgu.pantryplan.web.form.PlanEntryForm;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
@@ -190,8 +192,11 @@ public class MealPlanService {
         }
 
         int servings = form.getServings() == null ? 4 : form.getServings();
-        List<Recipe> pool = orderedPool(candidates, user, servings, form.isFavorPantry(), random);
-        int cursor = 0;
+        /* Every slot owns its pool and cursor. A shared pool would let a
+           breakfast recipe slide into dinner simply because it was next in
+           the shuffled order. */
+        Map<MealSlot, List<Recipe>> pools = new EnumMap<>(MealSlot.class);
+        Map<MealSlot, Integer> cursors = new EnumMap<>(MealSlot.class);
         int added = 0;
 
         for (LocalDate date : weekDates(plan)) {
@@ -203,16 +208,30 @@ public class MealPlanService {
                     continue;
                 }
 
-                if (cursor >= pool.size()) {
-                    /* Every recipe has had a turn. Rebuild the order so the next
-                       pass through is a different sequence. */
-                    pool = orderedPool(candidates, user, servings, form.isFavorPantry(), random);
-                    cursor = 0;
+                List<Recipe> matchingCandidates = candidates.stream()
+                        .filter(recipe -> isCompatibleWithSlot(recipe, slot))
+                        .toList();
+                if (matchingCandidates.isEmpty()) {
+                    continue;
                 }
 
-                Recipe chosen = form.isAvoidRepeats()
-                        ? pool.get(cursor++)
-                        : pool.get(random.nextInt(pool.size()));
+                List<Recipe> pool = pools.get(slot);
+                if (pool == null || cursors.get(slot) >= pool.size()) {
+                    /* Every recipe has had a turn. Rebuild the order so the next
+                       pass through is a different sequence. */
+                    pool = orderedPool(matchingCandidates, user, servings, form.isFavorPantry(), random);
+                    pools.put(slot, pool);
+                    cursors.put(slot, 0);
+                }
+
+                Recipe chosen;
+                if (form.isAvoidRepeats()) {
+                    int cursor = cursors.get(slot);
+                    chosen = pool.get(cursor);
+                    cursors.put(slot, cursor + 1);
+                } else {
+                    chosen = pool.get(random.nextInt(pool.size()));
+                }
 
                 PlanEntry entry = new PlanEntry(chosen, date, slot, servings);
                 plan.addEntry(entry);
@@ -240,6 +259,18 @@ public class MealPlanService {
                     (Recipe recipe) -> coverageService.coverageOf(user, recipe, servings)).reversed());
         }
         return pool;
+    }
+
+    /**
+     * Recipes classify themselves by their intended meal type. Accounts that
+     * created recipes before classification was introduced have a blank type;
+     * those legacy recipes remain eligible for every slot until the cook labels
+     * them, while an explicitly labelled recipe must match the slot exactly.
+     */
+    private boolean isCompatibleWithSlot(Recipe recipe, MealSlot slot) {
+        String mealType = recipe.getMealType();
+        return mealType == null || mealType.isBlank()
+                || mealType.trim().equalsIgnoreCase(slot.name());
     }
 
     private String slotKey(LocalDate date, MealSlot slot) {

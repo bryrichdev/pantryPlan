@@ -3,8 +3,12 @@ package edu.wgu.pantryplan.service;
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.Recipe;
 import edu.wgu.pantryplan.domain.RecipeLine;
+import edu.wgu.pantryplan.domain.RecipePreset;
+import edu.wgu.pantryplan.domain.RecipePresetLine;
 import edu.wgu.pantryplan.domain.User;
+import edu.wgu.pantryplan.domain.IngredientPreset;
 import edu.wgu.pantryplan.repository.IngredientRepository;
+import edu.wgu.pantryplan.repository.RecipePresetRepository;
 import edu.wgu.pantryplan.repository.PlanEntryRepository;
 import edu.wgu.pantryplan.repository.RecipeRepository;
 import edu.wgu.pantryplan.web.form.RecipeForm;
@@ -14,6 +18,9 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,13 +39,16 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final PlanEntryRepository planEntryRepository;
     private final IngredientRepository ingredientRepository;
+    private final RecipePresetRepository recipePresetRepository;
 
     public RecipeService(RecipeRepository recipeRepository,
                          PlanEntryRepository planEntryRepository,
-                         IngredientRepository ingredientRepository) {
+                         IngredientRepository ingredientRepository,
+                         RecipePresetRepository recipePresetRepository) {
         this.recipeRepository = recipeRepository;
         this.planEntryRepository = planEntryRepository;
         this.ingredientRepository = ingredientRepository;
+        this.recipePresetRepository = recipePresetRepository;
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +105,8 @@ public class RecipeService {
 
     private void applyForm(Recipe recipe, RecipeForm form) {
         recipe.setDescription(emptyToNull(form.getDescription()));
+        recipe.setMealType(emptyToNull(form.getMealType()));
+        recipe.setNationality(emptyToNull(form.getNationality()));
         recipe.setInstructions(emptyToNull(form.getInstructions()));
         recipe.setPrepMinutes(form.getPrepMinutes() == null ? 0 : form.getPrepMinutes());
         recipe.setCookMinutes(form.getCookMinutes() == null ? 0 : form.getCookMinutes());
@@ -131,6 +143,73 @@ public class RecipeService {
 
     private String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * Copies the shared starter recipes into this account. Any ingredients a
+     * preset recipe needs are copied from the shared ingredient catalogue too,
+     * so its ingredient list is intact even for a brand-new account.
+     */
+    @Transactional
+    public int importPresets(User user) {
+        Set<String> recipeNames = new HashSet<>();
+        Map<String, Ingredient> ingredientsByName = new HashMap<>();
+        for (Recipe existing : recipeRepository.findAllByUserOrderByNameAsc(user)) {
+            recipeNames.add(existing.getName().toLowerCase());
+        }
+        for (Ingredient ingredient : ingredientRepository.findAllByUserOrderByNameAsc(user)) {
+            ingredientsByName.put(ingredient.getName().toLowerCase(), ingredient);
+        }
+
+        int added = 0;
+        for (RecipePreset preset : recipePresetRepository.findAllByOrderByNameAsc()) {
+            if (recipeNames.contains(preset.getName().toLowerCase())) {
+                continue;
+            }
+            Recipe recipe = new Recipe(user, preset.getName(), preset.getServings());
+            recipe.setDescription(preset.getDescription());
+            recipe.setMealType(preset.getMealType());
+            recipe.setNationality(preset.getNationality());
+            recipe.setPrepMinutes(preset.getPrepMinutes());
+            recipe.setCookMinutes(preset.getCookMinutes());
+            recipe.setInstructions(preset.getInstructions());
+            recipe.setTags(preset.getTags());
+            for (RecipePresetLine presetLine : preset.getLines()) {
+                IngredientPreset presetIngredient = presetLine.getIngredientPreset();
+                String key = presetIngredient.getName().toLowerCase();
+                Ingredient ingredient = ingredientsByName.get(key);
+                if (ingredient == null) {
+                    ingredient = copyIngredientPreset(user, presetIngredient);
+                    ingredientsByName.put(key, ingredient);
+                }
+                RecipeLine line = new RecipeLine(ingredient, presetLine.getQuantity(), presetLine.getUnit());
+                line.setNote(presetLine.getNote());
+                recipe.addLine(line);
+            }
+            recipeRepository.save(recipe);
+            recipeNames.add(preset.getName().toLowerCase());
+            added++;
+        }
+        return added;
+    }
+
+    @Transactional(readOnly = true)
+    public int countMissingPresets(User user) {
+        Set<String> recipeNames = recipeRepository.findAllByUserOrderByNameAsc(user).stream()
+                .map(recipe -> recipe.getName().toLowerCase())
+                .collect(Collectors.toSet());
+        return (int) recipePresetRepository.findAllByOrderByNameAsc().stream()
+                .filter(preset -> !recipeNames.contains(preset.getName().toLowerCase()))
+                .count();
+    }
+
+    private Ingredient copyIngredientPreset(User user, IngredientPreset preset) {
+        Ingredient ingredient = new Ingredient(user, preset.getName(), preset.getCategory());
+        ingredient.setStockUnit(preset.getStockUnit());
+        ingredient.setDefaultLocation(preset.getDefaultLocation());
+        ingredient.setDefaultQuantity(preset.getDefaultQuantity());
+        ingredient.setGramsPerCup(preset.getGramsPerCup());
+        return ingredientRepository.save(ingredient);
     }
 
     @Transactional

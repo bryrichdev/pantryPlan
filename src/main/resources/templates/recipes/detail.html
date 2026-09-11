@@ -28,6 +28,14 @@
 
     <dl class="factgrid">
         <div class="factgrid__item">
+            <dt>Meal type</dt>
+            <dd th:text="${recipe.mealType ?: 'Not set'}">Dinner</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Nationality</dt>
+            <dd th:text="${recipe.nationality ?: 'Not set'}">Italian</dd>
+        </div>
+        <div class="factgrid__item">
             <dt>Serves</dt>
             <dd th:text="${recipe.servings}">4</dd>
         </div>

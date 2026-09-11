@@ -100,6 +100,14 @@ class AutoFillTests {
         return recipeService.create(form, user);
     }
 
+    private Recipe recipeForMealType(User user, String name, String mealType) {
+        RecipeForm form = new RecipeForm();
+        form.setName(name);
+        form.setServings(4);
+        form.setMealType(mealType);
+        return recipeService.create(form, user);
+    }
+
     private void stock(User user, Ingredient ingredient, String grams) {
         PantryItemForm form = new PantryItemForm();
         form.setIngredientId(ingredient.getId());
@@ -140,6 +148,25 @@ class AutoFillTests {
                 mealPlanService.requireOwned(created.getId(), user));
         assertEquals(7, entries.size());
         assertTrue(entries.stream().allMatch(entry -> entry.getMealSlot() == MealSlot.DINNER));
+    }
+
+    @Test
+    void fillsDinnerOnlyWithDinnerRecipes() {
+        User user = cook("fill-matching-types@example.com");
+        recipeForMealType(user, "Cinnamon French Toast", "Breakfast");
+        recipeForMealType(user, "Spaghetti Marinara", "Dinner");
+
+        MealPlan created = plan(user, "Type-aware week");
+        int added = mealPlanService.autoFill(created.getId(),
+                options(Set.of(MealSlot.DINNER), false, true), user, new Random(21));
+
+        List<PlanEntry> entries = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(created.getId(), user));
+        assertEquals(7, added);
+        assertTrue(entries.stream().allMatch(entry -> "Dinner"
+                .equalsIgnoreCase(entry.getRecipe().getMealType())));
+        assertFalse(entries.stream().anyMatch(entry -> entry.getRecipe().getName()
+                .equals("Cinnamon French Toast")));
     }
 
     @Test

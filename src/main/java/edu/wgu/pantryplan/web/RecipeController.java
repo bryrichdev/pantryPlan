@@ -91,6 +91,7 @@ public class RecipeController {
         model.addAttribute("recipes", results);
         model.addAttribute("blockReasons", blockReasons);
         model.addAttribute("knownTags", recipeService.allTags(user));
+        model.addAttribute("presetsAvailable", recipeService.countMissingPresets(user));
         model.addAttribute("query", orEmpty(name));
         model.addAttribute("ingredientQuery", orEmpty(ingredient));
         model.addAttribute("tagQuery", orEmpty(tag));
@@ -174,6 +175,19 @@ public class RecipeController {
         redirectAttributes.addFlashAttribute("message",
                 form.isNew() ? "Recipe created." : "Recipe updated.");
         return "redirect:/recipes/" + saved.getId();
+    }
+
+    @PostMapping("/import-presets")
+    public String importPresets(@AuthenticationPrincipal AppUserDetails principal,
+                                RedirectAttributes redirectAttributes) {
+        int added = recipeService.importPresets(currentUser(principal));
+        if (added == 0) {
+            redirectAttributes.addFlashAttribute("message", "You already have every starter recipe.");
+        } else {
+            redirectAttributes.addFlashAttribute("message",
+                    "Added " + added + " starter " + (added == 1 ? "recipe." : "recipes."));
+        }
+        return "redirect:/recipes";
     }
 
     /**

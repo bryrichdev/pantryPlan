@@ -44,6 +44,12 @@ public class RecipeForm {
     @Size(max = 2000, message = "Description must be 2000 characters or fewer")
     private String description;
 
+    @Size(max = 40, message = "Meal type must be 40 characters or fewer")
+    private String mealType;
+
+    @Size(max = 60, message = "Nationality must be 60 characters or fewer")
+    private String nationality;
+
     @Size(max = 20000, message = "Instructions must be 20000 characters or fewer")
     private String instructions;
 
@@ -60,6 +66,8 @@ public class RecipeForm {
         form.setPrepMinutes(recipe.getPrepMinutes());
         form.setCookMinutes(recipe.getCookMinutes());
         form.setDescription(recipe.getDescription());
+        form.setMealType(recipe.getMealType());
+        form.setNationality(recipe.getNationality());
         form.setInstructions(recipe.getInstructions());
         form.setTagsCsv(String.join(", ", recipe.getTags()));
         recipe.getLines().forEach(line -> form.getLines().add(RecipeLineForm.from(line)));
@@ -152,6 +160,22 @@ public class RecipeForm {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getMealType() {
+        return mealType;
+    }
+
+    public void setMealType(String mealType) {
+        this.mealType = mealType;
+    }
+
+    public String getNationality() {
+        return nationality;
+    }
+
+    public void setNationality(String nationality) {
+        this.nationality = nationality;
     }
 
     public String getInstructions() {
