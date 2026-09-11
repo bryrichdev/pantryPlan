@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${report.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <p class="crumb"><a th:href="@{/reports}">Reports</a></p>
+    <div class="pagehead">
+        <div>
+            <h1 th:text="${report.title}">Pantry stock report</h1>
+            <p class="pagehead__note">
+                Generated <time th:datetime="${report.generatedAt}"
+                                th:text="${@fmt.dateTime(report.generatedAt)}">Sep 11, 2026 at 12:00 PM</time>.
+            </p>
+        </div>
+        <a class="button button--quiet" th:href="@{/reports}">All reports</a>
+    </div>
+
+    <div class="empty" th:if="${#lists.isEmpty(report.rows)}">
+        <p>No rows to show in this report right now.</p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(report.rows)}">
+        <caption class="visually-hidden" th:text="${report.title}">Pantry stock report</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:each="header : ${report.columnHeaders}" th:text="${header}">Ingredient</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="row : ${report.rows}">
+            <td th:each="value : ${row.values}" th:text="${value}">Flour</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

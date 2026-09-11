@@ -32,9 +32,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/pantry")
 public class PantryController {
 
-    /** How far ahead an expiry date counts as "use this soon". */
-    public static final int EXPIRY_WARNING_DAYS = 7;
-
     private final PantryService pantryService;
     private final IngredientService ingredientService;
     private final UserService userService;
@@ -69,7 +66,7 @@ public class PantryController {
         model.addAttribute("locationFilter", location);
         model.addAttribute("searching", (query != null && !query.isBlank()) || location != null);
         model.addAttribute("today", LocalDate.now());
-        model.addAttribute("warningDays", EXPIRY_WARNING_DAYS);
+        model.addAttribute("warningDays", PantryService.EXPIRY_WARNING_DAYS);
     }
 
     @GetMapping

@@ -38,7 +38,7 @@
             <a th:href="@{/grocery-lists}"
                th:classappend="${#strings.startsWith(currentPath, '/grocery-lists')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/grocery-lists')} ? 'page' : null">Grocery lists</a>
-            <a th:href="@{/reports/pantry-stock}"
+            <a th:href="@{/reports}"
                th:classappend="${#strings.startsWith(currentPath, '/reports')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/reports')} ? 'page' : null">Reports</a>
         </nav>

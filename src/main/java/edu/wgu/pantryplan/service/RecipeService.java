@@ -57,6 +57,12 @@ public class RecipeService {
         return withTags(recipeRepository.findAllByUserOrderByNameAsc(user));
     }
 
+    /** Recipes ordered for the usage report, including those never cooked. */
+    @Transactional(readOnly = true)
+    public List<Recipe> findByUsage(User user) {
+        return recipeRepository.findAllByUserOrderByTimesCookedDescNameAsc(user);
+    }
+
     /**
      * Multi-criteria search. Any blank criterion is ignored rather than treated
      * as "match nothing", so a search on tag alone returns every recipe carrying

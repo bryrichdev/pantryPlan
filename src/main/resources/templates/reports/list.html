@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Reports')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Reports</h1>
+            <p class="pagehead__note">Current snapshots of your pantry and cooking history.</p>
+        </div>
+    </div>
+
+    <ul class="tasklist">
+        <li class="tasklist__item">
+            <a th:href="@{/reports/pantry-stock}">Pantry stock report</a>
+            <span>Totals what is currently on hand for each ingredient.</span>
+        </li>
+        <li class="tasklist__item">
+            <a th:href="@{/reports/recipe-usage}">Recipe usage report</a>
+            <span>Shows every recipe, how often it has been cooked, and when it was last cooked.</span>
+        </li>
+        <li class="tasklist__item">
+            <a th:href="@{/reports/near-expired-pantry-items}">Near-expired pantry items</a>
+            <span>Lists items that expire today or within the next seven days.</span>
+        </li>
+        <li class="tasklist__item">
+            <a th:href="@{/reports/expired-pantry-items}">Expired pantry items</a>
+            <span>Lists items whose expiry date has already passed.</span>
+        </li>
+    </ul>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

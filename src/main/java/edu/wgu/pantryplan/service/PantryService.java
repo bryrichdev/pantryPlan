@@ -24,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PantryService {
 
+    /** The same one-week window shown by the pantry warning and expiry report. */
+    public static final int EXPIRY_WARNING_DAYS = 7;
+
     private final PantryItemRepository pantryItemRepository;
     private final IngredientRepository ingredientRepository;
 
