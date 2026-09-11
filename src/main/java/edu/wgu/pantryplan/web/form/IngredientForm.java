@@ -31,6 +31,10 @@ public class IngredientForm {
     @NotNull(message = "Choose where this usually lives")
     private StorageLocation defaultLocation = StorageLocation.PANTRY;
 
+    @DecimalMin(value = "0.001", message = "Usual amount must be greater than zero")
+    @Digits(integer = 7, fraction = 3, message = "Use up to three decimal places")
+    private BigDecimal defaultQuantity;
+
     @DecimalMin(value = "0.001", message = "Weight per cup must be greater than zero")
     @Digits(integer = 7, fraction = 3, message = "Use up to three decimal places")
     private BigDecimal gramsPerCup;
@@ -42,6 +46,7 @@ public class IngredientForm {
         form.setCategory(ingredient.getCategory());
         form.setStockUnit(ingredient.getStockUnit());
         form.setDefaultLocation(ingredient.getDefaultLocation());
+        form.setDefaultQuantity(ingredient.getDefaultQuantity());
         form.setGramsPerCup(ingredient.getGramsPerCup());
         return form;
     }
@@ -88,6 +93,14 @@ public class IngredientForm {
 
     public void setDefaultLocation(StorageLocation defaultLocation) {
         this.defaultLocation = defaultLocation;
+    }
+
+    public BigDecimal getDefaultQuantity() {
+        return defaultQuantity;
+    }
+
+    public void setDefaultQuantity(BigDecimal defaultQuantity) {
+        this.defaultQuantity = defaultQuantity;
     }
 
     public BigDecimal getGramsPerCup() {

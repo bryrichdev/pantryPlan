@@ -3,6 +3,7 @@ package edu.wgu.pantryplan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,6 +19,9 @@ import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.IngredientForm;
 import edu.wgu.pantryplan.web.form.RegistrationForm;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.validation.Validator;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -40,6 +44,12 @@ class IngredientServiceTests {
 
     @Autowired
     private RecipeRepository recipeRepository;
+
+    @Autowired
+    private Validator validator;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private User cook(String email) {
         RegistrationForm form = new RegistrationForm();
@@ -150,5 +160,49 @@ class IngredientServiceTests {
                 () -> ingredientService.delete(oats.getId(), user));
         assertEquals("Oats", thrown.getIngredientName());
         assertTrue(thrown.getMessage().contains("recipes"));
+    }
+
+    @Test
+    void storesAndClearsTheUsualAmount() {
+        User user = cook("ing-usual@example.com");
+        IngredientForm form = formFor("Eggs", IngredientCategory.DAIRY);
+        form.setStockUnit(Unit.PIECE);
+        form.setDefaultQuantity(new BigDecimal("12"));
+        Ingredient eggs = ingredientService.create(form, user);
+
+        /* Flush and clear so the reload comes from the database, not the
+           persistence context. That exercises the NUMERIC column itself. */
+        entityManager.flush();
+        entityManager.clear();
+
+        Ingredient reloaded = ingredientService.requireOwned(eggs.getId(), user);
+        assertEquals(0, new BigDecimal("12").compareTo(reloaded.getDefaultQuantity()),
+                "the usual amount should survive a round trip");
+
+        form.setId(eggs.getId());
+        form.setDefaultQuantity(null);
+        ingredientService.update(eggs.getId(), form, user);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertNull(ingredientService.requireOwned(eggs.getId(), user).getDefaultQuantity(),
+                "blanking the field should clear the usual amount");
+    }
+
+    @Test
+    void rejectsAUsualAmountOfZero() {
+        IngredientForm form = formFor("Milk", IngredientCategory.DAIRY);
+
+        form.setDefaultQuantity(BigDecimal.ZERO);
+        assertFalse(validator.validateProperty(form, "defaultQuantity").isEmpty(),
+                "zero is not a usual amount");
+
+        form.setDefaultQuantity(new BigDecimal("1.5"));
+        assertTrue(validator.validateProperty(form, "defaultQuantity").isEmpty(),
+                "a fractional amount is allowed");
+
+        form.setDefaultQuantity(null);
+        assertTrue(validator.validateProperty(form, "defaultQuantity").isEmpty(),
+                "the usual amount is optional");
     }
 }

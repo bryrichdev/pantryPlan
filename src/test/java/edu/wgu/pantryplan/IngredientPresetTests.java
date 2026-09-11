@@ -92,6 +92,34 @@ class IngredientPresetTests {
     }
 
     @Test
+    void seedsUsualAmountsForEveryPackagedPreset() {
+        /* V6 matches presets by name, so a misspelt name there updates nothing
+           and fails silently. Counting the seeded rows catches that. Change
+           this number only alongside a migration that changes the seed. */
+        long seeded = presetRepository.findAll().stream()
+                .filter(preset -> preset.getDefaultQuantity() != null)
+                .count();
+        assertEquals(62, seeded);
+    }
+
+    @Test
+    void carriesTheUsualAmountAcross() {
+        User user = cook("preset-usual@example.com");
+        ingredientService.importPresets(user);
+
+        Ingredient eggs = find(user, "Eggs");
+        assertEquals(0, new BigDecimal("12").compareTo(eggs.getDefaultQuantity()),
+                "a dozen, counted in pieces");
+
+        Ingredient milk = find(user, "Whole milk");
+        assertEquals(0, new BigDecimal("3785").compareTo(milk.getDefaultQuantity()),
+                "a gallon, kept in millilitres");
+
+        assertNull(find(user, "Chicken breast").getDefaultQuantity(),
+                "meat sold by variable weight has no usual amount");
+    }
+
+    @Test
     void runningTwiceAddsNothingTheSecondTime() {
         User user = cook("preset-twice@example.com");
         int first = ingredientService.importPresets(user);

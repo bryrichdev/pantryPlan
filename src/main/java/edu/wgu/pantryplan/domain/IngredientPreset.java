@@ -36,6 +36,9 @@ public class IngredientPreset extends BaseEntity {
     @Column(name = "default_location", nullable = false, length = 30)
     private StorageLocation defaultLocation;
 
+    @Column(name = "default_quantity", precision = 10, scale = 3)
+    private BigDecimal defaultQuantity;
+
     @Column(name = "grams_per_cup", precision = 10, scale = 3)
     private BigDecimal gramsPerCup;
 
@@ -56,6 +59,10 @@ public class IngredientPreset extends BaseEntity {
 
     public StorageLocation getDefaultLocation() {
         return defaultLocation;
+    }
+
+    public BigDecimal getDefaultQuantity() {
+        return defaultQuantity;
     }
 
     public BigDecimal getGramsPerCup() {

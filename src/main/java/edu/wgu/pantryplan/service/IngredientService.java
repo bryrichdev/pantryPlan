@@ -89,6 +89,7 @@ public class IngredientService {
             Ingredient ingredient = new Ingredient(user, preset.getName(), preset.getCategory());
             ingredient.setStockUnit(preset.getStockUnit());
             ingredient.setDefaultLocation(preset.getDefaultLocation());
+            ingredient.setDefaultQuantity(preset.getDefaultQuantity());
             ingredient.setGramsPerCup(preset.getGramsPerCup());
             ingredientRepository.save(ingredient);
             added++;
@@ -140,6 +141,7 @@ public class IngredientService {
     private void applyForm(Ingredient ingredient, IngredientForm form) {
         ingredient.setStockUnit(form.getStockUnit());
         ingredient.setDefaultLocation(form.getDefaultLocation());
+        ingredient.setDefaultQuantity(form.getDefaultQuantity());
         ingredient.setGramsPerCup(form.getGramsPerCup());
     }
 

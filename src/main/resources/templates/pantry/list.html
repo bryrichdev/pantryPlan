@@ -137,8 +137,10 @@
                     <option value="">Choose an ingredient</option>
                     <option th:each="option : ${ingredientOptions}"
                             th:value="${option.id}" th:text="${option.name}"
+                            th:with="usualAmount=${@fmt.quantity(option.defaultQuantity)}"
                             th:attr="data-unit=${option.stockUnit.abbreviation},
-                                     data-location=${option.defaultLocation}">Flour</option>
+                                     data-location=${option.defaultLocation},
+                                     data-quantity=${usualAmount}">Flour</option>
                 </select>
                 <p class="field__error" th:if="${#fields.hasErrors('ingredientId')}"
                    th:errors="*{ingredientId}">Ingredient error</p>

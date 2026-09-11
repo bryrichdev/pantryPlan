@@ -19,6 +19,20 @@
         }
     }
 
+    /*
+     * The usual amount means nothing without its unit, so the label beside it
+     * follows whatever "Kept in" is set to.
+     */
+    function syncIngredientUnit(dialog) {
+        var select = dialog.querySelector("#dialog-stock-unit");
+        var label = dialog.querySelector("[data-ingredient-unit]");
+        if (!select || !label) {
+            return;
+        }
+        var chosen = select.options[select.selectedIndex];
+        label.textContent = chosen ? chosen.textContent : "\u2014";
+    }
+
     function fillIngredientDialog(dialog, trigger) {
         var mode = trigger.getAttribute("data-mode");
         var title = dialog.querySelector("[data-dialog-title]");
@@ -33,6 +47,7 @@
 
         var unitField = dialog.querySelector("#dialog-stock-unit");
         var locationField = dialog.querySelector("#dialog-default-location");
+        var quantityField = dialog.querySelector("#dialog-default-quantity");
 
         if (mode === "edit") {
             title.textContent = "Edit ingredient";
@@ -46,6 +61,9 @@
             if (locationField) {
                 locationField.value = trigger.getAttribute("data-default-location") || "PANTRY";
             }
+            if (quantityField) {
+                quantityField.value = trigger.getAttribute("data-default-quantity") || "";
+            }
         } else {
             title.textContent = "Add ingredient";
             idField.value = "";
@@ -58,7 +76,11 @@
             if (locationField) {
                 locationField.value = "PANTRY";
             }
+            if (quantityField) {
+                quantityField.value = "";
+            }
         }
+        syncIngredientUnit(dialog);
     }
 
     /*
@@ -76,6 +98,29 @@
         var unit = chosen ? chosen.getAttribute("data-unit") : null;
         label.textContent = unit || "\u2014";
         return chosen;
+    }
+
+    /*
+     * Prefills the amount from the chosen ingredient's usual amount. It only
+     * replaces a value the dialog put there itself: switching from eggs to milk
+     * swaps 12 for the milk amount, but a number the cook typed is kept.
+     */
+    function applyUsualQuantity(dialog, chosen) {
+        var field = dialog.querySelector("#pantry-quantity");
+        if (!field) {
+            return;
+        }
+        if (field.value !== "" && !field.hasAttribute("data-autofilled")) {
+            return;
+        }
+        var usual = chosen.getAttribute("data-quantity");
+        if (usual) {
+            field.value = usual;
+            field.setAttribute("data-autofilled", "");
+        } else {
+            field.value = "";
+            field.removeAttribute("data-autofilled");
+        }
     }
 
     function fillPantryDialog(dialog, trigger) {
@@ -101,6 +146,11 @@
                 field.value = values[selector] || "";
             }
         });
+
+        var quantityInput = dialog.querySelector("#pantry-quantity");
+        if (quantityInput) {
+            quantityInput.removeAttribute("data-autofilled");
+        }
 
         dialog.setAttribute("data-mode", mode || "create");
         syncPantryUnit(dialog);
@@ -399,9 +449,9 @@
 
     /*
      * Choosing an ingredient updates the unit shown beside the amount. On a new
-     * row it also preselects that ingredient's usual shelf; while editing it
-     * leaves the shelf alone, since the cook may have put this one elsewhere
-     * deliberately.
+     * row it also preselects that ingredient's usual shelf and usual amount;
+     * while editing it leaves both alone, since the cook may have changed them
+     * on purpose.
      */
     document.addEventListener("change", function (event) {
         if (event.target.matches && event.target.matches("[data-select-all]")) {
@@ -421,6 +471,13 @@
             }
             return;
         }
+        if (event.target.matches && event.target.matches("#dialog-stock-unit")) {
+            var ingredientDialog = event.target.closest("dialog");
+            if (ingredientDialog) {
+                syncIngredientUnit(ingredientDialog);
+            }
+            return;
+        }
         if (!event.target.matches || !event.target.matches("#pantry-ingredient")) {
             return;
         }
@@ -435,6 +492,15 @@
             if (locationField && preferred) {
                 locationField.value = preferred;
             }
+            applyUsualQuantity(dialog, chosen);
+        }
+    });
+
+    /* Typing an amount makes it the cook's own, so a later ingredient change
+       leaves it alone. Setting .value from script does not fire this event. */
+    document.addEventListener("input", function (event) {
+        if (event.target.matches && event.target.matches("#pantry-quantity")) {
+            event.target.removeAttribute("data-autofilled");
         }
     });
 
@@ -459,6 +525,9 @@
         if (requested === "pantry") {
             dialog.setAttribute("data-mode", idField && idField.value ? "edit" : "create");
             syncPantryUnit(dialog);
+        }
+        if (requested === "ingredient") {
+            syncIngredientUnit(dialog);
         }
         openDialog(dialog);
     });

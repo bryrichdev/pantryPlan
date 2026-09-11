@@ -65,6 +65,7 @@
             <th scope="col">Category</th>
             <th scope="col">Kept in</th>
             <th scope="col">Usually stored</th>
+            <th scope="col">Usual amount</th>
             <th scope="col">Weight per cup</th>
             <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
@@ -81,6 +82,11 @@
             <td th:text="${item.stockUnit.abbreviation}">g</td>
             <td><span class="badge" th:text="${@fmt.label(item.defaultLocation)}">Pantry</span></td>
             <td>
+                <span th:if="${item.defaultQuantity != null}"
+                      th:text="${@fmt.amount(item.defaultQuantity, item.stockUnit)}">12 pc</span>
+                <span th:if="${item.defaultQuantity == null}" class="muted">not set</span>
+            </td>
+            <td>
                 <span th:if="${item.gramsPerCup != null}"
                       th:text="|${@fmt.quantity(item.gramsPerCup)} g|">120 g</span>
                 <span th:if="${item.gramsPerCup == null}" class="muted">not set</span>
@@ -89,11 +95,13 @@
                 <button type="button" class="linkbutton"
                         data-dialog-open="ingredient-dialog"
                         data-mode="edit"
+                        th:with="usualAmount=${@fmt.quantity(item.defaultQuantity)}"
                         th:attr="data-id=${item.id},
                                  data-name=${item.name},
                                  data-category=${item.category},
                                  data-stock-unit=${item.stockUnit},
                                  data-default-location=${item.defaultLocation},
+                                 data-default-quantity=${usualAmount},
                                  data-grams=${item.gramsPerCup}">Edit</button>
                 <button type="button" class="linkbutton linkbutton--danger"
                         data-dialog-open="delete-dialog"
