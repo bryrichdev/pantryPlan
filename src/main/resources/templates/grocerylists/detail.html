@@ -21,6 +21,8 @@
             </p>
         </div>
         <div class="actions">
+            <a class="button button--primary" th:if="${groceryList.itemCount() > 0}"
+               th:href="@{/grocery-lists/{id}/print(id=${groceryList.id})}">Print</a>
             <form th:if="${groceryList.mealPlan != null}" th:action="@{/grocery-lists/generate}"
                   method="post" class="inline-form">
                 <input type="hidden" name="planId" th:value="${groceryList.mealPlan.id}">

@@ -1,5 +1,6 @@
 package edu.wgu.pantryplan;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -106,18 +107,13 @@ class GroceryListPageTests {
         return recipeService.create(form, owner);
     }
 
-    /** A week with one normal item and one flagged item, so both branches render. */
-    private MealPlan plannedWeek(User owner) {
-        Ingredient basil = ingredient(owner, "Basil", Unit.GRAM);
-        Recipe pesto = recipe(owner, "Pesto", basil, "2", Unit.CUP);
-        Recipe salad = recipe(owner, "Salad", basil, "50", Unit.GRAM);
-
+    private MealPlan planWith(User owner, String name, Recipe... recipes) {
         MealPlanForm planForm = new MealPlanForm();
-        planForm.setName("Page week");
+        planForm.setName(name);
         planForm.setWeekStartDate(MONDAY);
         MealPlan week = mealPlanService.create(planForm, owner);
 
-        for (Recipe recipe : new Recipe[] {pesto, salad}) {
+        for (Recipe recipe : recipes) {
             PlanEntryForm entry = new PlanEntryForm();
             entry.setRecipeId(recipe.getId());
             entry.setPlanDate(MONDAY);
@@ -126,6 +122,14 @@ class GroceryListPageTests {
             mealPlanService.addEntry(week.getId(), entry, owner);
         }
         return week;
+    }
+
+    /** A week with one normal item and one flagged item, so both branches render. */
+    private MealPlan plannedWeek(User owner) {
+        Ingredient basil = ingredient(owner, "Basil", Unit.GRAM);
+        Recipe pesto = recipe(owner, "Pesto", basil, "2", Unit.CUP);
+        Recipe salad = recipe(owner, "Salad", basil, "50", Unit.GRAM);
+        return planWith(owner, "Page week", pesto, salad);
     }
 
     @Test
@@ -181,5 +185,30 @@ class GroceryListPageTests {
                 .andExpect(redirectedUrl("/grocery-lists/" + list.getId() + "#item-" + item.getId()));
 
         assertTrue(item.isPurchased(), "the tick was saved");
+    }
+
+    @Test
+    void thePrintSheetLeavesOffWhatIsAlreadyBought() throws Exception {
+        User owner = cook("page-print@example.com");
+        Ingredient lemons = ingredient(owner, "Lemons", Unit.PIECE);
+        Ingredient limes = ingredient(owner, "Limes", Unit.PIECE);
+        MealPlan week = planWith(owner, "Print week",
+                recipe(owner, "Lemonade", lemons, "6", Unit.PIECE),
+                recipe(owner, "Limeade", limes, "6", Unit.PIECE));
+        GroceryList list = groceryListService.generate(week.getId(), owner, MONDAY);
+
+        GroceryListItem lemonItem = list.getItems().stream()
+                .filter(item -> item.getIngredient().getName().equals("Lemons"))
+                .findFirst().orElseThrow();
+        groceryListService.togglePurchased(list.getId(), lemonItem.getId(), owner);
+
+        String sheet = mockMvc.perform(get("/grocery-lists/{id}/print", list.getId())
+                        .with(user(new AppUserDetails(owner))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(sheet.contains("Limes"), "what is still to buy is printed");
+        assertFalse(sheet.contains("Lemons"), "what is already bought is left off");
+        assertTrue(sheet.contains("1 already bought"), "the sheet says something was left off");
     }
 }

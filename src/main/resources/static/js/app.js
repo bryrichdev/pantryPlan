@@ -354,6 +354,13 @@
             return;
         }
 
+        /* The print sheet's button. An onclick attribute would be simpler, but
+           the content security policy blocks inline script. */
+        if (event.target.closest("[data-print]")) {
+            window.print();
+            return;
+        }
+
         if (event.target.closest("[data-add-line]")) {
             var addContainer = document.querySelector("[data-lines]");
             if (addContainer) {

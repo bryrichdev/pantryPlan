@@ -10,6 +10,7 @@ import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.UnitConversionService;
 import edu.wgu.pantryplan.service.UserService;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -98,6 +99,29 @@ public class GroceryListController {
         model.addAttribute("aisles", GroceryAisle.group(list.getItems()));
         model.addAttribute("reviewReasons", reviewReasons);
         return "grocerylists/detail";
+    }
+
+    /**
+     * A plain, printable version of the list.
+     *
+     * <p>Only what is still to buy is shown. Anything already ticked has either
+     * been bought or turned out to be on the shelf, so it would only be clutter
+     * on paper. The page says how many were left off, so a short sheet is not
+     * mistaken for a missing one.
+     */
+    @GetMapping("/{id}/print")
+    public String print(@AuthenticationPrincipal AppUserDetails principal,
+                        @PathVariable Long id,
+                        Model model) {
+        GroceryList list = groceryListService.requireOwned(id, currentUser(principal));
+        List<GroceryListItem> stillToBuy = list.getItems().stream()
+                .filter(item -> !item.isPurchased())
+                .toList();
+
+        model.addAttribute("groceryList", list);
+        model.addAttribute("aisles", GroceryAisle.group(stillToBuy));
+        model.addAttribute("hiddenCount", list.purchasedCount());
+        return "grocerylists/print";
     }
 
     /**

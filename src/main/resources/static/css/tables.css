@@ -359,3 +359,76 @@
 }
 
 .aisle-footnote { margin-top: 1.5rem; }
+
+/* ---------- printable grocery list ----------
+   Black on white with plain boxes to tick in pen. Aisles flow into two columns
+   when there is room and never split across a column or page. */
+
+.printsheet {
+    width: 100%;
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+.printsheet__bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.printsheet__title {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+.printsheet__meta {
+    margin: 0.25rem 0 1.25rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+}
+
+.printsheet__aisles { columns: 2 16rem; column-gap: 2.5rem; }
+
+.printsheet__aisle {
+    break-inside: avoid;
+    margin: 0 0 1.25rem;
+}
+
+.printsheet__aisle h2 {
+    font-family: var(--serif);
+    font-size: 1rem;
+    margin: 0 0 0.35rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--ink);
+}
+
+.printsheet__items { list-style: none; margin: 0; padding: 0; }
+
+.printsheet__item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    padding: 0.2rem 0;
+    font-size: 0.95rem;
+}
+
+.printsheet__box {
+    flex: 0 0 auto;
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    transform: translateY(0.1rem);
+}
+
+.printsheet__name { min-width: 0; }
+.printsheet__flag { font-size: 0.8rem; font-style: italic; }
+.printsheet__amount { margin-left: auto; white-space: nowrap; }
+
+@media print {
+    body { background: #FFFFFF; }
+    .printsheet { max-width: none; padding: 0; }
+    .printsheet__bar { display: none; }
+}
