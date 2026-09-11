@@ -3,6 +3,7 @@ package edu.wgu.pantryplan.web;
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientCategory;
 import edu.wgu.pantryplan.domain.Recipe;
+import edu.wgu.pantryplan.domain.RecipeClassification;
 import edu.wgu.pantryplan.domain.StorageLocation;
 import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
@@ -61,6 +62,16 @@ public class RecipeController {
     @ModelAttribute("categories")
     public IngredientCategory[] categories() {
         return IngredientCategory.values();
+    }
+
+    @ModelAttribute("mealTypes")
+    public List<String> mealTypes() {
+        return RecipeClassification.MEAL_TYPES;
+    }
+
+    @ModelAttribute("cuisines")
+    public List<String> cuisines() {
+        return RecipeClassification.CUISINES;
     }
 
     @ModelAttribute("locations")
@@ -157,6 +168,16 @@ public class RecipeController {
 
         form.removeBlankLines();
         validateLines(form, result, user);
+
+        /* The dropdowns only offer listed values, but a request can carry
+           anything. The database would also refuse it; checking here gives
+           the cook a message instead of an error page. */
+        if (!RecipeClassification.isAllowedMealType(form.getMealType())) {
+            result.rejectValue("mealType", "mealType.unknown", "Choose a meal type from the list");
+        }
+        if (!RecipeClassification.isAllowedCuisine(form.getNationality())) {
+            result.rejectValue("nationality", "nationality.unknown", "Choose a cuisine from the list");
+        }
 
         if (recipeService.nameCollides(user, form.getName(), form.getId())) {
             result.rejectValue("name", "name.duplicate",

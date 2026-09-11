@@ -3,6 +3,7 @@ package edu.wgu.pantryplan.service;
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientPreset;
 import edu.wgu.pantryplan.domain.User;
+import edu.wgu.pantryplan.repository.CookLogRepository;
 import edu.wgu.pantryplan.repository.GroceryListItemRepository;
 import edu.wgu.pantryplan.repository.IngredientPresetRepository;
 import edu.wgu.pantryplan.repository.IngredientRepository;
@@ -32,17 +33,20 @@ public class IngredientService {
     private final PantryItemRepository pantryItemRepository;
     private final GroceryListItemRepository groceryListItemRepository;
     private final IngredientPresetRepository ingredientPresetRepository;
+    private final CookLogRepository cookLogRepository;
 
     public IngredientService(IngredientRepository ingredientRepository,
                              RecipeLineRepository recipeLineRepository,
                              PantryItemRepository pantryItemRepository,
                              GroceryListItemRepository groceryListItemRepository,
-                             IngredientPresetRepository ingredientPresetRepository) {
+                             IngredientPresetRepository ingredientPresetRepository,
+                             CookLogRepository cookLogRepository) {
         this.ingredientRepository = ingredientRepository;
         this.recipeLineRepository = recipeLineRepository;
         this.pantryItemRepository = pantryItemRepository;
         this.groceryListItemRepository = groceryListItemRepository;
         this.ingredientPresetRepository = ingredientPresetRepository;
+        this.cookLogRepository = cookLogRepository;
     }
 
     @Transactional(readOnly = true)
@@ -204,6 +208,12 @@ public class IngredientService {
         }
         if (groceryListItemRepository.existsByIngredient(ingredient)) {
             return "this ingredient appears on a saved grocery list";
+        }
+        /* Cook logs keep the ingredient so a cooked meal can be undone and its
+           stock put back. The database enforces this with ON DELETE RESTRICT;
+           checking here turns a failed delete into an explanation. */
+        if (cookLogRepository.existsByIngredient(ingredient)) {
+            return "a cooked meal in a meal plan still records using it";
         }
         return null;
     }

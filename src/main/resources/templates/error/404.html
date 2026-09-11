@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Not found')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <h1>Not found</h1>
+    <p class="lede">
+        That page does not exist, or it belongs to a different account.
+    </p>
+    <p><a th:href="@{/dashboard}">Back to the dashboard</a></p>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

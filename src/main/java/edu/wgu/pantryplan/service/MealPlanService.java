@@ -207,7 +207,8 @@ public class MealPlanService {
     /**
      * Marks selected scheduled meals as cooked and deducts their recipe lines
      * from the owner's pantry. A pantry row is never allowed below zero; rows
-     * emptied by the deduction are removed entirely.
+     * emptied by the deduction are removed entirely. Expired rows are never
+     * drawn from, which matches the grocery list treating them as unusable.
      */
     @Transactional
     public CookResult markEntriesCooked(Long planId, java.util.Collection<Long> entryIds, User user) {
@@ -304,8 +305,10 @@ public class MealPlanService {
     private void deductIngredient(User user, PlanEntry entry, Ingredient ingredient,
                                   BigDecimal requested, Instant cookedAt) {
         BigDecimal remaining = requested.setScale(3, RoundingMode.HALF_UP);
+        LocalDate today = LocalDate.now();
         List<PantryItem> pantryRows = new ArrayList<>(
                 pantryItemRepository.findAllByUserAndIngredient(user, ingredient));
+        pantryRows.removeIf(item -> item.isExpired(today));
         pantryRows.sort(Comparator
                 .comparing(PantryItem::getExpiresOn, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(PantryItem::getPurchasedOn, Comparator.nullsLast(Comparator.naturalOrder()))

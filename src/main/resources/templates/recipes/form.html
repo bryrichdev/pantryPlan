@@ -43,21 +43,18 @@
                 <label for="mealType">Meal type</label>
                 <select id="mealType" th:field="*{mealType}">
                     <option value="">Not set</option>
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Brunch">Brunch</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Snack">Snack</option>
-                    <option value="Dessert">Dessert</option>
+                    <option th:each="type : ${mealTypes}" th:value="${type}" th:text="${type}">Dinner</option>
                 </select>
+                <p class="field__hint">Auto-fill puts a recipe only in slots of its meal type.</p>
                 <p class="field__error" th:if="${#fields.hasErrors('mealType')}"
                    th:errors="*{mealType}">Meal type error</p>
             </div>
             <div class="field">
-                <label for="nationality">Nationality / cuisine</label>
-                <input type="text" id="nationality" th:field="*{nationality}" maxlength="60"
-                       placeholder="e.g. Mexican, Italian, Greek">
-                <p class="field__hint">Use the cuisine or nationality that best describes the dish.</p>
+                <label for="nationality">Cuisine</label>
+                <select id="nationality" th:field="*{nationality}">
+                    <option value="">Not set</option>
+                    <option th:each="cuisine : ${cuisines}" th:value="${cuisine}" th:text="${cuisine}">Italian</option>
+                </select>
                 <p class="field__error" th:if="${#fields.hasErrors('nationality')}"
                    th:errors="*{nationality}">Nationality error</p>
             </div>

@@ -21,6 +21,7 @@ import edu.wgu.pantryplan.repository.CookLogRepository;
 import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.CookResult;
 import edu.wgu.pantryplan.service.CookUndoResult;
+import edu.wgu.pantryplan.service.IngredientInUseException;
 import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.PantryService;
@@ -405,5 +406,51 @@ class MealPlanServiceTests {
         assertEquals(1, result.getMissingCount());
         assertEquals(1, mealPlanService.entriesInOrder(
                 mealPlanService.requireOwned(second.getId(), user)).size());
+    }
+
+    @Test
+    void cookingNeverDrawsFromExpiredStock() {
+        User user = cook("plan-cook-expired@example.com");
+        Ingredient milk = ingredient(user, "Milk", Unit.MILLILITER);
+        PantryItem expired = stock(user, milk, "500");
+        expired.setExpiresOn(LocalDate.now().minusDays(1));
+        PantryItem fresh = stock(user, milk, "100");
+        Recipe custard = recipeUsing(user, "Custard", 4, milk, "80", Unit.MILLILITER);
+        MealPlan created = plan(user, "Expiry-aware week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(custard, MONDAY, MealSlot.DINNER, 4), user);
+
+        mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+
+        assertEquals(0, new java.math.BigDecimal("500").compareTo(expired.getQuantity()),
+                "the expired carton is left alone, even though it expires soonest");
+        assertEquals(0, new java.math.BigDecimal("20").compareTo(fresh.getQuantity()),
+                "the 80 ml comes out of the carton that is still good");
+    }
+
+    @Test
+    void anIngredientWithCookingHistoryCannotBeDeleted() {
+        User user = cook("plan-cook-history@example.com");
+        Ingredient saffron = ingredient(user, "Saffron", Unit.GRAM);
+        stock(user, saffron, "1");
+        Recipe paella = recipeUsing(user, "Paella", 4, saffron, "1", Unit.GRAM);
+        MealPlan created = plan(user, "Cooked with saffron");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(paella, MONDAY, MealSlot.DINNER, 4), user);
+        mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+
+        /* Take away every other reference: the cook used up the pantry row,
+           and the recipe no longer lists saffron. Only the cook log is left. */
+        assertTrue(pantryService.findAll(user).isEmpty());
+        RecipeForm withoutSaffron = new RecipeForm();
+        withoutSaffron.setId(paella.getId());
+        withoutSaffron.setName("Paella");
+        withoutSaffron.setServings(4);
+        recipeService.update(paella.getId(), withoutSaffron, user);
+
+        IngredientInUseException refused = assertThrows(IngredientInUseException.class,
+                () -> ingredientService.delete(saffron.getId(), user));
+        assertTrue(refused.getMessage().contains("cooked meal"),
+                "the cook sees why, instead of a database error");
     }
 }

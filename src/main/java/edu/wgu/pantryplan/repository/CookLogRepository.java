@@ -1,6 +1,7 @@
 package edu.wgu.pantryplan.repository;
 
 import edu.wgu.pantryplan.domain.CookLog;
+import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.PlanEntry;
 import edu.wgu.pantryplan.domain.User;
 import java.util.List;
@@ -13,4 +14,6 @@ public interface CookLogRepository extends JpaRepository<CookLog, Long> {
     List<CookLog> findAllByPlanEntryOrderByCookedAtDesc(PlanEntry planEntry);
 
     List<CookLog> findAllByUserOrderByCookedAtDesc(User user);
+
+    boolean existsByIngredient(Ingredient ingredient);
 }
