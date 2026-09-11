@@ -19,6 +19,16 @@
 <body>
 
 <header th:fragment="topnav" class="topnav">
+    <div class="impersonation" th:if="${impersonatorName != null}" role="status">
+        <p class="impersonation__text">
+            <th:block th:text="${impersonatorName}">Admin</th:block>, you are viewing
+            PantryPlan as <strong th:text="${currentUserName}">Cook</strong>.
+            Anything you change here changes their account.
+        </p>
+        <form th:action="@{/admin/impersonate/exit}" method="post" class="inline-form">
+            <button type="submit" class="button button--quiet">Return to admin</button>
+        </form>
+    </div>
     <div class="topnav__inner">
         <a class="wordmark" th:href="@{/}">PantryPlan</a>
 
@@ -41,6 +51,9 @@
             <a th:href="@{/reports}"
                th:classappend="${#strings.startsWith(currentPath, '/reports')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/reports')} ? 'page' : null">Reports</a>
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}"
+               th:classappend="${#strings.startsWith(currentPath, '/admin')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/admin')} ? 'page' : null">Admin</a>
         </nav>
 
         <div class="topnav__account">

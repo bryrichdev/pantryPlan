@@ -350,3 +350,22 @@ h1 {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ---------- viewing as another account ----------
+   Amber, because it is a warning: changes made here land in someone else's
+   account. It sits above the navigation on every page until the admin leaves. */
+
+.impersonation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.55rem 1.5rem;
+    background: #F7EBD8;
+    border-bottom: 2px solid var(--amber);
+    color: var(--ink);
+    font-size: 0.92rem;
+}
+
+.impersonation__text { margin: 0; }

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Users</h1>
+            <p class="pagehead__note">
+                Every account on PantryPlan. Click a user to see the app as they
+                see it; a banner at the top takes you back.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <table class="table">
+        <caption class="visually-hidden">User accounts</caption>
+        <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Role</th>
+            <th scope="col">Joined</th>
+            <th scope="col">Recipes</th>
+            <th scope="col">Pantry items</th>
+            <th scope="col">Meal plans</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="account : ${users}"
+            th:classappend="${!account.admin and account.enabled} ? 'table__row--link' : ''"
+            th:attr="data-row-activate=${!account.admin and account.enabled} ? '[data-view-as]' : null">
+            <td th:text="${account.displayName}">Cook</td>
+            <td th:text="${account.email}">cook@example.com</td>
+            <td>
+                <span class="badge" th:if="${account.admin}">Admin</span>
+                <span th:unless="${account.admin}">User</span>
+                <span class="pill pill--bad" th:unless="${account.enabled}">Disabled</span>
+            </td>
+            <td th:text="${@fmt.date(account.joinedAt)}">Sep 11, 2026</td>
+            <td th:text="${account.recipeCount}">0</td>
+            <td th:text="${account.pantryItemCount}">0</td>
+            <td th:text="${account.mealPlanCount}">0</td>
+            <td class="table__actions">
+                <span class="muted" th:if="${account.id == currentUserId}">You</span>
+                <form th:if="${!account.admin and account.enabled}"
+                      th:action="@{/admin/impersonate}" method="post" class="inline-form">
+                    <input type="hidden" name="username" th:value="${account.email}">
+                    <button type="submit" class="linkbutton" data-view-as>View as</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

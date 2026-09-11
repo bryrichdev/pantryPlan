@@ -18,6 +18,8 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, Long> {
 
     Optional<PantryItem> findByIdAndUser(Long id, User user);
 
+    long countByUser(User user);
+
     List<PantryItem> findAllByUserOrderByIngredientNameAsc(User user);
 
     List<PantryItem> findAllByUserAndIngredientNameContainingIgnoreCaseOrderByIngredientNameAsc(

@@ -12,6 +12,8 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     Optional<Recipe> findByIdAndUser(Long id, User user);
 
+    long countByUser(User user);
+
     List<Recipe> findAllByUserOrderByNameAsc(User user);
 
     List<Recipe> findAllByUserOrderByTimesCookedDescNameAsc(User user);
