@@ -367,6 +367,60 @@
 
     /* ---------------------------------------------------------------- wiring */
 
+    /* ------------------------------------------------------------ phone menu */
+
+    function setMenuOpen(toggle, open) {
+        var header = toggle.closest(".topnav");
+        if (!header) {
+            return;
+        }
+        if (open) {
+            header.setAttribute("data-nav-open", "");
+        } else {
+            header.removeAttribute("data-nav-open");
+        }
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    /* Escape closes the menu and puts focus back on its button. Dialogs handle
+       Escape themselves, so this only acts when the menu is open. */
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") {
+            return;
+        }
+        var toggle = document.querySelector("[data-nav-toggle][aria-expanded='true']");
+        if (toggle) {
+            setMenuOpen(toggle, false);
+            toggle.focus();
+        }
+    });
+
+    /* -------------------------------------------------------- table labels */
+
+    /*
+     * On a phone each table row becomes a card, and a card has no header row
+     * to say which value is which. This copies each column's heading onto its
+     * cells as data-label, which the phone stylesheet prints beside the value.
+     * Doing it here means no template has to repeat its headings by hand.
+     */
+    function labelTableCells() {
+        var tables = document.querySelectorAll("table.table");
+        Array.prototype.forEach.call(tables, function (table) {
+            var headings = Array.prototype.map.call(
+                table.querySelectorAll("thead th"),
+                function (th) { return th.textContent.replace(/\s+/g, " ").trim(); });
+            Array.prototype.forEach.call(table.querySelectorAll("tbody tr"), function (row) {
+                Array.prototype.forEach.call(row.children, function (cell, index) {
+                    if (headings[index] && !cell.hasAttribute("data-label")) {
+                        cell.setAttribute("data-label", headings[index]);
+                    }
+                });
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", labelTableCells);
+
     document.addEventListener("click", function (event) {
         var opener = event.target.closest("[data-dialog-open]");
         if (opener) {
@@ -395,6 +449,14 @@
             if (owner) {
                 owner.close();
             }
+            return;
+        }
+
+        /* The phone menu. The open state lives on the header so the CSS can
+           show the links and account controls together. */
+        var navToggle = event.target.closest("[data-nav-toggle]");
+        if (navToggle) {
+            setMenuOpen(navToggle, navToggle.getAttribute("aria-expanded") !== "true");
             return;
         }
 

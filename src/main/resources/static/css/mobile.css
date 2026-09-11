@@ -1,0 +1,478 @@
+/* PantryPlan — small screens.
+
+   Loaded after every other stylesheet, so these rules override the desktop
+   ones without editing them. Two breakpoints:
+
+   56rem (about 900px)  the navigation folds behind a Menu button
+   40rem (about 640px)  phone layout: tables become cards, rows stack,
+                        buttons widen to thumb size
+
+   Nothing here applies on a desktop-width window. */
+
+/* ---------------------------------------------------------------- menu button */
+
+/* Hidden on desktop, where every link fits across the header. */
+.topnav__toggle { display: none; }
+
+@media (max-width: 56rem) {
+    .topnav__inner {
+        padding: 0.7rem 1rem;
+        gap: 0.5rem 1rem;
+    }
+
+    .topnav__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+        min-height: 2.75rem;
+        padding: 0 0.9rem;
+        font: inherit;
+        font-size: 0.95rem;
+        color: var(--ink);
+        background: transparent;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+        cursor: pointer;
+    }
+
+    /* Three bars drawn with borders, so no icon font or image is needed. */
+    .topnav__toggle-icon {
+        width: 1.1rem;
+        height: 0.8rem;
+        border-top: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        position: relative;
+    }
+
+    .topnav__toggle-icon::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        border-top: 2px solid currentColor;
+        transform: translateY(-50%);
+    }
+
+    .topnav__toggle[aria-expanded="true"] {
+        border-color: var(--herb);
+        color: var(--herb-deep);
+    }
+
+    /* Closed: only the wordmark and the Menu button show. A signed-out
+       visitor has no Menu button, so their Sign in link stays visible. */
+    .topnav:not([data-nav-open]) .topnav__links,
+    .topnav:not([data-nav-open]) .topnav__user,
+    .topnav:not([data-nav-open]) .topnav__account .inline-form {
+        display: none;
+    }
+
+    /* Open: the links drop below as a full-width list with large tap rows. */
+    .topnav__links {
+        width: 100%;
+        flex-direction: column;
+        gap: 0;
+        border-top: 1px solid var(--rule);
+        font-size: 1rem;
+    }
+
+    .topnav__links a {
+        padding: 0.8rem 0.25rem;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .topnav__links a:hover { border-bottom-color: var(--rule); }
+
+    /* The underline cue does not work in a stacked list, so the current page
+       gets the herb edge used for today's card on the plan page. */
+    .topnav__links a.is-active {
+        border-bottom-color: var(--rule);
+        box-shadow: inset 3px 0 0 var(--herb);
+        padding-left: 0.85rem;
+    }
+
+    .topnav__account {
+        width: 100%;
+        justify-content: space-between;
+        margin-left: 0;
+        padding: 0.35rem 0 0.2rem;
+    }
+
+    /* Signed out, the account area holds only Sign in, which belongs on the
+       right of the wordmark rather than on a row of its own. */
+    .topnav__account:not(:has(.inline-form)) {
+        width: auto;
+        margin-left: auto;
+        padding: 0;
+    }
+}
+
+/* ---------------------------------------------------------------- phone layout */
+
+@media (max-width: 40rem) {
+
+    /* ----- page shell ----- */
+
+    .page {
+        padding: 1.5rem 1rem 3rem;
+    }
+
+    h1 { font-size: 1.6rem; }
+
+    .pagehead {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .pagehead__note { max-width: none; }
+
+    .notice { max-width: none; }
+
+    /* Page actions fill the width in an even grid of buttons. */
+    .actions {
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .actions > .button,
+    .actions > form {
+        flex: 1 1 calc(50% - 0.5rem);
+    }
+
+    .actions .button {
+        width: 100%;
+        min-height: 2.75rem;
+        text-align: center;
+    }
+
+    /* ----- inputs ----- */
+
+    /* iOS Safari zooms the whole page into any field under 16px when it is
+       tapped, and does not zoom back out. 16px stops that. */
+    .field input,
+    .field select,
+    .field textarea,
+    .form textarea,
+    .searchbar input[type="search"],
+    .searchbar__select,
+    .filters__field input,
+    .filters__field select,
+    .filters--inline input,
+    .filters--inline select,
+    .lineitem__cell input,
+    .lineitem__cell select {
+        font-size: 16px;
+    }
+
+    .form,
+    .form--wide {
+        max-width: none;
+    }
+
+    .fieldrow {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .fieldrow .field { flex: 1 1 auto; }
+
+    /* ----- toolbars, search, and filters ----- */
+
+    .toolbar {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .toolbar > .button,
+    .toolbar > form,
+    .toolbar__actions {
+        width: 100%;
+    }
+
+    .toolbar__actions { flex-wrap: wrap; }
+
+    .toolbar .button {
+        flex: 1 1 auto;
+        min-height: 2.75rem;
+        text-align: center;
+    }
+
+    .toolbar > form .button { width: 100%; }
+
+    .searchbar {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .searchbar input[type="search"] {
+        flex: 1 1 100%;
+        min-height: 2.75rem;
+    }
+
+    .searchbar__select {
+        flex: 1 1 auto;
+        min-height: 2.75rem;
+    }
+
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .filters__field input,
+    .filters__field select,
+    .filters--inline input,
+    .filters--inline select {
+        width: 100%;
+        min-width: 0;
+        height: 2.75rem;
+    }
+
+    .filters__buttons { width: 100%; }
+
+    .filters__buttons .button,
+    .filters--inline .button {
+        flex: 1 1 0;
+        height: 2.75rem;
+    }
+
+    /* ----- tables become cards ----- */
+
+    /* The header row is hidden, except for a select-all checkbox, which would
+       otherwise have nowhere to live. */
+    .table thead { display: block; }
+    .table thead tr { display: block; }
+    .table thead th { display: none; }
+
+    .table thead th.table__check {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: auto;
+        padding: 0 0 0.75rem;
+        border: 0;
+        font-size: 0.9rem;
+        color: var(--ink);
+    }
+
+    .table thead th.table__check::after { content: "Select all"; }
+
+    .table tbody tr {
+        position: relative;
+        display: block;
+        margin: 0 0 0.75rem;
+        padding: 0.75rem 0.9rem;
+        background: #FFFFFF;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+    }
+
+    .table tbody tr:hover { background: #FFFFFF; }
+
+    /* Each value sits on the right with its column's name on the left. The
+       names come from data-label, which app.js copies from the headings. */
+    .table tbody td {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: baseline;
+        gap: 0.25rem 0.4rem;
+        padding: 0.3rem 0;
+        border: 0;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    /* margin-right: auto pushes the value to the right edge while a cell with
+       several parts, such as a row of tag badges, keeps them together. */
+    .table tbody td[data-label]::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        max-width: 45%;
+        margin-right: auto;
+        padding-right: 0.75rem;
+        text-align: left;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+    }
+
+    /* The first real column is the card's title: larger, on its own line,
+       with no label. When a row starts with a checkbox, the title is the cell
+       after it. */
+    .table tbody td:first-child:not(.table__check),
+    .table tbody td.table__check + td {
+        display: block;
+        margin-bottom: 0.3rem;
+        padding: 0 2.75rem 0.45rem 0;
+        border-bottom: 1px solid var(--rule);
+        text-align: left;
+        font-size: 1.02rem;
+        font-weight: 600;
+    }
+
+    .table tbody td:first-child:not(.table__check)::before,
+    .table tbody td.table__check + td::before {
+        display: none;
+    }
+
+    /* The row checkbox moves to the card's top right corner, enlarged for a
+       thumb. */
+    .table tbody td.table__check {
+        position: absolute;
+        top: 0.55rem;
+        right: 0.55rem;
+        width: auto;
+        padding: 0.2rem;
+    }
+
+    .table tbody td.table__check::before { display: none; }
+
+    .table__check input {
+        width: 1.4rem;
+        height: 1.4rem;
+    }
+
+    /* Row actions get their own strip along the bottom of the card. */
+    .table tbody td.table__actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.25rem 1.5rem;
+        margin-top: 0.4rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--rule);
+        white-space: normal;
+        text-align: left;
+    }
+
+    .table tbody td.table__actions::before { display: none; }
+
+    .table__actions a,
+    .table__actions .linkbutton,
+    .table__actions form {
+        margin: 0;
+    }
+
+    .table__actions a,
+    .table__actions .linkbutton {
+        display: inline-block;
+        padding: 0.45rem 0;
+        font-size: 0.95rem;
+    }
+
+    /* ----- selection bar ----- */
+
+    /* While something is ticked, the bar floats at the bottom of the screen,
+       where a thumb can reach it however far down the list you are. */
+    .bulkbar {
+        position: fixed;
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        z-index: 20;
+        margin: 0;
+        gap: 0.5rem 1rem;
+        box-shadow: 0 6px 24px rgba(27, 42, 32, 0.25);
+    }
+
+    .bulkbar .button { min-height: 2.5rem; }
+
+    .page:has(.bulkbar:not([hidden])) { padding-bottom: 8rem; }
+
+    /* ----- dialogs ----- */
+
+    .dialog,
+    .dialog--narrow {
+        width: calc(100vw - 1rem);
+        max-height: calc(100dvh - 1rem);
+        overflow-y: auto;
+    }
+
+    .dialog__head { padding: 0.9rem 1rem 0.75rem; }
+    .dialog__body { padding: 1rem 1rem 0.25rem; }
+    .dialog__foot { padding: 0.85rem 1rem 1rem; }
+
+    .dialog__foot .button {
+        flex: 1 1 auto;
+        min-height: 2.75rem;
+    }
+
+    .dialog__close {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+    }
+
+    /* ----- recipes ----- */
+
+    .factgrid {
+        gap: 0.75rem 1.5rem;
+    }
+
+    .lines { padding: 0.9rem 0.85rem 1rem; }
+
+    /* ----- meal plans ----- */
+
+    .week { gap: 0.75rem; }
+
+    .day__add {
+        align-self: stretch;
+        min-height: 2.75rem;
+    }
+
+    .meal__actions .linkbutton { padding: 0.35rem 0; font-size: 0.9rem; }
+
+    .meal__check input,
+    .meal-select-all input {
+        width: 1.3rem;
+        height: 1.3rem;
+    }
+
+    /* ----- grocery lists ----- */
+
+    .tick {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1.1rem;
+    }
+
+    .shoplist__item { padding: 0.75rem 0; }
+
+    .shoplist__amount {
+        display: block;
+        margin-left: 0;
+    }
+
+    /* ----- logs pager ----- */
+
+    .pager .button {
+        min-width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    .pager__total {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    /* ----- viewing-as banner ----- */
+
+    .impersonation {
+        justify-content: flex-start;
+        padding: 0.6rem 1rem;
+        font-size: 0.88rem;
+    }
+
+    .impersonation .button { width: 100%; }
+
+    /* ----- account page ----- */
+
+    .section .button { width: 100%; min-height: 2.75rem; }
+}
+
+/* Touch screens have no hover, and a tapped row can stay "hovered" until the
+   next tap. Keep row backgrounds steady there. */
+@media (hover: none) {
+    .table tbody tr:hover { background: inherit; }
+}

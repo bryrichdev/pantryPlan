@@ -11,6 +11,8 @@
     <link rel="stylesheet" th:href="@{/css/dialog.css}">
     <link rel="stylesheet" th:href="@{/css/recipes.css}">
     <link rel="stylesheet" th:href="@{/css/plans.css}">
+    <!-- Last, so its small-screen rules win over everything above. -->
+    <link rel="stylesheet" th:href="@{/css/mobile.css}">
     <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon.png}">
     <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
     <script th:src="@{/js/app.js}" defer></script>
@@ -32,7 +34,14 @@
     <div class="topnav__inner">
         <a class="wordmark" th:href="@{/}">PantryPlan</a>
 
-        <nav class="topnav__links" sec:authorize="isAuthenticated()">
+        <!-- Only shown on narrow screens, where the links fold away behind it. -->
+        <button type="button" class="topnav__toggle" sec:authorize="isAuthenticated()"
+                data-nav-toggle aria-expanded="false" aria-controls="site-menu">
+            <span class="topnav__toggle-icon" aria-hidden="true"></span>
+            Menu
+        </button>
+
+        <nav class="topnav__links" id="site-menu" aria-label="Main" sec:authorize="isAuthenticated()">
             <a th:href="@{/recipes}"
                th:classappend="${#strings.startsWith(currentPath, '/recipes')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/recipes')} ? 'page' : null">Recipes</a>
