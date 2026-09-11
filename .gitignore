@@ -32,3 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 .DS_Store
+
+# Local container secrets and database exports
+.env
+.env.*
+!.env.example
+*.dump
+*.backup
