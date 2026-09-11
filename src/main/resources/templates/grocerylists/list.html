@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Grocery lists')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Grocery lists</h1>
+            <p class="pagehead__note">
+                Each list comes from one meal plan: what the week needs, less what
+                is already in the pantry.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <form th:action="@{/grocery-lists/generate}" method="post" th:unless="${#lists.isEmpty(plans)}">
+        <div class="toolbar">
+            <div class="searchbar">
+                <label class="visually-hidden" for="plan-choice">Meal plan</label>
+                <select id="plan-choice" name="planId" class="searchbar__select" required>
+                    <option th:each="plan : ${plans}" th:value="${plan.id}"
+                            th:text="${plan.name}">This week</option>
+                </select>
+                <button type="submit" class="button button--primary">Build grocery list</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="empty" th:if="${#lists.isEmpty(groceryLists)}">
+        <p th:if="${#lists.isEmpty(plans)}">
+            No grocery lists yet. <a th:href="@{/meal-plans}">Plan a week first</a>,
+            then build a list from it.
+        </p>
+        <p th:unless="${#lists.isEmpty(plans)}">
+            No grocery lists yet. Choose a plan above and build one.
+        </p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(groceryLists)}">
+        <caption class="visually-hidden">Grocery lists on this account</caption>
+        <thead>
+        <tr>
+            <th scope="col">List</th>
+            <th scope="col">Meal plan</th>
+            <th scope="col">Built</th>
+            <th scope="col">Bought</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="groceryList : ${groceryLists}" class="table__row--link"
+            th:attr="data-row-href=@{/grocery-lists/{id}(id=${groceryList.id})}">
+            <td>
+                <a th:href="@{/grocery-lists/{id}(id=${groceryList.id})}"
+                   th:text="${groceryList.title}">Groceries for this week</a>
+                <span class="pill pill--warn" th:if="${groceryList.needsReviewCount() > 0}"
+                      th:text="|${groceryList.needsReviewCount()} to check|">2 to check</span>
+            </td>
+            <td>
+                <span th:if="${groceryList.mealPlan != null}"
+                      th:text="${groceryList.mealPlan.name}">This week</span>
+                <span th:if="${groceryList.mealPlan == null}" class="muted">Plan deleted</span>
+            </td>
+            <td th:text="${@fmt.dateTime(groceryList.generatedAt)}">Sep 11, 2026 at 3:04 PM</td>
+            <td th:text="|${groceryList.purchasedCount()} of ${groceryList.itemCount()}|">3 of 12</td>
+            <td class="table__actions">
+                <button type="button" class="linkbutton linkbutton--danger"
+                        data-dialog-open="delete-dialog"
+                        th:attr="data-name=${groceryList.title},
+                                 data-entity='grocery list',
+                                 data-delete-url=@{/grocery-lists/{id}/delete(id=${groceryList.id})}">Delete</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form th:action="@{/grocery-lists}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title" data-delete-heading>Delete grocery list?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-delete-message>Delete this grocery list?</p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

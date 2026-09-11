@@ -57,6 +57,14 @@ public class GroceryList extends BaseEntity {
         return items.stream().filter(i -> !i.isPurchased()).count();
     }
 
+    public long purchasedCount() {
+        return items.stream().filter(GroceryListItem::isPurchased).count();
+    }
+
+    public long needsReviewCount() {
+        return items.stream().filter(GroceryListItem::isNeedsReview).count();
+    }
+
     public User getUser() {
         return user;
     }

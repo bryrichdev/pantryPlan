@@ -14,4 +14,6 @@ public interface GroceryListRepository extends JpaRepository<GroceryList, Long> 
     List<GroceryList> findAllByUserOrderByGeneratedAtDesc(User user);
 
     List<GroceryList> findAllByMealPlanOrderByGeneratedAtDesc(MealPlan mealPlan);
+
+    Optional<GroceryList> findFirstByMealPlanOrderByGeneratedAtDesc(MealPlan mealPlan);
 }

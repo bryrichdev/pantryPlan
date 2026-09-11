@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${groceryList.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <p class="crumb"><a th:href="@{/grocery-lists}">Grocery lists</a></p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="pagehead">
+        <div>
+            <h1 th:text="${groceryList.title}">Groceries for this week</h1>
+            <p class="pagehead__note">
+                <th:block th:text="|Built ${@fmt.dateTime(groceryList.generatedAt)}|">Built Sep 11, 2026</th:block><th:block
+                    th:if="${groceryList.mealPlan != null}"> from
+                <a th:href="@{/meal-plans/{id}(id=${groceryList.mealPlan.id})}"
+                   th:text="${groceryList.mealPlan.name}">This week</a></th:block>.
+                <th:block th:text="|${groceryList.purchasedCount()} of ${groceryList.itemCount()} bought.|">3 of 12 bought.</th:block>
+            </p>
+        </div>
+        <div class="actions">
+            <form th:if="${groceryList.mealPlan != null}" th:action="@{/grocery-lists/generate}"
+                  method="post" class="inline-form">
+                <input type="hidden" name="planId" th:value="${groceryList.mealPlan.id}">
+                <button type="submit" class="button button--quiet">Rebuild from plan</button>
+            </form>
+            <button type="button" class="button button--quiet"
+                    data-dialog-open="delete-dialog"
+                    th:attr="data-name=${groceryList.title},
+                             data-entity='grocery list',
+                             data-delete-url=@{/grocery-lists/{id}/delete(id=${groceryList.id})}">Delete</button>
+        </div>
+    </div>
+
+    <div class="empty" th:if="${groceryList.itemCount() == 0}">
+        <p>
+            Nothing to buy. Either your pantry covers every meal still to cook,
+            or the plan has no meals left to shop for.
+        </p>
+    </div>
+
+    <p class="notice notice--warn" th:if="${groceryList.needsReviewCount() > 0}">
+        Items marked <strong>Check pantry</strong> could not be compared with your
+        shelf, so the amount shown is everything the recipes call for.
+    </p>
+
+    <section class="aisle" th:each="aisle : ${aisles}">
+        <h2 class="aisle__name" th:text="${@fmt.label(aisle.category)}">Produce</h2>
+        <ul class="shoplist">
+            <li class="shoplist__item" th:each="item : ${aisle.items}"
+                th:id="|item-${item.id}|"
+                th:classappend="${item.purchased} ? 'shoplist__item--bought' : ''">
+                <form th:action="@{/grocery-lists/{id}/items/{itemId}/toggle(id=${groceryList.id},itemId=${item.id})}"
+                      method="post" class="shoplist__toggle">
+                    <button type="submit" class="tick" th:attr="aria-pressed=${item.purchased}">
+                        <span class="visually-hidden"
+                              th:text="|Bought ${item.ingredient.name}|">Bought flour</span>
+                    </button>
+                </form>
+                <div class="shoplist__body">
+                    <span class="shoplist__name" th:text="${item.ingredient.name}">Flour</span>
+                    <span class="shoplist__amount"
+                          th:text="${@fmt.amount(item.neededQuantity, item.unit)}">0.323 lb</span>
+                    <span class="pill pill--warn" th:if="${item.needsReview}">Check pantry</span>
+
+                    <p class="shoplist__note" th:if="${item.needsReview}">
+                        <th:block th:text="|Not checked against your pantry: ${reviewReasons.get(item.id)}.|">
+                            Not checked against your pantry.
+                        </th:block>
+                        <a th:href="@{/ingredients(q=${item.ingredient.name})}">Edit ingredient</a>
+                    </p>
+                    <p class="shoplist__note"
+                       th:if="${!item.needsReview and item.ingredient.defaultQuantity != null}"
+                       th:text="|Usually ${@fmt.amount(item.ingredient.defaultQuantity, item.ingredient.stockUnit)}|">
+                        Usually 5 lb
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <p class="footnote aisle-footnote" th:if="${groceryList.itemCount() > 0 and groceryList.mealPlan != null}">
+        Rebuilding subtracts your current pantry again and clears these ticks.
+    </p>
+</main>
+
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form th:action="@{/grocery-lists}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title" data-delete-heading>Delete grocery list?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-delete-message>Delete this grocery list?</p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

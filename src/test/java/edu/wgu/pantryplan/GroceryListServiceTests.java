@@ -3,6 +3,7 @@ package edu.wgu.pantryplan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -301,5 +302,56 @@ class GroceryListServiceTests {
 
         assertThrows(NoSuchElementException.class,
                 () -> groceryListService.generate(week.getId(), stranger, MONDAY));
+    }
+
+    @Test
+    void togglesPurchasedForTheOwnerOnly() {
+        User owner = cook("grocery-tick@example.com");
+        User stranger = cook("grocery-tick-stranger@example.com");
+        Ingredient eggs = ingredient(owner, "Eggs", Unit.PIECE, null);
+        Recipe omelette = recipe(owner, "Omelette", 2, eggs, "3", Unit.PIECE);
+
+        MealPlan week = plan(owner);
+        schedule(owner, week, omelette, MONDAY, 2);
+        GroceryList list = groceryListService.generate(week.getId(), owner, MONDAY);
+        Long itemId = list.getItems().get(0).getId();
+
+        assertTrue(groceryListService.togglePurchased(list.getId(), itemId, owner).isPurchased());
+        assertFalse(groceryListService.togglePurchased(list.getId(), itemId, owner).isPurchased(),
+                "a second tick undoes the first");
+
+        assertThrows(NoSuchElementException.class,
+                () -> groceryListService.togglePurchased(list.getId(), itemId, stranger),
+                "another account cannot tick items on this list");
+    }
+
+    @Test
+    void findsThePlansCurrentList() {
+        User user = cook("grocery-current@example.com");
+        Ingredient lentils = ingredient(user, "Lentils", Unit.GRAM, null);
+        Recipe dal = recipe(user, "Dal", 4, lentils, "250", Unit.GRAM);
+
+        MealPlan week = plan(user);
+        assertTrue(groceryListService.findForPlan(week).isEmpty(), "no list before one is built");
+
+        schedule(user, week, dal, MONDAY, 4);
+        GroceryList built = groceryListService.generate(week.getId(), user, MONDAY);
+
+        assertEquals(built.getId(), groceryListService.findForPlan(week).orElseThrow().getId());
+        assertEquals(1, groceryListService.findAll(user).size());
+    }
+
+    @Test
+    void deletesTheOwnersListOnly() {
+        User owner = cook("grocery-delete@example.com");
+        User stranger = cook("grocery-delete-stranger@example.com");
+        MealPlan week = plan(owner);
+        GroceryList list = groceryListService.generate(week.getId(), owner, MONDAY);
+
+        assertThrows(NoSuchElementException.class,
+                () -> groceryListService.delete(list.getId(), stranger));
+
+        groceryListService.delete(list.getId(), owner);
+        assertNull(groceryListService.findForPlan(week).orElse(null));
     }
 }

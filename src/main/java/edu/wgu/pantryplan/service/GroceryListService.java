@@ -8,13 +8,16 @@ import edu.wgu.pantryplan.domain.PlanEntry;
 import edu.wgu.pantryplan.domain.RecipeLine;
 import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
+import edu.wgu.pantryplan.repository.GroceryListItemRepository;
 import edu.wgu.pantryplan.repository.GroceryListRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,15 +38,80 @@ public class GroceryListService {
     private static final int STORED_SCALE = 3;
 
     private final GroceryListRepository groceryListRepository;
+    private final GroceryListItemRepository groceryListItemRepository;
     private final MealPlanService mealPlanService;
     private final PantryCoverageService coverageService;
 
     public GroceryListService(GroceryListRepository groceryListRepository,
+                              GroceryListItemRepository groceryListItemRepository,
                               MealPlanService mealPlanService,
                               PantryCoverageService coverageService) {
         this.groceryListRepository = groceryListRepository;
+        this.groceryListItemRepository = groceryListItemRepository;
         this.mealPlanService = mealPlanService;
         this.coverageService = coverageService;
+    }
+
+    /**
+     * Every list on the account, newest first, with what the list page reads
+     * already loaded. open-in-view is off, so the template cannot load it later.
+     */
+    @Transactional(readOnly = true)
+    public List<GroceryList> findAll(User user) {
+        List<GroceryList> lists = groceryListRepository.findAllByUserOrderByGeneratedAtDesc(user);
+        lists.forEach(GroceryListService::loadForDisplay);
+        return lists;
+    }
+
+    /**
+     * The plan's current list, if one has been built. The caller has already
+     * checked the plan belongs to the account.
+     */
+    @Transactional(readOnly = true)
+    public Optional<GroceryList> findForPlan(MealPlan plan) {
+        return groceryListRepository.findFirstByMealPlanOrderByGeneratedAtDesc(plan);
+    }
+
+    /**
+     * One list, scoped to its owner, with its items and their ingredients loaded.
+     *
+     * @throws NoSuchElementException when the list is not this account's
+     */
+    @Transactional(readOnly = true)
+    public GroceryList requireOwned(Long id, User user) {
+        GroceryList list = findOwned(id, user);
+        loadForDisplay(list);
+        return list;
+    }
+
+    /**
+     * Ticks an item off, or unticks it. The item is looked up through its list,
+     * and the list through its owner, so an id from another account fails.
+     */
+    @Transactional
+    public GroceryListItem togglePurchased(Long listId, Long itemId, User user) {
+        GroceryList list = findOwned(listId, user);
+        GroceryListItem item = groceryListItemRepository.findByIdAndGroceryList(itemId, list)
+                .orElseThrow(() -> new NoSuchElementException("No item " + itemId + " on this list"));
+        item.togglePurchased();
+        return groceryListItemRepository.save(item);
+    }
+
+    @Transactional
+    public void delete(Long id, User user) {
+        groceryListRepository.delete(findOwned(id, user));
+    }
+
+    private GroceryList findOwned(Long id, User user) {
+        return groceryListRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NoSuchElementException("No grocery list " + id + " for this account"));
+    }
+
+    private static void loadForDisplay(GroceryList list) {
+        if (list.getMealPlan() != null) {
+            list.getMealPlan().getName();
+        }
+        list.getItems().forEach(item -> item.getIngredient().getName());
     }
 
     @Transactional

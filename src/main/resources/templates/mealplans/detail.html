@@ -25,6 +25,13 @@
                     th:attr="data-date=${plan.weekStartDate}">Add a meal</button>
             <button type="button" class="button button--quiet"
                     data-dialog-open="autofill-dialog">Fill the week for me</button>
+            <a class="button button--quiet" th:if="${groceryList != null}"
+               th:href="@{/grocery-lists/{id}(id=${groceryList.id})}">Grocery list</a>
+            <form th:if="${groceryList == null}" th:action="@{/grocery-lists/generate}"
+                  method="post" class="inline-form">
+                <input type="hidden" name="planId" th:value="${plan.id}">
+                <button type="submit" class="button button--quiet">Build grocery list</button>
+            </form>
             <button type="button" class="button button--quiet"
                     data-dialog-open="plan-dialog" data-mode="edit"
                     th:attr="data-id=${plan.id},

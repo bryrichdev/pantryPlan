@@ -5,6 +5,7 @@ import edu.wgu.pantryplan.domain.MealSlot;
 import edu.wgu.pantryplan.domain.PlanEntry;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
+import edu.wgu.pantryplan.service.GroceryListService;
 import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
@@ -34,13 +35,16 @@ public class MealPlanController {
 
     private final MealPlanService mealPlanService;
     private final RecipeService recipeService;
+    private final GroceryListService groceryListService;
     private final UserService userService;
 
     public MealPlanController(MealPlanService mealPlanService,
                               RecipeService recipeService,
+                              GroceryListService groceryListService,
                               UserService userService) {
         this.mealPlanService = mealPlanService;
         this.recipeService = recipeService;
+        this.groceryListService = groceryListService;
         this.userService = userService;
     }
 
@@ -118,6 +122,7 @@ public class MealPlanController {
         model.addAttribute("days", days);
         model.addAttribute("entryCount", ordered.size());
         model.addAttribute("recipeOptions", recipeService.findAll(user));
+        model.addAttribute("groceryList", groceryListService.findForPlan(plan).orElse(null));
         model.addAttribute("today", LocalDate.now());
         if (!model.containsAttribute("entryForm")) {
             PlanEntryForm form = new PlanEntryForm();
