@@ -77,7 +77,7 @@ class IngredientPresetTests {
 
         Ingredient flour = find(user, "All-purpose flour");
         assertEquals(IngredientCategory.PANTRY_STAPLE, flour.getCategory());
-        assertEquals(Unit.GRAM, flour.getStockUnit());
+        assertEquals(Unit.POUND, flour.getStockUnit());
         assertEquals(StorageLocation.PANTRY, flour.getDefaultLocation());
         assertEquals(0, new BigDecimal("120.000").compareTo(flour.getGramsPerCup()));
         assertTrue(flour.hasVolumeWeightRatio());
@@ -112,8 +112,9 @@ class IngredientPresetTests {
                 "a dozen, counted in pieces");
 
         Ingredient milk = find(user, "Whole milk");
-        assertEquals(0, new BigDecimal("3785").compareTo(milk.getDefaultQuantity()),
-                "a gallon, kept in millilitres");
+        assertEquals(Unit.CUP, milk.getStockUnit());
+        assertEquals(0, new BigDecimal("16").compareTo(milk.getDefaultQuantity()),
+                "a gallon, kept in cups");
 
         assertNull(find(user, "Chicken breast").getDefaultQuantity(),
                 "meat sold by variable weight has no usual amount");
