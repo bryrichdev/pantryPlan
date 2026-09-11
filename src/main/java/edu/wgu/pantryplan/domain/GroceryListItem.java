@@ -36,6 +36,15 @@ public class GroceryListItem extends BaseEntity {
     @Column(name = "purchased", nullable = false)
     private boolean purchased;
 
+    /**
+     * True when the recipe's unit could not be converted into the ingredient's
+     * stock unit. The quantity is then in the recipe's unit and the pantry was
+     * not subtracted, so the cook has to check the shelf by eye. Set only at
+     * construction: a line cannot become convertible later.
+     */
+    @Column(name = "needs_review", nullable = false)
+    private boolean needsReview;
+
     protected GroceryListItem() {
     }
 
@@ -45,6 +54,18 @@ public class GroceryListItem extends BaseEntity {
         this.neededQuantity = neededQuantity;
         this.unit = unit;
         this.category = category;
+    }
+
+    /**
+     * A line the list could not reconcile with the pantry.
+     *
+     * @param amount how much the recipes call for, in the recipe's own unit
+     */
+    public static GroceryListItem needingReview(Ingredient ingredient, BigDecimal amount, Unit recipeUnit,
+                                                IngredientCategory category) {
+        GroceryListItem item = new GroceryListItem(ingredient, amount, recipeUnit, category);
+        item.needsReview = true;
+        return item;
     }
 
     public void togglePurchased() {
@@ -93,5 +114,9 @@ public class GroceryListItem extends BaseEntity {
 
     public boolean isPurchased() {
         return purchased;
+    }
+
+    public boolean isNeedsReview() {
+        return needsReview;
     }
 }

@@ -9,6 +9,7 @@ import edu.wgu.pantryplan.repository.PantryItemRepository;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -18,9 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Works out how much of a recipe the pantry already covers.
  *
  * <p>Used to bias auto-filled plans toward what is already on the shelf. The
- * same per-line comparison — scale to the planned servings, convert into the
- * ingredient's stocking unit, measure against what is on hand — is what the
- * grocery list runs to decide what still needs buying.
+ * grocery list reuses the two building blocks, {@link #neededInStockUnit} and
+ * {@link #onHandOf}, but not {@link #covers}: it adds up a whole week's need
+ * per ingredient before comparing with the shelf, rather than line by line.
  */
 @Service
 public class PantryCoverageService {
@@ -37,16 +38,29 @@ public class PantryCoverageService {
     }
 
     /**
-     * Total on the shelf for one ingredient, in that ingredient's stocking unit.
-     *
-     * <p>Every pantry row for an ingredient is in the same unit by design, so
-     * this is plain addition rather than a conversion per row.
+     * Usable stock for one ingredient today, in that ingredient's stocking unit.
      */
     @Transactional(readOnly = true)
     public BigDecimal onHandOf(User user, Ingredient ingredient) {
+        return onHandOf(user, ingredient, LocalDate.now());
+    }
+
+    /**
+     * Usable stock for one ingredient on a given day, in its stocking unit.
+     *
+     * <p>Every pantry row for an ingredient is in the same unit by design, so
+     * this is plain addition rather than a conversion per row. Rows past their
+     * expiry date are left out: expired milk is on the shelf, but it is not
+     * going into anything. The date is a parameter so tests can fix it.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal onHandOf(User user, Ingredient ingredient, LocalDate today) {
         List<PantryItem> rows = pantryItemRepository.findAllByUserAndIngredient(user, ingredient);
         BigDecimal total = BigDecimal.ZERO;
         for (PantryItem row : rows) {
+            if (row.isExpired(today)) {
+                continue;
+            }
             total = total.add(row.getQuantity());
         }
         return total;
