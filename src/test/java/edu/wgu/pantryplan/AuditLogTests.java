@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import edu.wgu.pantryplan.audit.AuditLogEntry;
+import edu.wgu.pantryplan.audit.AuditLogPage;
 import edu.wgu.pantryplan.domain.IngredientCategory;
 import edu.wgu.pantryplan.domain.Role;
 import edu.wgu.pantryplan.domain.StorageLocation;
@@ -180,10 +181,25 @@ class AuditLogTests {
                 .andExpect(status().isForbidden());
 
         String page = mockMvc.perform(get("/admin/logs").with(user(new AppUserDetails(admin)))
-                        .param("table", "users"))
+                        .param("table", "users")
+                        .param("size", "25"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertTrue(page.contains("href=\"/admin/logs\""), "the Logs tab is in the navigation");
         assertTrue(page.contains("Accounts"), "entries render with their record type");
+        assertTrue(page.contains("Per page"), "the page size choice renders");
+    }
+
+    @Test
+    void anOddPageSizeOrAPagePastTheEndStillShowsTheLog() {
+        account("audit-paging@example.com");
+
+        AuditLogPage odd = auditLogService.search("", "", "", 0, 7);
+        assertEquals(AuditLogService.DEFAULT_PAGE_SIZE, odd.getSize(), "unlisted sizes fall back to the default");
+
+        AuditLogPage farAway = auditLogService.search("", "", "", 1_000_000, 25);
+        assertEquals(farAway.getTotalPages() - 1, farAway.getPage(), "a page past the end becomes the last page");
+        assertTrue(farAway.getTotalEntries() > 0);
+        assertTrue(!farAway.getEntries().isEmpty(), "and it has entries on it");
     }
 }

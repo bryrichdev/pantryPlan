@@ -419,3 +419,72 @@ a.topnav__user.is-active {
     gap: 1rem;
     margin-top: 1.25rem;
 }
+
+/* ---------- admin logs: inline filters and pager ----------
+   Inputs, selects, and buttons share one fixed height and sit on the same
+   baseline, so the Filter and Clear buttons line up with the fields beside
+   them. Scoped to .filters--inline so the recipe search is untouched. */
+
+.filters--inline {
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+.filters--inline input,
+.filters--inline select,
+.filters--inline .button,
+.pager .button {
+    box-sizing: border-box;
+    height: 2.3rem;
+    font: inherit;
+    font-size: 0.92rem;
+    line-height: 1.2;
+}
+
+.filters--inline input,
+.filters--inline select {
+    min-width: 11rem;
+    padding: 0 0.6rem;
+}
+
+.filters--inline input[type="search"] {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.filters--inline .filters__field--narrow select { min-width: 5.5rem; }
+
+.filters__buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filters--inline .button,
+.pager .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+}
+
+.pager .button { min-width: 2.3rem; padding: 0 0.7rem; }
+
+.pager .is-disabled {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
+}
+
+.pager__total {
+    margin-left: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+}

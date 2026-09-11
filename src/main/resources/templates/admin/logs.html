@@ -16,7 +16,7 @@
         </div>
     </div>
 
-    <form th:action="@{/admin/logs}" method="get" class="filters">
+    <form th:action="@{/admin/logs}" method="get" class="filters filters--inline">
         <div class="filters__field">
             <label for="log-table">Record type</label>
             <select id="log-table" name="table">
@@ -38,11 +38,23 @@
             <input type="search" id="log-account" name="account" th:value="${log.actor}"
                    placeholder="Part of an email">
         </div>
-        <div class="filters__field filters__field--actions">
+        <div class="filters__field filters__field--narrow">
+            <label for="log-size">Per page</label>
+            <select id="log-size" name="size">
+                <option th:each="choice : ${pageSizes}" th:value="${choice}" th:text="${choice}"
+                        th:selected="${choice == log.size}">50</option>
+            </select>
+        </div>
+        <div class="filters__buttons">
             <button type="submit" class="button button--quiet">Filter</button>
-            <a th:if="${log.filtered}" th:href="@{/admin/logs}" class="searchbar__clear">Clear</a>
+            <a th:href="@{/admin/logs}" class="button button--quiet">Clear</a>
         </div>
     </form>
+
+    <p class="resultcount" th:unless="${#lists.isEmpty(log.entries)}"
+       th:text="|Showing ${log.firstShown}–${log.lastShown} of ${log.totalEntries} changes|">
+        Showing 1–50 of 240 changes
+    </p>
 
     <div class="empty" th:if="${#lists.isEmpty(log.entries)}">
         <p th:if="${log.filtered}">No changes match those filters.</p>
@@ -79,12 +91,26 @@
         </tbody>
     </table>
 
-    <nav class="logs__pager" aria-label="Log pages" th:if="${log.hasNewer or log.hasOlder}">
+    <!-- Newer comes first because the log runs newest first. Every link keeps
+         the current filters and page size, so paging never loses them. -->
+    <nav class="pager" aria-label="Log pages" th:if="${log.totalPages > 1}">
         <a th:if="${log.hasNewer}" class="button button--quiet"
-           th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, page=${log.page - 1})}">Newer</a>
-        <span class="muted" th:text="|Page ${log.page + 1}|">Page 1</span>
+           th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, size=${log.size}, page=${log.page - 1})}">Newer</a>
+        <span th:unless="${log.hasNewer}" class="button button--quiet is-disabled" aria-disabled="true">Newer</span>
+
+        <th:block th:each="number : ${log.pageNumbers}">
+            <span th:if="${number == log.page}" class="button button--primary" aria-current="page"
+                  th:text="${number + 1}">1</span>
+            <a th:unless="${number == log.page}" class="button button--quiet"
+               th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, size=${log.size}, page=${number})}"
+               th:text="${number + 1}" th:attr="aria-label=|Page ${number + 1}|">2</a>
+        </th:block>
+
         <a th:if="${log.hasOlder}" class="button button--quiet"
-           th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, page=${log.page + 1})}">Older</a>
+           th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, size=${log.size}, page=${log.page + 1})}">Older</a>
+        <span th:unless="${log.hasOlder}" class="button button--quiet is-disabled" aria-disabled="true">Older</span>
+
+        <span class="pager__total" th:text="|Page ${log.page + 1} of ${log.totalPages}|">Page 1 of 12</span>
     </nav>
 </main>
 

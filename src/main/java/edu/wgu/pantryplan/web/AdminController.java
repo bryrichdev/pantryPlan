@@ -32,7 +32,7 @@ public class AdminController {
     }
 
     /**
-     * The audit log, newest first, fifty to a page. Filters arrive as query
+     * The audit log, newest first, in pages of a chosen size. Filters arrive as query
      * parameters so a filtered view can be bookmarked or shared.
      */
     @GetMapping("/logs")
@@ -40,10 +40,12 @@ public class AdminController {
                        @RequestParam(name = "action", required = false) String action,
                        @RequestParam(name = "account", required = false) String account,
                        @RequestParam(name = "page", defaultValue = "0") int page,
+                       @RequestParam(name = "size", defaultValue = "50") int size,
                        Model model) {
-        model.addAttribute("log", auditLogService.search(table, action, account, page));
+        model.addAttribute("log", auditLogService.search(table, action, account, page, size));
         model.addAttribute("tables", AuditLogService.TABLES);
         model.addAttribute("actions", AuditLogService.ACTIONS);
+        model.addAttribute("pageSizes", AuditLogService.PAGE_SIZES);
         return "admin/logs";
     }
 
