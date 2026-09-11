@@ -25,9 +25,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,7 @@ public class MealPlanService {
     private final PlanEntryRepository planEntryRepository;
     private final RecipeRepository recipeRepository;
     private final PantryCoverageService coverageService;
+    private final UnitConversionService unitConversionService;
     private final PantryItemRepository pantryItemRepository;
     private final CookLogRepository cookLogRepository;
 
@@ -50,12 +53,14 @@ public class MealPlanService {
                            PlanEntryRepository planEntryRepository,
                            RecipeRepository recipeRepository,
                            PantryCoverageService coverageService,
+                           UnitConversionService unitConversionService,
                            PantryItemRepository pantryItemRepository,
                            CookLogRepository cookLogRepository) {
         this.mealPlanRepository = mealPlanRepository;
         this.planEntryRepository = planEntryRepository;
         this.recipeRepository = recipeRepository;
         this.coverageService = coverageService;
+        this.unitConversionService = unitConversionService;
         this.pantryItemRepository = pantryItemRepository;
         this.cookLogRepository = cookLogRepository;
     }
@@ -238,6 +243,46 @@ public class MealPlanService {
         return markEntriesCooked(planId, entryIds, user);
     }
 
+    /**
+     * Reverses selected cook actions. The stock amount restored comes from the
+     * cook logs, so a meal that was only partly covered restores only what was
+     * actually removed from the pantry.
+     */
+    @Transactional
+    public CookUndoResult markEntriesNotCooked(Long planId,
+                                               java.util.Collection<Long> entryIds,
+                                               User user) {
+        MealPlan plan = requireOwned(planId, user);
+        CookUndoResult result = new CookUndoResult();
+        if (entryIds == null) {
+            return result;
+        }
+
+        Set<Long> uniqueIds = new HashSet<>(entryIds);
+        uniqueIds.remove(null);
+        for (Long entryId : uniqueIds) {
+            PlanEntry entry = planEntryRepository.findByIdAndMealPlan(entryId, plan).orElse(null);
+            if (entry == null) {
+                result.recordMissing();
+                continue;
+            }
+            if (!entry.isCooked()) {
+                result.recordAlreadyUncooked();
+                continue;
+            }
+            undoCooking(entry, user, result);
+        }
+        return result;
+    }
+
+    /** Reverses one entry; see {@link #markEntriesNotCooked(Long, java.util.Collection, User)}. */
+    @Transactional
+    public CookUndoResult markEntryNotCooked(Long planId, Long entryId, User user) {
+        List<Long> entryIds = new ArrayList<>();
+        entryIds.add(entryId);
+        return markEntriesNotCooked(planId, entryIds, user);
+    }
+
     private void cook(PlanEntry entry, User user, Instant cookedAt, CookResult result) {
         Recipe recipe = entry.getRecipe();
         for (RecipeLine line : recipe.getLines()) {
@@ -263,6 +308,7 @@ public class MealPlanService {
                 pantryItemRepository.findAllByUserAndIngredient(user, ingredient));
         pantryRows.sort(Comparator
                 .comparing(PantryItem::getExpiresOn, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(PantryItem::getPurchasedOn, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(PantryItem::getId));
 
         for (PantryItem item : pantryRows) {
@@ -282,6 +328,63 @@ public class MealPlanService {
                 pantryItemRepository.delete(item);
             }
         }
+    }
+
+    private void undoCooking(PlanEntry entry, User user, CookUndoResult result) {
+        List<CookLog> logs = cookLogRepository.findAllByPlanEntryAndReversedFalse(entry);
+        Map<Long, RestoredIngredient> restored = new LinkedHashMap<>();
+
+        /* Validate every conversion before changing anything. An ingredient's
+           stock unit can be edited after a meal was cooked; in that unusual
+           case an unsafe restoration is better refused than guessed. */
+        for (CookLog log : logs) {
+            Ingredient ingredient = log.getIngredient();
+            Optional<BigDecimal> amount = unitConversionService.convert(
+                    log.getQuantityDeducted(), log.getUnit(), ingredient.getStockUnit(), ingredient);
+            if (amount.isEmpty()) {
+                result.recordUnrestorableLog();
+                return;
+            }
+            RestoredIngredient existing = restored.get(ingredient.getId());
+            BigDecimal total = amount.get().setScale(3, RoundingMode.HALF_UP);
+            if (existing != null) {
+                total = total.add(existing.quantity());
+            }
+            restored.put(ingredient.getId(), new RestoredIngredient(ingredient, total));
+        }
+
+        /* Cook logs record the amount, not the original pantry row. Restored
+           stock therefore becomes one fresh row in the ingredient's default
+           location, with no invented purchase or expiry date. */
+        for (RestoredIngredient restoration : restored.values()) {
+            if (restoration.quantity().signum() > 0) {
+                pantryItemRepository.save(new PantryItem(user, restoration.ingredient(),
+                        restoration.quantity().setScale(3, RoundingMode.HALF_UP)));
+            }
+        }
+        for (CookLog log : logs) {
+            log.markReversed();
+            cookLogRepository.save(log);
+        }
+
+        entry.markNotCooked();
+        planEntryRepository.save(entry);
+        planEntryRepository.flush();
+        reconcileRecipeCookingHistory(entry.getRecipe());
+        result.recordUncooked();
+    }
+
+    private void reconcileRecipeCookingHistory(Recipe recipe) {
+        int cookedCount = Math.toIntExact(planEntryRepository.countByRecipeAndCookedTrue(recipe));
+        Instant mostRecentCookedAt = planEntryRepository
+                .findFirstByRecipeAndCookedTrueOrderByCookedAtDesc(recipe)
+                .map(PlanEntry::getCookedAt)
+                .orElse(null);
+        recipe.reconcileCookingHistory(cookedCount, mostRecentCookedAt);
+        recipeRepository.save(recipe);
+    }
+
+    private record RestoredIngredient(Ingredient ingredient, BigDecimal quantity) {
     }
 
 

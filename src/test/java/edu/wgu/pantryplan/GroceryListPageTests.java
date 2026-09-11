@@ -202,6 +202,41 @@ class GroceryListPageTests {
     }
 
     @Test
+    void aCookedMealCanBeUndoneFromThePlanPage() throws Exception {
+        User owner = cook("page-undo-cook@example.com");
+        MealPlan week = plannedWeek(owner);
+        PlanEntry entry = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(week.getId(), owner)).getFirst();
+        AppUserDetails principal = new AppUserDetails(owner);
+
+        mockMvc.perform(post("/meal-plans/{id}/entries/{entryId}/cook", week.getId(), entry.getId())
+                        .with(user(principal))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/meal-plans/" + week.getId()));
+
+        String cookedPage = mockMvc.perform(get("/meal-plans/{id}", week.getId()).with(user(principal)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(cookedPage.contains("Undo cooked"),
+                "each cooked meal exposes its own reversal action");
+        assertTrue(cookedPage.contains("Undo selected cooking"),
+                "selected meals can also be reversed together");
+
+        mockMvc.perform(post("/meal-plans/{id}/entries/{entryId}/uncook", week.getId(), entry.getId())
+                        .with(user(principal))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/meal-plans/" + week.getId()));
+
+        PlanEntry restored = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(week.getId(), owner)).stream()
+                .filter(candidate -> candidate.getId().equals(entry.getId()))
+                .findFirst().orElseThrow();
+        assertFalse(restored.isCooked());
+    }
+
+    @Test
     void tickingAnItemRedirectsBackToThatRow() throws Exception {
         User owner = cook("page-tick@example.com");
         MealPlan week = plannedWeek(owner);

@@ -7,6 +7,7 @@ import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.CookResult;
+import edu.wgu.pantryplan.service.CookUndoResult;
 import edu.wgu.pantryplan.service.GroceryListService;
 import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.RecipeService;
@@ -248,6 +249,17 @@ public class MealPlanController {
         return "redirect:/meal-plans/" + id;
     }
 
+    @PostMapping("/{id}/entries/bulk-uncook")
+    public String markEntriesNotCooked(@AuthenticationPrincipal AppUserDetails principal,
+                                       @PathVariable Long id,
+                                       @org.springframework.web.bind.annotation.RequestParam(required = false)
+                                       Collection<Long> ids,
+                                       RedirectAttributes redirectAttributes) {
+        CookUndoResult result = mealPlanService.markEntriesNotCooked(id, ids, currentUser(principal));
+        addUndoCookFlash(result, redirectAttributes);
+        return "redirect:/meal-plans/" + id;
+    }
+
     @PostMapping("/{id}/entries/{entryId}/cook")
     public String markEntryCooked(@AuthenticationPrincipal AppUserDetails principal,
                                   @PathVariable Long id,
@@ -255,6 +267,16 @@ public class MealPlanController {
                                   RedirectAttributes redirectAttributes) {
         CookResult result = mealPlanService.markEntryCooked(id, entryId, currentUser(principal));
         addCookFlash(result, redirectAttributes);
+        return "redirect:/meal-plans/" + id;
+    }
+
+    @PostMapping("/{id}/entries/{entryId}/uncook")
+    public String markEntryNotCooked(@AuthenticationPrincipal AppUserDetails principal,
+                                     @PathVariable Long id,
+                                     @PathVariable Long entryId,
+                                     RedirectAttributes redirectAttributes) {
+        CookUndoResult result = mealPlanService.markEntryNotCooked(id, entryId, currentUser(principal));
+        addUndoCookFlash(result, redirectAttributes);
         return "redirect:/meal-plans/" + id;
     }
 
@@ -273,6 +295,20 @@ public class MealPlanController {
                     : " ingredient amounts could not be converted to their pantry units.");
         }
         redirectAttributes.addFlashAttribute("message", message);
+    }
+
+    private void addUndoCookFlash(CookUndoResult result, RedirectAttributes redirectAttributes) {
+        if (result.getUncookedCount() > 0) {
+            redirectAttributes.addFlashAttribute("message", "Reversed cooking for "
+                    + result.getUncookedCount()
+                    + (result.getUncookedCount() == 1 ? " meal." : " meals."));
+        } else if (result.getUnrestorableLogCount() == 0) {
+            redirectAttributes.addFlashAttribute("error", "No cooked meals were found in that selection.");
+        }
+        if (result.getUnrestorableLogCount() > 0) {
+            redirectAttributes.addFlashAttribute("error", "Cooking could not be reversed because a pantry "
+                    + "unit changed and the recorded amount cannot be converted safely.");
+        }
     }
 
     @PostMapping("/{id}/delete")

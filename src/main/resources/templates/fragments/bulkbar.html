@@ -6,7 +6,8 @@
   Selection bar shown above a list that supports bulk delete. Hidden until
   something is ticked, so it never takes space it has not earned.
 -->
-<div th:fragment="bar(noun, cookFormId, cookUrl, directDeleteFormId)" class="bulkbar" data-bulk-bar hidden>
+<div th:fragment="bar(noun, cookFormId, cookUrl, directDeleteFormId, undoFormId, undoUrl)"
+     class="bulkbar" data-bulk-bar hidden>
     <span class="bulkbar__count">
         <span data-bulk-count>0</span> selected
     </span>
@@ -17,6 +18,8 @@
             th:attr="data-noun=${noun}">Delete selected</button>
     <button th:if="${cookUrl != null}" type="submit" class="button button--primary button--small"
             th:attr="form=${cookFormId}" th:formaction="${cookUrl}">Mark selected cooked</button>
+    <button th:if="${undoUrl != null}" type="submit" class="button button--quiet button--small"
+            th:attr="form=${undoFormId}" th:formaction="${undoUrl}">Undo selected cooking</button>
     <button type="button" class="linkbutton" data-bulk-clear>Clear selection</button>
 </div>
 

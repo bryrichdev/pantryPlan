@@ -2,6 +2,7 @@ package edu.wgu.pantryplan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,6 +20,7 @@ import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.repository.CookLogRepository;
 import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.CookResult;
+import edu.wgu.pantryplan.service.CookUndoResult;
 import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.PantryService;
@@ -327,6 +329,59 @@ class MealPlanServiceTests {
         assertEquals(new java.math.BigDecimal("200.000"),
                 pantryService.findAll(user).getFirst().getQuantity());
         assertEquals(1, recipeService.requireOwned(chili.getId(), user).getTimesCooked());
+    }
+
+    @Test
+    void undoingCookingRestoresOnlyWhatWasDeductedAndResetsMealHistory() {
+        User user = cook("plan-undo-cook@example.com");
+        Ingredient beans = ingredient(user, "Beans", Unit.GRAM);
+        stock(user, beans, "50");
+        Recipe chili = recipeUsing(user, "Chili", 4, beans, "100", Unit.GRAM);
+        MealPlan created = plan(user, "Undo week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(chili, MONDAY, MealSlot.DINNER, 4), user);
+
+        mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+        CookUndoResult result = mealPlanService.markEntryNotCooked(
+                created.getId(), entry.getId(), user);
+
+        assertEquals(1, result.getUncookedCount());
+        assertEquals(0, new java.math.BigDecimal("50.000").compareTo(
+                pantryService.findAll(user).stream()
+                        .map(PantryItem::getQuantity)
+                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add)),
+                "undo restores the 50 g actually deducted, not the 100 g recipe requirement");
+        PlanEntry restored = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(created.getId(), user)).getFirst();
+        assertFalse(restored.isCooked());
+        assertTrue(cookLogRepository.findAllByPlanEntryAndReversedFalse(restored).isEmpty(),
+                "the original deduction logs are retained but no longer active");
+        assertEquals(1, cookLogRepository.findAllByPlanEntryOrderByCookedAtDesc(restored).size());
+
+        Recipe refreshed = recipeService.requireOwned(chili.getId(), user);
+        assertEquals(0, refreshed.getTimesCooked());
+        assertNull(refreshed.getLastCookedAt());
+    }
+
+    @Test
+    void undoingOneOfTwoCookedMealsKeepsTheRecipeHistoryForTheOther() {
+        User user = cook("plan-undo-one@example.com");
+        Recipe soup = recipe(user, "Soup", 4);
+        MealPlan created = plan(user, "Two dinners");
+        PlanEntry first = mealPlanService.addEntry(created.getId(),
+                entryFor(soup, MONDAY, MealSlot.DINNER, 4), user);
+        PlanEntry second = mealPlanService.addEntry(created.getId(),
+                entryFor(soup, MONDAY.plusDays(1), MealSlot.DINNER, 4), user);
+
+        mealPlanService.markEntryCooked(created.getId(), first.getId(), user);
+        mealPlanService.markEntryCooked(created.getId(), second.getId(), user);
+        mealPlanService.markEntryNotCooked(created.getId(), second.getId(), user);
+
+        assertEquals(1, recipeService.requireOwned(soup.getId(), user).getTimesCooked());
+        List<PlanEntry> entries = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(created.getId(), user));
+        assertTrue(entries.getFirst().isCooked());
+        assertFalse(entries.get(1).isCooked());
     }
 
     @Test

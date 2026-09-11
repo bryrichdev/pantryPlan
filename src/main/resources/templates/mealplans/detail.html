@@ -46,7 +46,8 @@
     </p>
 
     <div th:replace="~{fragments/bulkbar :: bar('meal', 'entry-bulk-form',
-         @{/meal-plans/{id}/entries/bulk-cook(id=${plan.id})}, 'entry-bulk-form')}"></div>
+         @{/meal-plans/{id}/entries/bulk-cook(id=${plan.id})}, 'entry-bulk-form', 'entry-bulk-form',
+         @{/meal-plans/{id}/entries/bulk-uncook(id=${plan.id})})}"></div>
     <form id="entry-bulk-form" th:action="@{/meal-plans/{id}/entries/bulk-delete(id=${plan.id})}"
           method="post" data-bulk-form></form>
     <label class="meal-select-all" th:if="${entryCount > 0}">
@@ -82,6 +83,11 @@
                               th:action="@{/meal-plans/{id}/entries/{entryId}/cook(id=${plan.id},entryId=${entry.id})}"
                               method="post" class="meal__cook">
                             <button type="submit" class="linkbutton">Mark cooked</button>
+                        </form>
+                        <form th:if="${entry.cooked}"
+                              th:action="@{/meal-plans/{id}/entries/{entryId}/uncook(id=${plan.id},entryId=${entry.id})}"
+                              method="post" class="meal__cook">
+                            <button type="submit" class="linkbutton">Undo cooked</button>
                         </form>
                         <form th:action="@{/meal-plans/{id}/entries/{entryId}/delete(id=${plan.id},entryId=${entry.id})}"
                               method="post" class="meal__remove">

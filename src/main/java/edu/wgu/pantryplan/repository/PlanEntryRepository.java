@@ -14,4 +14,8 @@ public interface PlanEntryRepository extends JpaRepository<PlanEntry, Long> {
     List<PlanEntry> findAllByMealPlanOrderByPlanDateAscMealSlotAsc(MealPlan mealPlan);
 
     boolean existsByRecipe(Recipe recipe);
+
+    long countByRecipeAndCookedTrue(Recipe recipe);
+
+    Optional<PlanEntry> findFirstByRecipeAndCookedTrueOrderByCookedAtDesc(Recipe recipe);
 }

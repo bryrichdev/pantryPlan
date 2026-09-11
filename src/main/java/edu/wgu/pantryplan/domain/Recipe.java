@@ -97,6 +97,19 @@ public class Recipe extends BaseEntity {
         this.lastCookedAt = when;
     }
 
+    /**
+     * Synchronizes the derived cooking counters after a cooked plan entry is
+     * reversed. Entries own the actual history; the recipe keeps this compact
+     * summary for listing and reporting.
+     */
+    public void reconcileCookingHistory(int cookedCount, Instant mostRecentCookedAt) {
+        if (cookedCount < 0) {
+            throw new IllegalArgumentException("Cooked count cannot be negative");
+        }
+        this.timesCooked = cookedCount;
+        this.lastCookedAt = mostRecentCookedAt;
+    }
+
     public User getUser() {
         return user;
     }
