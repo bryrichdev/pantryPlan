@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Account')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <h1>Account</h1>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <p class="notice notice--warn" th:if="${impersonating}">
+        You are viewing as this user. Their name, email, and password are shown
+        for reference, but none of them can be changed from here.
+    </p>
+
+    <section class="section">
+        <h2>Your details</h2>
+        <form th:action="@{/account/profile}" th:object="${profileForm}" method="post" class="form">
+            <div class="field">
+                <label for="displayName">Name</label>
+                <input type="text" id="displayName" th:field="*{displayName}" maxlength="100"
+                       autocomplete="name">
+                <p class="field__error" th:if="${#fields.hasErrors('displayName')}"
+                   th:errors="*{displayName}">Name error</p>
+            </div>
+            <div class="field">
+                <label for="email">Email</label>
+                <input type="email" id="email" th:field="*{email}" maxlength="255"
+                       autocomplete="email">
+                <p class="field__hint">This is what you sign in with.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('email')}"
+                   th:errors="*{email}">Email error</p>
+            </div>
+            <div class="field">
+                <label for="profile-password">Current password</label>
+                <input type="password" id="profile-password" th:field="*{currentPassword}"
+                       autocomplete="current-password">
+                <p class="field__hint">Only needed if you are changing your email.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('currentPassword')}"
+                   th:errors="*{currentPassword}">Password error</p>
+            </div>
+            <button type="submit" class="button button--primary" th:disabled="${impersonating}">Save details</button>
+        </form>
+    </section>
+
+    <section class="section">
+        <h2>Password</h2>
+        <form th:action="@{/account/password}" th:object="${passwordForm}" method="post" class="form">
+            <div class="field">
+                <label for="password-current">Current password</label>
+                <input type="password" id="password-current" th:field="*{currentPassword}"
+                       autocomplete="current-password">
+                <p class="field__error" th:if="${#fields.hasErrors('currentPassword')}"
+                   th:errors="*{currentPassword}">Password error</p>
+            </div>
+            <div class="field">
+                <label for="password-new">New password</label>
+                <input type="password" id="password-new" th:field="*{newPassword}"
+                       autocomplete="new-password" minlength="10" maxlength="72">
+                <p class="field__hint">Between 10 and 72 characters.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('newPassword')}"
+                   th:errors="*{newPassword}">Password error</p>
+            </div>
+            <div class="field">
+                <label for="password-confirm">Confirm new password</label>
+                <input type="password" id="password-confirm" th:field="*{confirmPassword}"
+                       autocomplete="new-password" maxlength="72">
+                <p class="field__error" th:if="${#fields.hasErrors('confirmPassword')}"
+                   th:errors="*{confirmPassword}">Password error</p>
+            </div>
+            <button type="submit" class="button button--primary" th:disabled="${impersonating}">Change password</button>
+        </form>
+    </section>
+
+    <section class="section account-danger">
+        <h2>Delete account</h2>
+        <p>
+            This permanently removes your account and everything in it: recipes,
+            ingredients, pantry, meal plans, grocery lists, and cooking history.
+            It cannot be undone.
+        </p>
+        <form th:action="@{/account/delete}" th:object="${deleteForm}" method="post" class="form">
+            <div class="field">
+                <label for="delete-password">Password</label>
+                <input type="password" id="delete-password" th:field="*{currentPassword}"
+                       autocomplete="current-password">
+                <p class="field__error" th:if="${#fields.hasErrors('currentPassword')}"
+                   th:errors="*{currentPassword}">Password error</p>
+            </div>
+            <button type="submit" class="button button--danger" th:disabled="${impersonating}">Delete my account</button>
+        </form>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

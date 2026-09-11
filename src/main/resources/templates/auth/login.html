@@ -18,6 +18,12 @@
             <p class="notice notice--good" th:if="${param.logout}">
                 You are signed out.
             </p>
+            <p class="notice notice--good" th:if="${param.deleted}">
+                Your account and everything in it has been deleted.
+            </p>
+            <p class="notice notice--bad" th:if="${param.removed}">
+                The account you were signed in to no longer exists.
+            </p>
 
             <form th:action="@{/login}" method="post" class="form">
                 <div class="field">

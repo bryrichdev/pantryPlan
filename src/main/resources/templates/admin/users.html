@@ -17,10 +17,21 @@
 
     <div th:replace="~{fragments/layout :: flash}"></div>
 
+    <div th:replace="~{fragments/bulkbar :: bar('account', null, null, null, null, null)}"></div>
+
+    <!-- One standalone form for "View as". Each row's button names it with the
+         form attribute, because the rows already sit inside the bulk delete
+         form and forms cannot be nested. -->
+    <form id="view-as-form" th:action="@{/admin/impersonate}" method="post"></form>
+
+    <form th:action="@{/admin/users/bulk-delete}" method="post" data-bulk-form>
     <table class="table">
         <caption class="visually-hidden">User accounts</caption>
         <thead>
         <tr>
+            <th scope="col" class="table__check">
+                <input type="checkbox" data-select-all aria-label="Select every account that can be deleted">
+            </th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
             <th scope="col">Role</th>
@@ -33,8 +44,13 @@
         </thead>
         <tbody>
         <tr th:each="account : ${users}"
-            th:classappend="${!account.admin and account.enabled} ? 'table__row--link' : ''"
-            th:attr="data-row-activate=${!account.admin and account.enabled} ? '[data-view-as]' : null">
+            th:with="viewable=${!account.admin and account.enabled}, deletable=${!account.admin and account.id != currentUserId}"
+            th:classappend="${viewable} ? 'table__row--link' : ''"
+            th:attr="data-row-activate=${viewable} ? '[data-view-as]' : null">
+            <td class="table__check">
+                <input th:if="${deletable}" type="checkbox" name="ids" th:value="${account.id}" data-select-row
+                       th:attr="aria-label=|Select ${account.displayName}|">
+            </td>
             <td th:text="${account.displayName}">Cook</td>
             <td th:text="${account.email}">cook@example.com</td>
             <td>
@@ -48,16 +64,42 @@
             <td th:text="${account.mealPlanCount}">0</td>
             <td class="table__actions">
                 <span class="muted" th:if="${account.id == currentUserId}">You</span>
-                <form th:if="${!account.admin and account.enabled}"
-                      th:action="@{/admin/impersonate}" method="post" class="inline-form">
-                    <input type="hidden" name="username" th:value="${account.email}">
-                    <button type="submit" class="linkbutton" data-view-as>View as</button>
-                </form>
+                <button th:if="${viewable}" type="submit" form="view-as-form" name="username"
+                        th:value="${account.email}" class="linkbutton" data-view-as>View as</button>
+                <button th:if="${deletable}" type="button" class="linkbutton linkbutton--danger"
+                        data-dialog-open="delete-dialog"
+                        th:attr="data-name=${account.displayName},
+                                 data-entity='account',
+                                 data-delete-url=@{/admin/users/{id}/delete(id=${account.id})}">Delete</button>
             </td>
         </tr>
         </tbody>
     </table>
+    </form>
 </main>
+
+<div th:replace="~{fragments/bulkbar :: dialog}"></div>
+
+<dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
+    <form method="post" class="dialog__form" data-delete-form th:action="@{/admin/users}">
+        <div class="dialog__head">
+            <h2 id="delete-dialog-title" data-delete-heading>Delete account?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-delete-message>Delete this account?</p>
+            <p class="field__hint">
+                Everything in the account goes with it: recipes, ingredients, pantry,
+                meal plans, grocery lists, and cooking history.
+            </p>
+            <p class="notice notice--bad" data-delete-blocked hidden></p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-delete-submit>Delete</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
 
 <footer th:replace="~{fragments/layout :: sitefooter}"></footer>
 </body>

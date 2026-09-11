@@ -369,3 +369,25 @@ h1 {
 }
 
 .impersonation__text { margin: 0; }
+
+/* ---------- account page ---------- */
+
+a.topnav__user {
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+}
+
+a.topnav__user:hover,
+a.topnav__user.is-active {
+    color: var(--herb-deep);
+    border-bottom-color: var(--herb);
+}
+
+.account-danger {
+    max-width: 40rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+}
+
+.account-danger h2 { color: var(--rust); }

@@ -1,12 +1,11 @@
 package edu.wgu.pantryplan.web;
 
 import edu.wgu.pantryplan.security.AppUserDetails;
+import edu.wgu.pantryplan.security.Impersonation;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.switchuser.SwitchUserGrantedAuthority;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -34,16 +33,9 @@ public class CurrentUserAdvice {
      */
     @ModelAttribute("impersonatorName")
     public String impersonatorName() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            return null;
-        }
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (authority instanceof SwitchUserGrantedAuthority switched
-                    && switched.getSource().getPrincipal() instanceof AppUserDetails admin) {
-                return admin.getDisplayName();
-            }
-        }
-        return null;
+        Authentication admin = Impersonation.sourceOf(SecurityContextHolder.getContext().getAuthentication());
+        return admin != null && admin.getPrincipal() instanceof AppUserDetails details
+                ? details.getDisplayName()
+                : null;
     }
 }

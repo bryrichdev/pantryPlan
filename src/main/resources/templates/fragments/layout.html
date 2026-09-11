@@ -57,8 +57,9 @@
         </nav>
 
         <div class="topnav__account">
-            <span sec:authorize="isAuthenticated()" class="topnav__user"
-                  th:text="${currentUserName}">Cook</span>
+            <a sec:authorize="isAuthenticated()" class="topnav__user" th:href="@{/account}"
+               th:classappend="${#strings.startsWith(currentPath, '/account')} ? 'is-active' : ''"
+               th:text="${currentUserName}" title="Account settings">Cook</a>
             <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="inline-form">
                 <button type="submit" class="button button--quiet">Sign out</button>
             </form>

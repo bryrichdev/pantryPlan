@@ -1,5 +1,6 @@
 package edu.wgu.pantryplan.security;
 
+import edu.wgu.pantryplan.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
-import org.springframework.security.web.authentication.switchuser.SwitchUserGrantedAuthority;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
@@ -53,7 +54,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   AppUserDetailsService userDetailsService) throws Exception {
+                                                   AppUserDetailsService userDetailsService,
+                                                   UserRepository userRepository) throws Exception {
         http
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
@@ -90,7 +92,12 @@ public class SecurityConfig {
                                         + "base-uri 'self'; form-action 'self'")))
                 /* SwitchUserFilter sits after the authorization filter in the
                    chain, so the URL rules above run first. */
-                .addFilter(switchUserFilter(userDetailsService));
+                .addFilter(switchUserFilter(userDetailsService))
+                /* Runs once the session's login is loaded and before any
+                   access decision, so a deleted account is signed out rather
+                   than shown an error. Constructed here, not as a bean, for the
+                   same reason as the switch filter below. */
+                .addFilterBefore(new DeletedAccountFilter(userRepository), AuthorizationFilter.class);
         return http.build();
     }
 
@@ -139,7 +146,7 @@ public class SecurityConfig {
      */
     private AuthenticationSuccessHandler impersonationRedirects() {
         return (request, response, authentication) -> {
-            Authentication admin = sourceOf(authentication);
+            Authentication admin = Impersonation.sourceOf(authentication);
             if (admin != null) {
                 log.info("Admin {} started viewing as {}", admin.getName(), authentication.getName());
                 response.sendRedirect(request.getContextPath() + "/dashboard");
@@ -148,18 +155,5 @@ public class SecurityConfig {
                 response.sendRedirect(request.getContextPath() + "/admin/users");
             }
         };
-    }
-
-    /** The admin's own login, if this session is viewing as someone else. */
-    static Authentication sourceOf(Authentication authentication) {
-        if (authentication == null) {
-            return null;
-        }
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (authority instanceof SwitchUserGrantedAuthority switched) {
-                return switched.getSource();
-            }
-        }
-        return null;
     }
 }

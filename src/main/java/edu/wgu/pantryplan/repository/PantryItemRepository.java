@@ -8,6 +8,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 
 /**
  * Four separate finders rather than one query with optional parameters. A
@@ -37,4 +40,12 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, Long> {
             User user, LocalDate cutoff);
 
     boolean existsByIngredient(Ingredient ingredient);
+
+    /**
+     * Bulk delete for account removal. See AccountDeletionService for why the
+     * order of these calls matters. Child rows go through ON DELETE CASCADE.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM PantryItem p WHERE p.user = :user")
+    int deleteAllOwnedBy(@Param("user") User user);
 }

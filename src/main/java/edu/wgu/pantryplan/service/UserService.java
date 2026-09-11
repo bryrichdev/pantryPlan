@@ -1,5 +1,6 @@
 package edu.wgu.pantryplan.service;
 
+import edu.wgu.pantryplan.domain.Role;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.repository.UserRepository;
 import edu.wgu.pantryplan.web.form.RegistrationForm;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Account creation and lookup.
+ * Account creation, lookup, and self-service changes.
  */
 @Service
 public class UserService {
@@ -47,5 +48,46 @@ public class UserService {
     @Transactional(readOnly = true)
     public boolean emailIsTaken(String email) {
         return userRepository.existsByEmailIgnoreCase(email.trim());
+    }
+
+    /** True when the email belongs to an account other than this one. */
+    @Transactional(readOnly = true)
+    public boolean emailIsTakenByAnother(String email, Long userId) {
+        return userRepository.findByEmailIgnoreCase(email.trim())
+                .filter(match -> !match.getId().equals(userId))
+                .isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean passwordMatches(User user, String rawPassword) {
+        return rawPassword != null && passwordEncoder.matches(rawPassword, user.getPasswordHash());
+    }
+
+    /**
+     * @throws EmailAlreadyUsedException when another account has the new email
+     */
+    @Transactional
+    public User updateProfile(Long userId, String displayName, String email) {
+        User user = requireById(userId);
+        String normalized = email.trim().toLowerCase();
+        if (emailIsTakenByAnother(normalized, userId)) {
+            throw new EmailAlreadyUsedException(normalized);
+        }
+        user.setDisplayName(displayName.trim());
+        user.setEmail(normalized);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User changePassword(Long userId, String newRawPassword) {
+        User user = requireById(userId);
+        user.setPasswordHash(passwordEncoder.encode(newRawPassword));
+        return userRepository.save(user);
+    }
+
+    /** Whether removing this account would leave the app with no administrator. */
+    @Transactional(readOnly = true)
+    public boolean isLastAdmin(User user) {
+        return user.getRole() == Role.ROLE_ADMIN && userRepository.countByRole(Role.ROLE_ADMIN) <= 1;
     }
 }
