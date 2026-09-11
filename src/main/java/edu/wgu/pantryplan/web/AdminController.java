@@ -1,5 +1,6 @@
 package edu.wgu.pantryplan.web;
 
+import edu.wgu.pantryplan.audit.AuditLogService;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.AdminService;
 import edu.wgu.pantryplan.service.BulkDeleteResult;
@@ -23,9 +24,27 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AuditLogService auditLogService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, AuditLogService auditLogService) {
         this.adminService = adminService;
+        this.auditLogService = auditLogService;
+    }
+
+    /**
+     * The audit log, newest first, fifty to a page. Filters arrive as query
+     * parameters so a filtered view can be bookmarked or shared.
+     */
+    @GetMapping("/logs")
+    public String logs(@RequestParam(name = "table", required = false) String table,
+                       @RequestParam(name = "action", required = false) String action,
+                       @RequestParam(name = "account", required = false) String account,
+                       @RequestParam(name = "page", defaultValue = "0") int page,
+                       Model model) {
+        model.addAttribute("log", auditLogService.search(table, action, account, page));
+        model.addAttribute("tables", AuditLogService.TABLES);
+        model.addAttribute("actions", AuditLogService.ACTIONS);
+        return "admin/logs";
     }
 
     @GetMapping("/users")

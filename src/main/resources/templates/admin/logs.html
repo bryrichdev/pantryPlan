@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Logs')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Logs</h1>
+            <p class="pagehead__note">
+                Every change to account data, newest first: who made it, what it
+                was, and when. Changes made while viewing as someone name the
+                admin too. Password hashes are never recorded.
+            </p>
+        </div>
+    </div>
+
+    <form th:action="@{/admin/logs}" method="get" class="filters">
+        <div class="filters__field">
+            <label for="log-table">Record type</label>
+            <select id="log-table" name="table">
+                <option value="">All</option>
+                <option th:each="entry : ${tables}" th:value="${entry.key}" th:text="${entry.value}"
+                        th:selected="${entry.key == log.table}">Recipes</option>
+            </select>
+        </div>
+        <div class="filters__field">
+            <label for="log-action">Change</label>
+            <select id="log-action" name="action">
+                <option value="">All</option>
+                <option th:each="entry : ${actions}" th:value="${entry.key}" th:text="${entry.value}"
+                        th:selected="${entry.key == log.action}">Created</option>
+            </select>
+        </div>
+        <div class="filters__field">
+            <label for="log-account">Account</label>
+            <input type="search" id="log-account" name="account" th:value="${log.actor}"
+                   placeholder="Part of an email">
+        </div>
+        <div class="filters__field filters__field--actions">
+            <button type="submit" class="button button--quiet">Filter</button>
+            <a th:if="${log.filtered}" th:href="@{/admin/logs}" class="searchbar__clear">Clear</a>
+        </div>
+    </form>
+
+    <div class="empty" th:if="${#lists.isEmpty(log.entries)}">
+        <p th:if="${log.filtered}">No changes match those filters.</p>
+        <p th:unless="${log.filtered}">Nothing has been recorded yet.</p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(log.entries)}">
+        <caption class="visually-hidden">Recorded changes</caption>
+        <thead>
+        <tr>
+            <th scope="col">When</th>
+            <th scope="col">Account</th>
+            <th scope="col">Change</th>
+            <th scope="col">Record</th>
+            <th scope="col">Details</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${log.entries}">
+            <td class="logs__when" th:text="${@fmt.dateTime(entry.occurredAt)}">Sep 11, 2026 at 3:04 PM</td>
+            <td>
+                <span th:if="${entry.actor != null}" th:text="${entry.actor}">cook@example.com</span>
+                <span th:if="${entry.actor == null}" class="muted">System or signed out</span>
+                <span th:if="${entry.impersonator != null}" class="logs__via"
+                      th:text="|by admin ${entry.impersonator}|">by admin</span>
+            </td>
+            <td><span class="pill" th:classappend="${entry.actionPill}" th:text="${entry.actionLabel}">Created</span></td>
+            <td>
+                <th:block th:text="${entry.tableLabel}">Recipes</th:block>
+                <span th:if="${entry.rowId != null}" class="muted" th:text="|#${entry.rowId}|">#12</span>
+            </td>
+            <td class="logs__summary" th:text="${entry.summary}">name: Pilaf → Better pilaf</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <nav class="logs__pager" aria-label="Log pages" th:if="${log.hasNewer or log.hasOlder}">
+        <a th:if="${log.hasNewer}" class="button button--quiet"
+           th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, page=${log.page - 1})}">Newer</a>
+        <span class="muted" th:text="|Page ${log.page + 1}|">Page 1</span>
+        <a th:if="${log.hasOlder}" class="button button--quiet"
+           th:href="@{/admin/logs(table=${log.table}, action=${log.action}, account=${log.actor}, page=${log.page + 1})}">Older</a>
+    </nav>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>
