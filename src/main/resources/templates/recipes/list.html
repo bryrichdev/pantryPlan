@@ -67,7 +67,7 @@
         </p>
     </div>
 
-    <div th:replace="~{fragments/bulkbar :: bar('recipe')}"></div>
+    <div th:replace="~{fragments/bulkbar :: bar('recipe', null, null, null)}"></div>
 
     <form th:action="@{/recipes/bulk-delete}" method="post" data-bulk-form
           th:unless="${#lists.isEmpty(recipes)}">

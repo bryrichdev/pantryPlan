@@ -45,6 +45,15 @@
         then come back and schedule it.
     </p>
 
+    <div th:replace="~{fragments/bulkbar :: bar('meal', 'entry-bulk-form',
+         @{/meal-plans/{id}/entries/bulk-cook(id=${plan.id})}, 'entry-bulk-form')}"></div>
+    <form id="entry-bulk-form" th:action="@{/meal-plans/{id}/entries/bulk-delete(id=${plan.id})}"
+          method="post" data-bulk-form></form>
+    <label class="meal-select-all" th:if="${entryCount > 0}">
+        <input type="checkbox" form="entry-bulk-form" data-select-all>
+        Select every meal
+    </label>
+
     <div class="week">
         <section class="day" th:each="day : ${days}"
                  th:classappend="${day.date.equals(today)} ? 'day--today' : ''">
@@ -57,6 +66,9 @@
 
             <ul class="meals" th:unless="${day.empty}">
                 <li class="meal" th:each="entry : ${day.entries}">
+                    <input type="checkbox" class="meal__check" name="ids" th:value="${entry.id}"
+                           form="entry-bulk-form" data-select-row
+                           th:attr="aria-label=|Select ${entry.recipe.name}|">
                     <div class="meal__slot" th:text="${@fmt.label(entry.mealSlot)}">Dinner</div>
                     <div class="meal__body">
                         <a class="meal__recipe" th:href="@{/recipes/{id}(id=${entry.recipe.id})}"
@@ -65,10 +77,17 @@
                               th:text="|for ${entry.servings}|">for 4</span>
                         <span class="pill pill--good" th:if="${entry.cooked}">Cooked</span>
                     </div>
-                    <form th:action="@{/meal-plans/{id}/entries/{entryId}/delete(id=${plan.id},entryId=${entry.id})}"
-                          method="post" class="meal__remove">
-                        <button type="submit" class="linkbutton linkbutton--danger">Remove</button>
-                    </form>
+                    <div class="meal__actions">
+                        <form th:unless="${entry.cooked}"
+                              th:action="@{/meal-plans/{id}/entries/{entryId}/cook(id=${plan.id},entryId=${entry.id})}"
+                              method="post" class="meal__cook">
+                            <button type="submit" class="linkbutton">Mark cooked</button>
+                        </form>
+                        <form th:action="@{/meal-plans/{id}/entries/{entryId}/delete(id=${plan.id},entryId=${entry.id})}"
+                              method="post" class="meal__remove">
+                            <button type="submit" class="linkbutton linkbutton--danger">Remove</button>
+                        </form>
+                    </div>
                 </li>
             </ul>
 

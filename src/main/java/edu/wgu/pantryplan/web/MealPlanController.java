@@ -5,6 +5,8 @@ import edu.wgu.pantryplan.domain.MealSlot;
 import edu.wgu.pantryplan.domain.PlanEntry;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
+import edu.wgu.pantryplan.service.BulkDeleteResult;
+import edu.wgu.pantryplan.service.CookResult;
 import edu.wgu.pantryplan.service.GroceryListService;
 import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.RecipeService;
@@ -17,6 +19,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -66,10 +69,16 @@ public class MealPlanController {
             MealPlanForm form = new MealPlanForm();
             /* Default to the coming Monday, which is what most people mean by
                "next week" when they sit down to plan. */
-            form.setWeekStartDate(LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)));
+            LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+            form.setWeekStartDate(weekStart);
+            form.setName(defaultPlanName(weekStart));
             model.addAttribute("planForm", form);
         }
         return "mealplans/list";
+    }
+
+    private String defaultPlanName(LocalDate weekStart) {
+        return String.format("%02d/%02d Meal Plan", weekStart.getMonthValue(), weekStart.getDayOfMonth());
     }
 
     @PostMapping
@@ -210,6 +219,60 @@ public class MealPlanController {
         mealPlanService.removeEntry(id, entryId, currentUser(principal));
         redirectAttributes.addFlashAttribute("message", "Meal removed from the plan.");
         return "redirect:/meal-plans/" + id;
+    }
+
+    @PostMapping("/{id}/entries/bulk-delete")
+    public String removeEntries(@AuthenticationPrincipal AppUserDetails principal,
+                                @PathVariable Long id,
+                                @org.springframework.web.bind.annotation.RequestParam(required = false)
+                                Collection<Long> ids,
+                                RedirectAttributes redirectAttributes) {
+        BulkDeleteResult result = mealPlanService.removeEntries(id, ids, currentUser(principal));
+        if (result.getDeletedCount() == 0) {
+            redirectAttributes.addFlashAttribute("error", "No meals were removed.");
+        } else {
+            redirectAttributes.addFlashAttribute("message", "Removed " + result.getDeletedCount()
+                    + (result.getDeletedCount() == 1 ? " meal." : " meals."));
+        }
+        return "redirect:/meal-plans/" + id;
+    }
+
+    @PostMapping("/{id}/entries/bulk-cook")
+    public String markEntriesCooked(@AuthenticationPrincipal AppUserDetails principal,
+                                    @PathVariable Long id,
+                                    @org.springframework.web.bind.annotation.RequestParam(required = false)
+                                    Collection<Long> ids,
+                                    RedirectAttributes redirectAttributes) {
+        CookResult result = mealPlanService.markEntriesCooked(id, ids, currentUser(principal));
+        addCookFlash(result, redirectAttributes);
+        return "redirect:/meal-plans/" + id;
+    }
+
+    @PostMapping("/{id}/entries/{entryId}/cook")
+    public String markEntryCooked(@AuthenticationPrincipal AppUserDetails principal,
+                                  @PathVariable Long id,
+                                  @PathVariable Long entryId,
+                                  RedirectAttributes redirectAttributes) {
+        CookResult result = mealPlanService.markEntryCooked(id, entryId, currentUser(principal));
+        addCookFlash(result, redirectAttributes);
+        return "redirect:/meal-plans/" + id;
+    }
+
+    private void addCookFlash(CookResult result, RedirectAttributes redirectAttributes) {
+        if (result.getCookedCount() == 0) {
+            redirectAttributes.addFlashAttribute("error", "Those meals were already marked as cooked.");
+            return;
+        }
+
+        String message = "Marked " + result.getCookedCount()
+                + (result.getCookedCount() == 1 ? " meal as cooked." : " meals as cooked.");
+        if (result.getUnconvertibleLineCount() > 0) {
+            message += " " + result.getUnconvertibleLineCount()
+                    + (result.getUnconvertibleLineCount() == 1
+                    ? " ingredient amount could not be converted to its pantry unit."
+                    : " ingredient amounts could not be converted to their pantry units.");
+        }
+        redirectAttributes.addFlashAttribute("message", message);
     }
 
     @PostMapping("/{id}/delete")

@@ -7,6 +7,27 @@
     margin-top: 1.5rem;
 }
 
+/* On a wide plan page, four equally sized day cards make a clean first row.
+   Twenty-four tracks let the three remaining cards sit with matching space on
+   either side, keeping Friday through Sunday genuinely centred. */
+@media (min-width: 70rem) {
+    .week { grid-template-columns: repeat(24, minmax(0, 1fr)); }
+
+    .day { grid-column: span 6; }
+
+    .day:nth-child(5) { grid-column: 4 / span 6; }
+}
+
+.meal-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
 .day {
     display: flex;
     flex-direction: column;
@@ -52,7 +73,7 @@
 
 .meal {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto;
     gap: 0.15rem 0.5rem;
     padding: 0.5rem 0;
     border-top: 1px solid var(--rule);
@@ -61,7 +82,7 @@
 .meal:first-child { border-top: 0; }
 
 .meal__slot {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.03em;
@@ -70,6 +91,11 @@
 }
 
 .meal__body { min-width: 0; }
+
+.meal__check {
+    grid-row: 1 / span 3;
+    margin: 0.25rem 0 0;
+}
 
 .meal__recipe {
     display: block;
@@ -84,9 +110,19 @@
     color: var(--ink-soft);
 }
 
-.meal__remove { margin: 0; align-self: start; }
+.meal__actions {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    grid-column: 2 / -1;
+    grid-row: 3;
+    margin-top: 0.2rem;
+}
 
-.meal__remove .linkbutton { margin: 0; font-size: 0.82rem; }
+.meal__cook, .meal__remove { margin: 0; }
+
+.meal__actions .linkbutton { margin: 0; font-size: 0.82rem; }
 
 .day__add {
     align-self: flex-start;

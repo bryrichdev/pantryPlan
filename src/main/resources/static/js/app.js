@@ -169,11 +169,37 @@
             idField.value = trigger.getAttribute("data-id") || "";
             nameField.value = trigger.getAttribute("data-name") || "";
             weekField.value = trigger.getAttribute("data-week") || "";
+            nameField.removeAttribute("data-generated-plan-name");
         } else {
             title.textContent = "New plan";
             idField.value = "";
-            nameField.value = "";
+            syncPlanName(dialog, true);
         }
+    }
+
+    /* Uses the date input's YYYY-MM-DD value directly, avoiding the timezone
+       shift that can happen when a date-only value is passed to Date. */
+    function suggestedPlanName(weekStart) {
+        var parts = (weekStart || "").split("-");
+        if (parts.length !== 3) {
+            return "";
+        }
+        return parts[1] + "/" + parts[2] + " Meal Plan";
+    }
+
+    /* A changed start date updates only the generated default. Once the cook
+       types a name, it belongs to them and date changes leave it alone. */
+    function syncPlanName(dialog, force) {
+        var nameField = dialog.querySelector("#plan-name");
+        var weekField = dialog.querySelector("#plan-week");
+        if (!nameField || !weekField) {
+            return;
+        }
+        if (!force && nameField.value !== "" && !nameField.hasAttribute("data-generated-plan-name")) {
+            return;
+        }
+        nameField.value = suggestedPlanName(weekField.value);
+        nameField.setAttribute("data-generated-plan-name", "");
     }
 
     /*
@@ -272,12 +298,30 @@
         return document.querySelector("[data-bulk-form]");
     }
 
+    /* Meal-plan rows carry a form attribute so their individual cook/remove
+       forms can remain valid siblings rather than becoming nested forms. */
+    function selectionControls(form, selector) {
+        if (!form) {
+            return [];
+        }
+        var controls = Array.prototype.slice.call(form.querySelectorAll(selector));
+        if (form.id) {
+            var external = document.querySelectorAll(selector + "[form='" + form.id + "']");
+            external.forEach(function (control) {
+                if (controls.indexOf(control) === -1) {
+                    controls.push(control);
+                }
+            });
+        }
+        return controls;
+    }
+
     function selectedBoxes() {
         var form = bulkForm();
         if (!form) {
             return [];
         }
-        return Array.prototype.slice.call(form.querySelectorAll("[data-select-row]"))
+        return selectionControls(form, "[data-select-row]")
             .filter(function (box) {
                 return box.checked;
             });
@@ -294,7 +338,7 @@
         if (!form || !bar) {
             return;
         }
-        var boxes = form.querySelectorAll("[data-select-row]");
+        var boxes = selectionControls(form, "[data-select-row]");
         var chosen = selectedBoxes().length;
 
         bar.hidden = chosen === 0;
@@ -303,7 +347,7 @@
             counter.textContent = String(chosen);
         }
 
-        var master = form.querySelector("[data-select-all]");
+        var master = selectionControls(form, "[data-select-all]")[0];
         if (master) {
             master.checked = chosen > 0 && chosen === boxes.length;
             master.indeterminate = chosen > 0 && chosen < boxes.length;
@@ -315,7 +359,7 @@
         if (!form) {
             return;
         }
-        form.querySelectorAll("[data-select-row]").forEach(function (box) {
+        selectionControls(form, "[data-select-row]").forEach(function (box) {
             box.checked = checked;
         });
         refreshSelection();
@@ -478,6 +522,13 @@
             }
             return;
         }
+        if (event.target.matches && event.target.matches("#plan-week")) {
+            var planDialog = event.target.closest("dialog");
+            if (planDialog && !planDialog.querySelector("input[name='id']").value) {
+                syncPlanName(planDialog, false);
+            }
+            return;
+        }
         if (event.target.matches && event.target.matches("#dialog-stock-unit")) {
             var ingredientDialog = event.target.closest("dialog");
             if (ingredientDialog) {
@@ -506,6 +557,10 @@
     /* Typing an amount makes it the cook's own, so a later ingredient change
        leaves it alone. Setting .value from script does not fire this event. */
     document.addEventListener("input", function (event) {
+        if (event.target.matches && event.target.matches("#plan-name")) {
+            event.target.removeAttribute("data-generated-plan-name");
+            return;
+        }
         if (event.target.matches && event.target.matches("#pantry-quantity")) {
             event.target.removeAttribute("data-autofilled");
         }

@@ -1,5 +1,6 @@
 package edu.wgu.pantryplan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -15,6 +16,7 @@ import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientCategory;
 import edu.wgu.pantryplan.domain.MealPlan;
 import edu.wgu.pantryplan.domain.MealSlot;
+import edu.wgu.pantryplan.domain.PlanEntry;
 import edu.wgu.pantryplan.domain.Recipe;
 import edu.wgu.pantryplan.domain.StorageLocation;
 import edu.wgu.pantryplan.domain.Unit;
@@ -33,6 +35,7 @@ import edu.wgu.pantryplan.web.form.RecipeLineForm;
 import edu.wgu.pantryplan.web.form.RegistrationForm;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -162,6 +165,11 @@ class GroceryListPageTests {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertTrue(before.contains("Build grocery list"));
+        assertTrue(before.contains("entry-bulk-form"), "the plan page renders meal selection controls");
+        assertTrue(before.contains("form=\"entry-bulk-form\""),
+                "selected meal deletion submits directly through the bulk form");
+        assertTrue(before.contains("Mark selected cooked"), "the bulk cook action is available");
+        assertTrue(before.contains("Mark cooked"), "each uncooked meal has its own cook action");
 
         GroceryList list = groceryListService.generate(week.getId(), owner, MONDAY);
 
@@ -169,6 +177,28 @@ class GroceryListPageTests {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertTrue(after.contains("/grocery-lists/" + list.getId()), "the plan links to its list");
+    }
+
+    @Test
+    void bulkDeletingMealsOnlyRemovesTheSelectedPlanEntries() throws Exception {
+        User owner = cook("page-bulk-delete@example.com");
+        MealPlan week = plannedWeek(owner);
+        List<PlanEntry> scheduled = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(week.getId(), owner));
+        PlanEntry selected = scheduled.getFirst();
+        Long recipeId = selected.getRecipe().getId();
+
+        mockMvc.perform(post("/meal-plans/{id}/entries/bulk-delete", week.getId())
+                        .param("ids", selected.getId().toString())
+                        .with(user(new AppUserDetails(owner)))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/meal-plans/" + week.getId()));
+
+        assertEquals(1, mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(week.getId(), owner)).size());
+        assertEquals(0, recipeService.requireOwned(recipeId, owner).getTimesCooked(),
+                "deleting a scheduled entry never marks or cooks its recipe");
     }
 
     @Test

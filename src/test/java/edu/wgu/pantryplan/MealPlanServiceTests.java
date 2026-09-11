@@ -8,14 +8,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import edu.wgu.pantryplan.domain.MealPlan;
 import edu.wgu.pantryplan.domain.MealSlot;
 import edu.wgu.pantryplan.domain.PlanEntry;
+import edu.wgu.pantryplan.domain.CookLog;
+import edu.wgu.pantryplan.domain.Ingredient;
+import edu.wgu.pantryplan.domain.IngredientCategory;
+import edu.wgu.pantryplan.domain.PantryItem;
 import edu.wgu.pantryplan.domain.Recipe;
+import edu.wgu.pantryplan.domain.StorageLocation;
+import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
+import edu.wgu.pantryplan.repository.CookLogRepository;
+import edu.wgu.pantryplan.service.BulkDeleteResult;
+import edu.wgu.pantryplan.service.CookResult;
+import edu.wgu.pantryplan.service.IngredientService;
 import edu.wgu.pantryplan.service.MealPlanService;
+import edu.wgu.pantryplan.service.PantryService;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.MealPlanForm;
+import edu.wgu.pantryplan.web.form.IngredientForm;
+import edu.wgu.pantryplan.web.form.PantryItemForm;
 import edu.wgu.pantryplan.web.form.PlanEntryForm;
 import edu.wgu.pantryplan.web.form.RecipeForm;
+import edu.wgu.pantryplan.web.form.RecipeLineForm;
 import edu.wgu.pantryplan.web.form.RegistrationForm;
 import java.time.LocalDate;
 import java.util.List;
@@ -38,6 +52,15 @@ class MealPlanServiceTests {
 
     @Autowired
     private RecipeService recipeService;
+
+    @Autowired
+    private IngredientService ingredientService;
+
+    @Autowired
+    private PantryService pantryService;
+
+    @Autowired
+    private CookLogRepository cookLogRepository;
 
     @Autowired
     private UserService userService;
@@ -74,6 +97,36 @@ class MealPlanServiceTests {
         return form;
     }
 
+    private Ingredient ingredient(User user, String name, Unit stockUnit) {
+        IngredientForm form = new IngredientForm();
+        form.setName(name);
+        form.setCategory(IngredientCategory.OTHER);
+        form.setStockUnit(stockUnit);
+        form.setDefaultLocation(StorageLocation.PANTRY);
+        return ingredientService.create(form, user);
+    }
+
+    private PantryItem stock(User user, Ingredient ingredient, String quantity) {
+        PantryItemForm form = new PantryItemForm();
+        form.setIngredientId(ingredient.getId());
+        form.setQuantity(new java.math.BigDecimal(quantity));
+        form.setLocation(StorageLocation.PANTRY);
+        return pantryService.create(form, user);
+    }
+
+    private Recipe recipeUsing(User user, String name, int servings, Ingredient ingredient,
+                               String quantity, Unit unit) {
+        RecipeForm form = new RecipeForm();
+        form.setName(name);
+        form.setServings(servings);
+        RecipeLineForm line = new RecipeLineForm();
+        line.setIngredientId(ingredient.getId());
+        line.setQuantity(new java.math.BigDecimal(quantity));
+        line.setUnit(unit);
+        form.getLines().add(line);
+        return recipeService.create(form, user);
+    }
+
     @Test
     void createsAPlanCoveringSevenDays() {
         User user = cook("plan-create@example.com");
@@ -100,6 +153,7 @@ class MealPlanServiceTests {
         User user = cook("plan-order@example.com");
         MealPlan created = plan(user, "Ordered week");
         Recipe eggs = recipe(user, "Scrambled eggs", 2);
+        Recipe sandwich = recipe(user, "Turkey sandwich", 1);
         Recipe stew = recipe(user, "Beef stew", 6);
 
         mealPlanService.addEntry(created.getId(),
@@ -107,17 +161,20 @@ class MealPlanServiceTests {
         mealPlanService.addEntry(created.getId(),
                 entryFor(eggs, MONDAY, MealSlot.BREAKFAST, 2), user);
         mealPlanService.addEntry(created.getId(),
+                entryFor(sandwich, MONDAY, MealSlot.LUNCH, 1), user);
+        mealPlanService.addEntry(created.getId(),
                 entryFor(stew, MONDAY, MealSlot.DINNER, 4), user);
 
         List<PlanEntry> ordered = mealPlanService.entriesInOrder(
                 mealPlanService.requireOwned(created.getId(), user));
 
-        assertEquals(3, ordered.size());
+        assertEquals(4, ordered.size());
         assertEquals(MONDAY, ordered.get(0).getPlanDate());
         assertEquals(MealSlot.BREAKFAST, ordered.get(0).getMealSlot(),
-                "breakfast comes before dinner on the same day");
-        assertEquals(MealSlot.DINNER, ordered.get(1).getMealSlot());
-        assertEquals(MONDAY.plusDays(1), ordered.get(2).getPlanDate());
+                "breakfast comes first on the same day");
+        assertEquals(MealSlot.LUNCH, ordered.get(1).getMealSlot());
+        assertEquals(MealSlot.DINNER, ordered.get(2).getMealSlot());
+        assertEquals(MONDAY.plusDays(1), ordered.get(3).getPlanDate());
     }
 
     @Test
@@ -221,5 +278,77 @@ class MealPlanServiceTests {
         assertTrue(mealPlanService.findAll(user).isEmpty());
         assertFalse(recipeService.findAll(user).isEmpty(),
                 "the recipe itself survives the plan being deleted");
+    }
+
+    @Test
+    void cookingADinnerScalesIngredientsAndRemovesDepletedPantryRows() {
+        User user = cook("plan-cook-deplete@example.com");
+        Ingredient rice = ingredient(user, "Rice", Unit.GRAM);
+        stock(user, rice, "50");
+        stock(user, rice, "100");
+        Recipe risotto = recipeUsing(user, "Risotto", 4, rice, "100", Unit.GRAM);
+        MealPlan created = plan(user, "Cooked week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(risotto, MONDAY, MealSlot.DINNER, 8), user);
+
+        CookResult result = mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+
+        assertEquals(1, result.getCookedCount());
+        assertTrue(pantryService.findAll(user).isEmpty(),
+                "200 g needed for eight servings consumes the 150 g on hand without going below zero");
+        PlanEntry cooked = mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(created.getId(), user)).getFirst();
+        assertTrue(cooked.isCooked());
+        assertEquals(1, recipeService.requireOwned(risotto.getId(), user).getTimesCooked());
+        List<CookLog> logs = cookLogRepository.findAllByPlanEntryAndReversedFalse(cooked);
+        assertEquals(2, logs.size(),
+                "each pantry row consumed is retained in the cooking audit");
+        assertEquals(0, new java.math.BigDecimal("150.000").compareTo(logs.stream()
+                .map(CookLog::getQuantityDeducted)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add)));
+    }
+
+    @Test
+    void cookingTheSameMealTwiceNeverDeductsPantryTwice() {
+        User user = cook("plan-cook-repeat@example.com");
+        Ingredient beans = ingredient(user, "Beans", Unit.GRAM);
+        stock(user, beans, "300");
+        Recipe chili = recipeUsing(user, "Chili", 4, beans, "100", Unit.GRAM);
+        MealPlan created = plan(user, "Repeat-safe week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(chili, MONDAY, MealSlot.DINNER, 4), user);
+
+        CookResult first = mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+        CookResult second = mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+
+        assertEquals(1, first.getCookedCount());
+        assertEquals(0, second.getCookedCount());
+        assertEquals(1, second.getAlreadyCookedCount());
+        assertEquals(new java.math.BigDecimal("200.000"),
+                pantryService.findAll(user).getFirst().getQuantity());
+        assertEquals(1, recipeService.requireOwned(chili.getId(), user).getTimesCooked());
+    }
+
+    @Test
+    void bulkActionsStayInsideTheSelectedPlan() {
+        User user = cook("plan-bulk-actions@example.com");
+        Recipe soup = recipe(user, "Soup", 4);
+        MealPlan first = plan(user, "First week");
+        MealPlanForm nextWeek = new MealPlanForm();
+        nextWeek.setName("Second week");
+        nextWeek.setWeekStartDate(MONDAY.plusDays(7));
+        MealPlan second = mealPlanService.create(nextWeek, user);
+        PlanEntry inFirst = mealPlanService.addEntry(first.getId(),
+                entryFor(soup, MONDAY, MealSlot.DINNER, 4), user);
+        PlanEntry inSecond = mealPlanService.addEntry(second.getId(),
+                entryFor(soup, MONDAY.plusDays(7), MealSlot.DINNER, 4), user);
+
+        BulkDeleteResult result = mealPlanService.removeEntries(first.getId(),
+                List.of(inFirst.getId(), inSecond.getId()), user);
+
+        assertEquals(1, result.getDeletedCount());
+        assertEquals(1, result.getMissingCount());
+        assertEquals(1, mealPlanService.entriesInOrder(
+                mealPlanService.requireOwned(second.getId(), user)).size());
     }
 }

@@ -1,16 +1,25 @@
 package edu.wgu.pantryplan.service;
 
+import edu.wgu.pantryplan.domain.CookLog;
+import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.MealPlan;
 import edu.wgu.pantryplan.domain.PlanEntry;
+import edu.wgu.pantryplan.domain.PantryItem;
 import edu.wgu.pantryplan.domain.Recipe;
+import edu.wgu.pantryplan.domain.RecipeLine;
 import edu.wgu.pantryplan.domain.User;
+import edu.wgu.pantryplan.repository.CookLogRepository;
 import edu.wgu.pantryplan.repository.MealPlanRepository;
+import edu.wgu.pantryplan.repository.PantryItemRepository;
 import edu.wgu.pantryplan.repository.PlanEntryRepository;
 import edu.wgu.pantryplan.repository.RecipeRepository;
 import edu.wgu.pantryplan.web.form.AutoFillForm;
 import edu.wgu.pantryplan.web.form.MealPlanForm;
 import edu.wgu.pantryplan.domain.MealSlot;
 import edu.wgu.pantryplan.web.form.PlanEntryForm;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,15 +43,21 @@ public class MealPlanService {
     private final PlanEntryRepository planEntryRepository;
     private final RecipeRepository recipeRepository;
     private final PantryCoverageService coverageService;
+    private final PantryItemRepository pantryItemRepository;
+    private final CookLogRepository cookLogRepository;
 
     public MealPlanService(MealPlanRepository mealPlanRepository,
                            PlanEntryRepository planEntryRepository,
                            RecipeRepository recipeRepository,
-                           PantryCoverageService coverageService) {
+                           PantryCoverageService coverageService,
+                           PantryItemRepository pantryItemRepository,
+                           CookLogRepository cookLogRepository) {
         this.mealPlanRepository = mealPlanRepository;
         this.planEntryRepository = planEntryRepository;
         this.recipeRepository = recipeRepository;
         this.coverageService = coverageService;
+        this.pantryItemRepository = pantryItemRepository;
+        this.cookLogRepository = cookLogRepository;
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +87,10 @@ public class MealPlanService {
     public List<PlanEntry> entriesInOrder(MealPlan plan) {
         List<PlanEntry> entries = planEntryRepository
                 .findAllByMealPlanOrderByPlanDateAscMealSlotAsc(plan);
+        /* meal_slot is persisted as text, so SQL's alphabetical order would
+           put dinner ahead of lunch. Keep the display order intentional. */
+        entries.sort(Comparator.comparing(PlanEntry::getPlanDate)
+                .thenComparingInt(entry -> mealSlotOrder(entry.getMealSlot())));
         entries.forEach(entry -> entry.getRecipe().getName());
         return entries;
     }
@@ -83,8 +102,17 @@ public class MealPlanService {
     public List<PlanEntry> entriesOn(MealPlan plan, LocalDate date) {
         return entriesInOrder(plan).stream()
                 .filter(entry -> date.equals(entry.getPlanDate()))
-                .sorted(Comparator.comparing(PlanEntry::getMealSlot))
+                .sorted(Comparator.comparingInt(entry -> mealSlotOrder(entry.getMealSlot())))
                 .toList();
+    }
+
+    private int mealSlotOrder(MealSlot slot) {
+        return switch (slot) {
+            case BREAKFAST -> 0;
+            case LUNCH -> 1;
+            case DINNER -> 2;
+            case SNACK -> 3;
+        };
     }
 
     @Transactional
@@ -142,6 +170,118 @@ public class MealPlanService {
                         "No entry " + entryId + " on this plan"));
         plan.removeEntry(entry);
         mealPlanRepository.save(plan);
+    }
+
+    /**
+     * Removes the selected meals from a plan. IDs outside this plan (including
+     * another account's) are ignored and reported as missing.
+     */
+    @Transactional
+    public BulkDeleteResult removeEntries(Long planId, java.util.Collection<Long> entryIds, User user) {
+        MealPlan plan = requireOwned(planId, user);
+        BulkDeleteResult result = new BulkDeleteResult();
+        if (entryIds == null) {
+            return result;
+        }
+
+        Set<Long> uniqueIds = new HashSet<>(entryIds);
+        uniqueIds.remove(null);
+        for (Long entryId : uniqueIds) {
+            PlanEntry entry = planEntryRepository.findByIdAndMealPlan(entryId, plan).orElse(null);
+            if (entry == null) {
+                result.recordMissing();
+                continue;
+            }
+            plan.removeEntry(entry);
+            result.recordDeleted();
+        }
+        mealPlanRepository.save(plan);
+        return result;
+    }
+
+    /**
+     * Marks selected scheduled meals as cooked and deducts their recipe lines
+     * from the owner's pantry. A pantry row is never allowed below zero; rows
+     * emptied by the deduction are removed entirely.
+     */
+    @Transactional
+    public CookResult markEntriesCooked(Long planId, java.util.Collection<Long> entryIds, User user) {
+        MealPlan plan = requireOwned(planId, user);
+        CookResult result = new CookResult();
+        if (entryIds == null) {
+            return result;
+        }
+
+        Instant cookedAt = Instant.now();
+        Set<Long> uniqueIds = new HashSet<>(entryIds);
+        uniqueIds.remove(null);
+        for (Long entryId : uniqueIds) {
+            PlanEntry entry = planEntryRepository.findByIdAndMealPlan(entryId, plan).orElse(null);
+            if (entry == null) {
+                result.recordMissing();
+                continue;
+            }
+            if (entry.isCooked()) {
+                result.recordAlreadyCooked();
+                continue;
+            }
+            cook(entry, user, cookedAt, result);
+        }
+        return result;
+    }
+
+    /** Marks one entry cooked; see {@link #markEntriesCooked(Long, java.util.Collection, User)}. */
+    @Transactional
+    public CookResult markEntryCooked(Long planId, Long entryId, User user) {
+        List<Long> entryIds = new ArrayList<>();
+        entryIds.add(entryId);
+        return markEntriesCooked(planId, entryIds, user);
+    }
+
+    private void cook(PlanEntry entry, User user, Instant cookedAt, CookResult result) {
+        Recipe recipe = entry.getRecipe();
+        for (RecipeLine line : recipe.getLines()) {
+            BigDecimal needed = coverageService.neededInStockUnit(line, entry.getServings()).orElse(null);
+            if (needed == null) {
+                result.recordUnconvertibleLine();
+                continue;
+            }
+            deductIngredient(user, entry, line.getIngredient(), needed, cookedAt);
+        }
+
+        entry.markCooked(cookedAt);
+        recipe.recordCooked(cookedAt);
+        planEntryRepository.save(entry);
+        recipeRepository.save(recipe);
+        result.recordCooked();
+    }
+
+    private void deductIngredient(User user, PlanEntry entry, Ingredient ingredient,
+                                  BigDecimal requested, Instant cookedAt) {
+        BigDecimal remaining = requested.setScale(3, RoundingMode.HALF_UP);
+        List<PantryItem> pantryRows = new ArrayList<>(
+                pantryItemRepository.findAllByUserAndIngredient(user, ingredient));
+        pantryRows.sort(Comparator
+                .comparing(PantryItem::getExpiresOn, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(PantryItem::getId));
+
+        for (PantryItem item : pantryRows) {
+            if (remaining.signum() <= 0) {
+                break;
+            }
+            BigDecimal available = item.getQuantity();
+            BigDecimal deducted = available.min(remaining);
+            item.deduct(deducted);
+            remaining = remaining.subtract(deducted);
+
+            if (deducted.signum() > 0) {
+                cookLogRepository.save(new CookLog(user, entry, ingredient, deducted,
+                        ingredient.getStockUnit(), cookedAt));
+            }
+            if (item.getQuantity().signum() == 0) {
+                pantryItemRepository.delete(item);
+            }
+        }
     }
 
 
