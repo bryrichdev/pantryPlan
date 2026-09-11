@@ -13,6 +13,7 @@ import edu.wgu.pantryplan.repository.PlanEntryRepository;
 import edu.wgu.pantryplan.repository.RecipeRepository;
 import edu.wgu.pantryplan.web.form.RecipeForm;
 import edu.wgu.pantryplan.web.form.RecipeLineForm;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -220,6 +221,33 @@ public class RecipeService {
             throw new RecipeInUseException(recipe.getName(), reason);
         }
         recipeRepository.delete(recipe);
+    }
+
+    /**
+     * Deletes selected recipes independently, retaining any that are still
+     * scheduled in a meal plan. This gives the list page a safe bulk action
+     * without letting one protected recipe block all of the others.
+     */
+    @Transactional
+    public BulkDeleteResult deleteAll(Collection<Long> ids, User user) {
+        BulkDeleteResult result = new BulkDeleteResult();
+        if (ids == null || ids.isEmpty()) {
+            return result;
+        }
+        for (Long id : ids) {
+            Recipe recipe = recipeRepository.findByIdAndUser(id, user).orElse(null);
+            if (recipe == null) {
+                result.recordMissing();
+                continue;
+            }
+            if (describeReferences(recipe) != null) {
+                result.recordBlocked(recipe.getName());
+                continue;
+            }
+            recipeRepository.delete(recipe);
+            result.recordDeleted();
+        }
+        return result;
     }
 
     /**

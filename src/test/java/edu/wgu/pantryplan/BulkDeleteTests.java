@@ -6,21 +6,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.IngredientCategory;
+import edu.wgu.pantryplan.domain.MealPlan;
+import edu.wgu.pantryplan.domain.MealSlot;
 import edu.wgu.pantryplan.domain.PantryItem;
+import edu.wgu.pantryplan.domain.Recipe;
 import edu.wgu.pantryplan.domain.StorageLocation;
 import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.IngredientService;
+import edu.wgu.pantryplan.service.MealPlanService;
 import edu.wgu.pantryplan.service.PantryService;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.IngredientForm;
+import edu.wgu.pantryplan.web.form.MealPlanForm;
 import edu.wgu.pantryplan.web.form.PantryItemForm;
+import edu.wgu.pantryplan.web.form.PlanEntryForm;
 import edu.wgu.pantryplan.web.form.RecipeForm;
 import edu.wgu.pantryplan.web.form.RecipeLineForm;
 import edu.wgu.pantryplan.web.form.RegistrationForm;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +45,9 @@ class BulkDeleteTests {
 
     @Autowired
     private PantryService pantryService;
+
+    @Autowired
+    private MealPlanService mealPlanService;
 
     @Autowired
     private RecipeService recipeService;
@@ -81,6 +91,13 @@ class BulkDeleteTests {
         line.setUnit(Unit.GRAM);
         form.getLines().add(line);
         recipeService.create(form, user);
+    }
+
+    private Recipe recipe(User user, String name) {
+        RecipeForm form = new RecipeForm();
+        form.setName(name);
+        form.setServings(4);
+        return recipeService.create(form, user);
     }
 
     @Test
@@ -157,6 +174,49 @@ class BulkDeleteTests {
         assertEquals(2, result.getDeletedCount());
         assertFalse(result.hasBlocked(), "nothing references a pantry row");
         assertEquals(1, pantryService.findAll(user).size());
+    }
+
+    @Test
+    void deletesSelectedRecipesWithoutCrossingAccountBoundaries() {
+        User mine = cook("bulk-recipes-mine@example.com");
+        User theirs = cook("bulk-recipes-theirs@example.com");
+        Recipe first = recipe(mine, "First recipe");
+        Recipe second = recipe(mine, "Second recipe");
+        Recipe theirRecipe = recipe(theirs, "Private recipe");
+
+        BulkDeleteResult result = recipeService.deleteAll(
+                List.of(first.getId(), second.getId(), theirRecipe.getId()), mine);
+
+        assertEquals(2, result.getDeletedCount());
+        assertEquals(1, result.getMissingCount());
+        assertTrue(recipeService.findAll(mine).isEmpty());
+        assertEquals(1, recipeService.findAll(theirs).size());
+    }
+
+    @Test
+    void keepsScheduledRecipesWhileDeletingOtherSelectedRecipes() {
+        User user = cook("bulk-recipes-scheduled@example.com");
+        Recipe free = recipe(user, "Free recipe");
+        Recipe scheduled = recipe(user, "Scheduled recipe");
+        MealPlanForm planForm = new MealPlanForm();
+        planForm.setName("This week");
+        planForm.setWeekStartDate(LocalDate.of(2026, 9, 14));
+        MealPlan plan = mealPlanService.create(planForm, user);
+        PlanEntryForm entry = new PlanEntryForm();
+        entry.setRecipeId(scheduled.getId());
+        entry.setPlanDate(plan.getWeekStartDate());
+        entry.setMealSlot(MealSlot.DINNER);
+        entry.setServings(4);
+        mealPlanService.addEntry(plan.getId(), entry, user);
+
+        BulkDeleteResult result = recipeService.deleteAll(
+                List.of(free.getId(), scheduled.getId()), user);
+
+        assertEquals(1, result.getDeletedCount());
+        assertEquals(List.of("Scheduled recipe"), result.getBlockedNames());
+        assertEquals(List.of("Scheduled recipe"), recipeService.findAll(user).stream()
+                .map(Recipe::getName)
+                .toList());
     }
 
     @Test

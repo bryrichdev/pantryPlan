@@ -8,6 +8,7 @@ import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.IngredientService;
+import edu.wgu.pantryplan.service.BulkDeleteResult;
 import edu.wgu.pantryplan.service.RecipeInUseException;
 import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
@@ -186,6 +187,27 @@ public class RecipeController {
         } else {
             redirectAttributes.addFlashAttribute("message",
                     "Added " + added + " starter " + (added == 1 ? "recipe." : "recipes."));
+        }
+        return "redirect:/recipes";
+    }
+
+    @PostMapping("/bulk-delete")
+    public String bulkDelete(@AuthenticationPrincipal AppUserDetails principal,
+                             @RequestParam(name = "ids", required = false) List<Long> ids,
+                             RedirectAttributes redirectAttributes) {
+        if (ids == null || ids.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Nothing was selected.");
+            return "redirect:/recipes";
+        }
+
+        BulkDeleteResult result = recipeService.deleteAll(ids, currentUser(principal));
+        if (!result.deletedNothing()) {
+            redirectAttributes.addFlashAttribute("message",
+                    "Deleted " + result.getDeletedCount() + " "
+                            + (result.getDeletedCount() == 1 ? "recipe." : "recipes."));
+        }
+        if (result.hasBlocked()) {
+            redirectAttributes.addFlashAttribute("error", result.describeBlocked());
         }
         return "redirect:/recipes";
     }

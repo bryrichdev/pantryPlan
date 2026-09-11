@@ -67,10 +67,17 @@
         </p>
     </div>
 
-    <table class="table" th:unless="${#lists.isEmpty(recipes)}">
+    <div th:replace="~{fragments/bulkbar :: bar('recipe')}"></div>
+
+    <form th:action="@{/recipes/bulk-delete}" method="post" data-bulk-form
+          th:unless="${#lists.isEmpty(recipes)}">
+    <table class="table">
         <caption class="visually-hidden">Recipes on this account</caption>
         <thead>
         <tr>
+            <th scope="col" class="table__check">
+                <input type="checkbox" data-select-all aria-label="Select every recipe">
+            </th>
             <th scope="col">Name</th>
             <th scope="col">Meal type</th>
             <th scope="col">Nationality</th>
@@ -84,6 +91,10 @@
         <tbody>
         <tr th:each="recipe : ${recipes}" class="table__row--link"
             th:attr="data-row-href=@{/recipes/{id}(id=${recipe.id})}">
+            <td class="table__check">
+                <input type="checkbox" name="ids" th:value="${recipe.id}" data-select-row
+                       th:attr="aria-label=|Select ${recipe.name}|">
+            </td>
             <td><a th:href="@{/recipes/{id}(id=${recipe.id})}" th:text="${recipe.name}">Pesto pasta</a></td>
             <td>
                 <span th:if="${recipe.mealType}" class="badge" th:text="${recipe.mealType}">Dinner</span>
@@ -116,7 +127,10 @@
         </tr>
         </tbody>
     </table>
+    </form>
 </main>
+
+<div th:replace="~{fragments/bulkbar :: dialog}"></div>
 
 <dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
     <form method="post" class="dialog__form" data-delete-form th:action="@{/recipes}">

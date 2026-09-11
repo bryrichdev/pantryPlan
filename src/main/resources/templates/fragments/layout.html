@@ -23,12 +23,24 @@
         <a class="wordmark" th:href="@{/}">PantryPlan</a>
 
         <nav class="topnav__links" sec:authorize="isAuthenticated()">
-            <a th:href="@{/recipes}">Recipes</a>
-            <a th:href="@{/ingredients}">Ingredients</a>
-            <a th:href="@{/pantry}">Pantry</a>
-            <a th:href="@{/meal-plans}">Meal plans</a>
-            <a th:href="@{/grocery-lists}">Grocery lists</a>
-            <a th:href="@{/reports/pantry-stock}">Reports</a>
+            <a th:href="@{/recipes}"
+               th:classappend="${#strings.startsWith(currentPath, '/recipes')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/recipes')} ? 'page' : null">Recipes</a>
+            <a th:href="@{/ingredients}"
+               th:classappend="${#strings.startsWith(currentPath, '/ingredients')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/ingredients')} ? 'page' : null">Ingredients</a>
+            <a th:href="@{/pantry}"
+               th:classappend="${#strings.startsWith(currentPath, '/pantry')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/pantry')} ? 'page' : null">Pantry</a>
+            <a th:href="@{/meal-plans}"
+               th:classappend="${#strings.startsWith(currentPath, '/meal-plans')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/meal-plans')} ? 'page' : null">Meal plans</a>
+            <a th:href="@{/grocery-lists}"
+               th:classappend="${#strings.startsWith(currentPath, '/grocery-lists')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/grocery-lists')} ? 'page' : null">Grocery lists</a>
+            <a th:href="@{/reports/pantry-stock}"
+               th:classappend="${#strings.startsWith(currentPath, '/reports')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/reports')} ? 'page' : null">Reports</a>
         </nav>
 
         <div class="topnav__account">

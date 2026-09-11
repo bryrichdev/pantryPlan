@@ -90,6 +90,12 @@ a:hover { color: var(--herb); }
     border-bottom-color: var(--herb);
 }
 
+.topnav__links a.is-active {
+    color: var(--herb-deep);
+    font-weight: 700;
+    border-bottom-color: var(--herb);
+}
+
 .topnav__account {
     margin-left: auto;
     display: flex;
