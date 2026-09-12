@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import edu.wgu.pantryplan.repository.GroceryListItemRepository;
 
 /**
  * What is on the shelf, for a single cook.
@@ -30,10 +31,14 @@ public class PantryService {
     private final PantryItemRepository pantryItemRepository;
     private final IngredientRepository ingredientRepository;
 
+    private final GroceryListItemRepository groceryListItemRepository;
+
     public PantryService(PantryItemRepository pantryItemRepository,
-                         IngredientRepository ingredientRepository) {
+                         IngredientRepository ingredientRepository,
+                         GroceryListItemRepository groceryListItemRepository) {
         this.pantryItemRepository = pantryItemRepository;
         this.ingredientRepository = ingredientRepository;
+        this.groceryListItemRepository = groceryListItemRepository;
     }
 
     @Transactional(readOnly = true)
@@ -152,6 +157,7 @@ public class PantryService {
                 result.recordMissing();
                 continue;
             }
+            unlinkFromGroceryLists(item);
             pantryItemRepository.delete(item);
             result.recordDeleted();
         }
@@ -163,6 +169,22 @@ public class PantryService {
      */
     @Transactional
     public void delete(Long id, User user) {
-        pantryItemRepository.delete(requireOwned(id, user));
+        PantryItem item = requireOwned(id, user);
+        unlinkFromGroceryLists(item);
+        pantryItemRepository.delete(item);
+    }
+
+    /**
+     * A grocery line remembers the shelf entry it created. The database would
+     * set that link to null on its own, but Hibernate refuses to flush a
+     * reference to a row it is deleting in the same transaction, so the link is
+     * cleared here first. What the line bought stays recorded either way.
+     */
+    private void unlinkFromGroceryLists(PantryItem item) {
+        groceryListItemRepository.findAllByPantryItem(item)
+                .forEach(line -> {
+                    line.unlinkPantryItem();
+                    groceryListItemRepository.save(line);
+                });
     }
 }

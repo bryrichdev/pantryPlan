@@ -480,3 +480,62 @@
     .stockup__fields { grid-template-columns: 1fr; }
     .stockup { max-height: none; }
 }
+
+/* ---------- a grocery line that is already on the shelf ---------- */
+
+.shoplist__stocked {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding-left: 1rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    text-align: right;
+}
+
+.shoplist__stocked-amount {
+    font-weight: 600;
+    color: var(--herb-deep);
+    white-space: nowrap;
+}
+
+.shoplist__stocked-label { white-space: nowrap; }
+
+.shoplist__stocked .linkbutton {
+    margin-left: 0;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 40rem) {
+    /* Under the name rather than beside it: three more words do not fit on a
+       phone next to an ingredient name and its amount. */
+    .shoplist__item { flex-wrap: wrap; }
+
+    .shoplist__stocked {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 0.35rem 0 0 2.85rem;
+    }
+}
+
+/* ---------- page headings that stay put ----------
+   The heading block holds the page's actions, so it stays at the top of the
+   window while a long list scrolls under it. The negative margins let its
+   background span the page's padding, and the positive ones put the spacing
+   back inside. */
+
+@media (min-width: 40.001rem) {
+    .pagehead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        margin: 0 -1.5rem 1.5rem;
+        padding: 1rem 1.5rem;
+        background: var(--paper);
+        border-bottom: 1px solid var(--rule);
+    }
+
+    /* Anchored rows land below the heading rather than behind it. */
+    .shoplist__item, .table tbody tr { scroll-margin-top: 9rem; }
+}

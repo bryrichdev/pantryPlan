@@ -54,6 +54,23 @@ public class GroceryListItem extends BaseEntity {
     @Column(name = "stocked_at")
     private Instant stockedAt;
 
+    /**
+     * How much this line put on the shelf. Kept here rather than read back
+     * through the pantry row, so the list can still say what was bought after
+     * that row is deleted or its amount edited.
+     */
+    @Column(name = "stocked_quantity", precision = 10, scale = 3)
+    private BigDecimal stockedQuantity;
+
+    /**
+     * The shelf entry this line created, or null once it is gone. The database
+     * sets it to null if the pantry row is deleted on its own, so undoing a
+     * line that has already been cleared off the shelf still works.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pantry_item_id")
+    private PantryItem pantryItem;
+
     protected GroceryListItem() {
     }
 
@@ -87,11 +104,32 @@ public class GroceryListItem extends BaseEntity {
      * @throws IllegalStateException if it has already been stocked, so a
      *     resubmitted form cannot add the same shopping to the pantry twice
      */
-    public void markStocked(Instant when) {
+    public void markStocked(Instant when, PantryItem created, BigDecimal quantity) {
         if (stockedAt != null) {
             throw new IllegalStateException("Already added to the pantry");
         }
         this.stockedAt = when;
+        this.pantryItem = created;
+        this.stockedQuantity = quantity;
+    }
+
+    /**
+     * Puts the line back to bought but not put away, so it can be stocked
+     * again. The shelf entry itself is removed by the service.
+     */
+    public void clearStock() {
+        this.stockedAt = null;
+        this.pantryItem = null;
+        this.stockedQuantity = null;
+    }
+
+    /**
+     * Drops the link to a shelf entry that has been deleted from the pantry
+     * page. What this line bought is still recorded; there is just no row left
+     * for Undo to remove.
+     */
+    public void unlinkPantryItem() {
+        this.pantryItem = null;
     }
 
     public boolean isStocked() {
@@ -153,5 +191,18 @@ public class GroceryListItem extends BaseEntity {
 
     public Instant getStockedAt() {
         return stockedAt;
+    }
+
+    public BigDecimal getStockedQuantity() {
+        return stockedQuantity;
+    }
+
+    public PantryItem getPantryItem() {
+        return pantryItem;
+    }
+
+    /** The unit the stocked amount is in: always the ingredient's stocking unit. */
+    public Unit getStockedUnit() {
+        return ingredient.getStockUnit();
     }
 }

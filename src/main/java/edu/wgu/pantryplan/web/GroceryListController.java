@@ -269,6 +269,23 @@ public class GroceryListController {
         return "redirect:/grocery-lists/" + id;
     }
 
+    /**
+     * Takes one line back off the shelf. A redirect rather than a background
+     * request: the row's whole look changes, and undoing happens once in a
+     * while rather than once per item like ticking.
+     */
+    @PostMapping("/{id}/items/{itemId}/unstock")
+    public String undoStock(@AuthenticationPrincipal AppUserDetails principal,
+                            @PathVariable Long id,
+                            @PathVariable Long itemId,
+                            RedirectAttributes redirectAttributes) {
+        boolean removed = groceryListService.undoStock(id, itemId, currentUser(principal));
+        redirectAttributes.addFlashAttribute("message", removed
+                ? "Taken back off the shelf. The item is ready to put away again."
+                : "That pantry entry was already gone, so only the list was updated.");
+        return "redirect:/grocery-lists/" + id;
+    }
+
     @PostMapping("/{id}/delete")
     public String delete(@AuthenticationPrincipal AppUserDetails principal,
                          @PathVariable Long id,

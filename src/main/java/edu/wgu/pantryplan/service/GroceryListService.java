@@ -4,6 +4,7 @@ import edu.wgu.pantryplan.domain.GroceryList;
 import edu.wgu.pantryplan.domain.GroceryListItem;
 import edu.wgu.pantryplan.domain.Ingredient;
 import edu.wgu.pantryplan.domain.MealPlan;
+import edu.wgu.pantryplan.domain.PantryItem;
 import edu.wgu.pantryplan.domain.PlanEntry;
 import edu.wgu.pantryplan.domain.RecipeLine;
 import edu.wgu.pantryplan.domain.Unit;
@@ -83,6 +84,41 @@ public class GroceryListService {
                 .toList();
     }
 
+    /**
+     * Takes one line back off the shelf: the pantry row it created is deleted
+     * and the line becomes bought but not put away, ready to stock again.
+     *
+     * <p>If that row has already been deleted from the pantry page, the link is
+     * null and only the mark is cleared. Undoing is about this line, not about
+     * whatever the shelf looks like now.
+     *
+     * @return true if a pantry row was deleted, false if there was none left
+     * @throws NoSuchElementException when the line is not this account's, or
+     *     was never put away
+     */
+    @Transactional
+    public boolean undoStock(Long listId, Long itemId, User user) {
+        GroceryList list = requireOwned(listId, user);
+        GroceryListItem item = list.getItems().stream()
+                .filter(candidate -> candidate.getId().equals(itemId))
+                .filter(GroceryListItem::isStocked)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No stocked item " + itemId + " on this list"));
+
+        PantryItem stored = item.getPantryItem();
+        /* The link is cleared first. The pantry row is deleted next, and the
+           database would otherwise refuse while this line still points at it. */
+        item.clearStock();
+        groceryListItemRepository.saveAndFlush(item);
+
+        if (stored == null) {
+            return false;
+        }
+        pantryService.delete(stored.getId(), user);
+        return true;
+    }
+
     /** Bought lines waiting to be put away. */
     @Transactional(readOnly = true)
     public List<GroceryListItem> readyToStock(GroceryList list) {
@@ -124,9 +160,9 @@ public class GroceryListService {
             pantryForm.setLocation(row.getLocation());
             pantryForm.setPurchasedOn(form.getPurchasedOn());
             pantryForm.setExpiresOn(row.getExpiresOn());
-            pantryService.create(pantryForm, user);
+            PantryItem created = pantryService.create(pantryForm, user);
 
-            item.markStocked(now);
+            item.markStocked(now, created, row.getQuantity());
             groceryListItemRepository.save(item);
             stocked++;
         }

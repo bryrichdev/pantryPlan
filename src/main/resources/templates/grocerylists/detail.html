@@ -17,9 +17,8 @@
                     th:if="${groceryList.mealPlan != null}"> from
                 <a th:href="@{/meal-plans/{id}(id=${groceryList.mealPlan.id})}"
                    th:text="${groceryList.mealPlan.name}">This week</a></th:block>.
-                </p>
-                <p class="pagehead__note"><span data-bought-count th:text="${groceryList.purchasedCount()}">3</span> of
-                <span th:text="${groceryList.itemCount()}">12</span> bought.
+                <span data-bought-count th:text="${groceryList.purchasedCount()}">3</span> of
+                <span th:text="${groceryList.itemCount()}">12</span>
             </p>
         </div>
         <div class="actions">
@@ -76,7 +75,6 @@
                     <span class="shoplist__amount"
                           th:text="${@fmt.amount(item.neededQuantity, item.unit)}">0.323 lb</span>
                     <span class="pill pill--warn" th:if="${item.needsReview}">Check pantry</span>
-                    <span class="pill pill--good" th:if="${item.stocked}">In pantry</span>
 
                     <p class="shoplist__note" th:if="${item.needsReview}">
                         <th:block th:text="|Not checked against your pantry: ${reviewReasons.get(item.id)}.|">
@@ -85,10 +83,21 @@
                         <a th:href="@{/ingredients(q=${item.ingredient.name})}">Edit ingredient</a>
                     </p>
                     <p class="shoplist__note"
-                       th:if="${!item.needsReview and item.ingredient.defaultQuantity != null}"
+                       th:if="${!item.needsReview and item.stocked == false and item.ingredient.defaultQuantity != null}"
                        th:text="|Usually ${@fmt.amount(item.ingredient.defaultQuantity, item.ingredient.stockUnit)}|">
                         Usually 5 lb
                     </p>
+                </div>
+
+                <!-- What this line actually put on the shelf, and a way back. -->
+                <div class="shoplist__stocked" th:if="${item.stocked}">
+                    <span class="shoplist__stocked-amount"
+                          th:text="${@fmt.amount(item.stockedQuantity, item.stockedUnit)}">5 lb</span>
+                    <span class="shoplist__stocked-label">in pantry</span>
+                    <form th:action="@{/grocery-lists/{id}/items/{itemId}/unstock(id=${groceryList.id},itemId=${item.id})}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="linkbutton">Undo</button>
+                    </form>
                 </div>
             </li>
         </ul>

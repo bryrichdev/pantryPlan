@@ -381,4 +381,113 @@ class StockUpTests {
 
         assertEquals(1, pantryService.findAll(user).size());
     }
+
+    /* ------------------------------------------------------------- undoing */
+
+    @Test
+    void undoingTakesTheShelfEntryBackOff() {
+        User user = cook("stockup-undo@example.com");
+        Ingredient sugar = ingredient(user, "Sugar", Unit.POUND, null);
+        GroceryList list = listFor(user, "Undo week", recipe(user, "Cake", sugar, "1", Unit.POUND));
+        GroceryListItem item = itemNamed(list, "Sugar");
+        groceryListService.togglePurchased(list.getId(), item.getId(), user);
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "4", StorageLocation.PANTRY, null)), user);
+
+        assertEquals(0, new BigDecimal("4").compareTo(item.getStockedQuantity()),
+                "the list remembers what it put away");
+        assertEquals(1, pantryService.findAll(user).size());
+
+        assertTrue(groceryListService.undoStock(list.getId(), item.getId(), user));
+
+        assertTrue(pantryService.findAll(user).isEmpty(), "the shelf entry is gone");
+        assertFalse(item.isStocked());
+        assertNull(item.getStockedQuantity());
+        assertEquals(List.of("Sugar"), groceryListService.readyToStock(list).stream()
+                .map(waiting -> waiting.getIngredient().getName()).toList());
+    }
+
+    @Test
+    void aLineCanBePutAwayAgainAfterUndoing() {
+        User user = cook("stockup-redo@example.com");
+        Ingredient rice = ingredient(user, "Rice", Unit.POUND, null);
+        GroceryList list = listFor(user, "Redo week", recipe(user, "Pilaf", rice, "1", Unit.POUND));
+        GroceryListItem item = itemNamed(list, "Rice");
+        groceryListService.togglePurchased(list.getId(), item.getId(), user);
+
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "2", StorageLocation.PANTRY, null)), user);
+        groceryListService.undoStock(list.getId(), item.getId(), user);
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "5", StorageLocation.FRIDGE, null)), user);
+
+        List<PantryItem> shelf = pantryService.findAll(user);
+        assertEquals(1, shelf.size(), "one entry, not two");
+        assertEquals(0, new BigDecimal("5").compareTo(shelf.get(0).getQuantity()),
+                "the corrected amount, not the first one");
+    }
+
+    /**
+     * The pantry row can be cleared off the pantry page on its own. The link
+     * goes with it, and undoing then only has the list left to tidy.
+     */
+    @Test
+    void undoingStillWorksWhenTheShelfEntryIsAlreadyGone() {
+        User user = cook("stockup-undo-gone@example.com");
+        Ingredient tea = ingredient(user, "Tea", Unit.OUNCE, null);
+        GroceryList list = listFor(user, "Gone week", recipe(user, "Brew", tea, "1", Unit.OUNCE));
+        GroceryListItem item = itemNamed(list, "Tea");
+        groceryListService.togglePurchased(list.getId(), item.getId(), user);
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "8", StorageLocation.PANTRY, null)), user);
+
+        pantryService.delete(pantryService.findAll(user).get(0).getId(), user);
+
+        assertFalse(groceryListService.undoStock(list.getId(), item.getId(), user),
+                "there was no shelf entry left to remove");
+        assertFalse(item.isStocked(), "but the line is ready to put away again");
+    }
+
+    @Test
+    void onlyAStockedLineCanBeUndoneAndOnlyByItsOwner() {
+        User owner = cook("stockup-undo-owner@example.com");
+        User stranger = cook("stockup-undo-stranger@example.com");
+        Ingredient jam = ingredient(owner, "Jam", Unit.OUNCE, null);
+        GroceryList list = listFor(owner, "Owner undo week", recipe(owner, "Toast", jam, "2", Unit.OUNCE));
+        GroceryListItem item = itemNamed(list, "Jam");
+
+        assertThrows(NoSuchElementException.class,
+                () -> groceryListService.undoStock(list.getId(), item.getId(), owner),
+                "nothing was put away yet");
+
+        groceryListService.togglePurchased(list.getId(), item.getId(), owner);
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "12", StorageLocation.PANTRY, null)), owner);
+
+        assertThrows(NoSuchElementException.class,
+                () -> groceryListService.undoStock(list.getId(), item.getId(), stranger));
+        assertEquals(1, pantryService.findAll(owner).size(), "the owner's shelf is untouched");
+    }
+
+    @Test
+    void theListShowsWhatWasStockedWithAWayBack() throws Exception {
+        User user = cook("stockup-shown@example.com");
+        Ingredient flour = ingredient(user, "Flour", Unit.POUND, null);
+        GroceryList list = listFor(user, "Shown week", recipe(user, "Bread", flour, "1", Unit.POUND));
+        GroceryListItem item = itemNamed(list, "Flour");
+        groceryListService.togglePurchased(list.getId(), item.getId(), user);
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "5", StorageLocation.PANTRY, null)), user);
+
+        String page = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/grocery-lists/{id}", list.getId())
+                        .with(user(new AppUserDetails(user))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(page.contains("5 lb"), "the amount that went on the shelf is shown");
+        assertTrue(page.contains("/items/" + item.getId() + "/unstock"), "with a way to undo it");
+        assertFalse(page.contains("Put 1 bought item away"),
+                "and it is no longer offered in the stock-up dialog");
+    }
 }
