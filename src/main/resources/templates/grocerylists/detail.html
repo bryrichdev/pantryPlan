@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${groceryList.title})}"></head>
-<body>
+<body th:attr="data-open-dialog=${openDialog}">
 <header th:replace="~{fragments/layout :: topnav}"></header>
 
 <main class="page">
@@ -17,10 +17,19 @@
                     th:if="${groceryList.mealPlan != null}"> from
                 <a th:href="@{/meal-plans/{id}(id=${groceryList.mealPlan.id})}"
                    th:text="${groceryList.mealPlan.name}">This week</a></th:block>.
-                <th:block th:text="|${groceryList.purchasedCount()} of ${groceryList.itemCount()} bought.|">3 of 12 bought.</th:block>
+                </p>
+                <p class="pagehead__note"><span data-bought-count th:text="${groceryList.purchasedCount()}">3</span> of
+                <span th:text="${groceryList.itemCount()}">12</span> bought.
             </p>
         </div>
         <div class="actions">
+            <button type="button" class="button button--primary"
+                    th:if="${!#lists.isEmpty(stockableItems)}"
+                    data-dialog-open="stockup-dialog" data-stockup-button
+                    th:disabled="${readyCount == 0}"
+                    th:text="|Put ${readyCount} bought ${readyCount == 1 ? 'item' : 'items'} away|">
+                Put 4 bought items away
+            </button>
             <a class="button button--primary" th:if="${groceryList.itemCount() > 0}"
                th:href="@{/grocery-lists/{id}/print(id=${groceryList.id})}">Print</a>
             <form th:if="${groceryList.mealPlan != null}" th:action="@{/grocery-lists/generate}"
@@ -55,8 +64,9 @@
                 th:id="|item-${item.id}|"
                 th:classappend="${item.purchased} ? 'shoplist__item--bought' : ''">
                 <form th:action="@{/grocery-lists/{id}/items/{itemId}/toggle(id=${groceryList.id},itemId=${item.id})}"
-                      method="post" class="shoplist__toggle">
-                    <button type="submit" class="tick" th:attr="aria-pressed=${item.purchased}">
+                      method="post" class="shoplist__toggle" data-keep-scroll data-tick-form>
+                    <button type="submit" class="tick"
+                            th:attr="aria-pressed=${item.purchased}, data-tick=${item.id}">
                         <span class="visually-hidden"
                               th:text="|Bought ${item.ingredient.name}|">Bought flour</span>
                     </button>
@@ -66,6 +76,7 @@
                     <span class="shoplist__amount"
                           th:text="${@fmt.amount(item.neededQuantity, item.unit)}">0.323 lb</span>
                     <span class="pill pill--warn" th:if="${item.needsReview}">Check pantry</span>
+                    <span class="pill pill--good" th:if="${item.stocked}">In pantry</span>
 
                     <p class="shoplist__note" th:if="${item.needsReview}">
                         <th:block th:text="|Not checked against your pantry: ${reviewReasons.get(item.id)}.|">
@@ -87,6 +98,99 @@
         Rebuilding subtracts your current pantry again and clears these ticks.
     </p>
 </main>
+
+<dialog id="stockup-dialog" class="dialog dialog--wide" aria-labelledby="stockup-dialog-title">
+    <form th:action="@{/grocery-lists/{id}/stock-up(id=${groceryList.id})}" th:object="${stockUpForm}"
+          method="post" class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="stockup-dialog-title">Put the shopping away</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+
+        <div class="dialog__body">
+            <p class="field__hint">
+                Enter what you actually bought, not what the list asked for. Each
+                row becomes a pantry entry. To leave something out, untick it on
+                the list behind this dialog.
+            </p>
+
+            <p class="empty empty--tight" data-stockup-empty hidden>
+                Nothing is ticked yet. Tick what you bought and they will appear here.
+            </p>
+
+            <div class="field">
+                <label for="stockup-purchased">Shopped on</label>
+                <input type="date" id="stockup-purchased" th:field="*{purchasedOn}">
+                <p class="field__error" th:if="${#fields.hasErrors('purchasedOn')}"
+                   th:errors="*{purchasedOn}">Date error</p>
+            </div>
+
+            <ul class="stockup">
+                <!-- A row exists for every line that has not been put away,
+                     ticked or not, and the browser shows the ticked ones. That
+                     way ticking an item never has to reload the page. -->
+                <li class="stockup__row" th:each="item, status : ${stockableItems}"
+                    th:attr="data-stockup-row=${item.id}" th:hidden="${!item.purchased}">
+                    <!-- The line is named by the saved record, not by the form,
+                         so the row cannot claim to be a different ingredient. -->
+                    <input type="hidden" th:field="*{rows[__${status.index}__].itemId}">
+                    <!-- Hidden rather than a checkbox: the tick on the list is
+                         what decides, and this mirrors it for the server. -->
+                    <input type="hidden" th:field="*{rows[__${status.index}__].include}" data-stockup-include>
+
+                    <p class="stockup__name" th:text="${item.ingredient.name}">Flour</p>
+
+                    <p class="stockup__asked stockup__asked--flush">
+                        <th:block th:text="|List asked for ${@fmt.amount(item.neededQuantity, item.unit)}|">
+                            List asked for 0.323 lb
+                        </th:block>
+                        <th:block th:if="${item.needsReview}">— in the recipe's unit, so enter what you bought.</th:block>
+                    </p>
+
+                    <div class="stockup__fields stockup__fields--flush">
+                        <div class="field">
+                            <label th:for="|stockup-qty-${status.index}|">Amount bought</label>
+                            <div class="measure">
+                                <input type="number" th:id="|stockup-qty-${status.index}|"
+                                       th:field="*{rows[__${status.index}__].quantity}"
+                                       step="0.001" min="0.001" inputmode="decimal">
+                                <span class="measure__unit"
+                                      th:text="${item.ingredient.stockUnit.abbreviation}">lb</span>
+                            </div>
+                            <p class="field__error" th:if="${#fields.hasErrors('rows[__${status.index}__].quantity')}"
+                               th:errors="*{rows[__${status.index}__].quantity}">Amount error</p>
+                        </div>
+
+                        <div class="field">
+                            <label th:for="|stockup-loc-${status.index}|">Goes in</label>
+                            <select th:id="|stockup-loc-${status.index}|"
+                                    th:field="*{rows[__${status.index}__].location}">
+                                <option th:each="place : ${locations}" th:value="${place}"
+                                        th:text="${@fmt.label(place)}">Pantry</option>
+                            </select>
+                            <p class="field__error" th:if="${#fields.hasErrors('rows[__${status.index}__].location')}"
+                               th:errors="*{rows[__${status.index}__].location}">Location error</p>
+                        </div>
+
+                        <div class="field">
+                            <label th:for="|stockup-exp-${status.index}|">Use by</label>
+                            <input type="date" th:id="|stockup-exp-${status.index}|"
+                                   th:field="*{rows[__${status.index}__].expiresOn}">
+                            <p class="field__hint">Optional.</p>
+                            <p class="field__error" th:if="${#fields.hasErrors('rows[__${status.index}__].expiresOn')}"
+                               th:errors="*{rows[__${status.index}__].expiresOn}">Expiry error</p>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="dialog__foot">
+            <button type="submit" class="button button--primary" data-stockup-submit>Add to pantry</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
 
 <dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
     <form method="post" class="dialog__form" data-delete-form th:action="@{/grocery-lists}">

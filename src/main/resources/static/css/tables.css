@@ -432,3 +432,51 @@
     .printsheet { max-width: none; padding: 0; }
     .printsheet__bar { display: none; }
 }
+
+/* ---------- putting the shopping away ----------
+   A wider dialog than the rest: each bought line needs an amount, a shelf, and
+   a date side by side, which does not fit the 32rem default. */
+
+.dialog--wide { width: min(46rem, calc(100vw - 2rem)); }
+
+.stockup {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    max-height: 26rem;
+    overflow-y: auto;
+}
+
+.stockup__row {
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--rule);
+}
+
+/* :first-child would still draw a rule when the first row is a hidden one, so
+   the border goes on the bottom of each row instead and the last one drops it. */
+.stockup__row { border-top: 0; border-bottom: 1px solid var(--rule); }
+.stockup__row:last-child { border-bottom: 0; }
+
+.stockup__name {
+    margin: 0;
+    font-weight: 600;
+}
+
+.stockup__asked {
+    margin: 0.1rem 0 0.5rem;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+}
+
+.stockup__fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.75rem;
+}
+
+.stockup__fields .field { margin-bottom: 0; }
+
+@media (max-width: 40rem) {
+    .stockup__fields { grid-template-columns: 1fr; }
+    .stockup { max-height: none; }
+}

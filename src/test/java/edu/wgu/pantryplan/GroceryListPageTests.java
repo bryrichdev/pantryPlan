@@ -236,8 +236,29 @@ class GroceryListPageTests {
         assertFalse(restored.isCooked());
     }
 
+    /**
+     * The page ticks in the background and updates itself, so it asks for an
+     * empty answer rather than a rendered page it would only discard.
+     */
     @Test
-    void tickingAnItemRedirectsBackToThatRow() throws Exception {
+    void tickingFromTheBrowserGetsAnEmptyAnswer() throws Exception {
+        User owner = cook("page-tick-fetch@example.com");
+        MealPlan week = plannedWeek(owner);
+        GroceryList list = groceryListService.generate(week.getId(), owner, MONDAY);
+        GroceryListItem item = list.getItems().get(0);
+
+        mockMvc.perform(post("/grocery-lists/{id}/items/{itemId}/toggle", list.getId(), item.getId())
+                        .with(user(new AppUserDetails(owner)))
+                        .with(csrf())
+                        .header("X-Requested-With", "fetch"))
+                .andExpect(status().isNoContent());
+
+        assertTrue(item.isPurchased(), "the tick was saved");
+    }
+
+    /** Without JavaScript the form posts normally and the browser comes back. */
+    @Test
+    void tickingWithoutJavaScriptRedirectsToTheList() throws Exception {
         User owner = cook("page-tick@example.com");
         MealPlan week = plannedWeek(owner);
         GroceryList list = groceryListService.generate(week.getId(), owner, MONDAY);
@@ -247,7 +268,8 @@ class GroceryListPageTests {
                         .with(user(new AppUserDetails(owner)))
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/grocery-lists/" + list.getId() + "#item-" + item.getId()));
+                /* No fragment: it would scroll the ticked row to the top. */
+                .andExpect(redirectedUrl("/grocery-lists/" + list.getId()));
 
         assertTrue(item.isPurchased(), "the tick was saved");
     }

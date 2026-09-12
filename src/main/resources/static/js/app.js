@@ -421,6 +421,155 @@
 
     document.addEventListener("DOMContentLoaded", labelTableCells);
 
+    /* --------------------------------------------------- keeping the scroll */
+
+    /*
+     * A form post that redirects lands the browser on a fresh page at the top.
+     * Halfway down a long list that is jarring, so the position is stashed on
+     * the way out and restored on the way back in.
+     *
+     * Grocery ticks no longer reload at all, but this still covers the case
+     * where that fails and the form is submitted the ordinary way.
+     */
+    var SCROLL_KEY = "pantryplan:scroll";
+
+    function rememberScroll() {
+        try {
+            sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+        } catch (error) {
+            /* Private browsing can refuse storage. Losing the position is not
+               worth breaking the tick over. */
+        }
+    }
+
+    function restoreScroll() {
+        var saved = null;
+        try {
+            saved = sessionStorage.getItem(SCROLL_KEY);
+            sessionStorage.removeItem(SCROLL_KEY);
+        } catch (error) {
+            return;
+        }
+        /* A real link to an anchor wins: that scroll was asked for. */
+        if (saved !== null && !window.location.hash) {
+            window.scrollTo(0, parseInt(saved, 10) || 0);
+        }
+    }
+
+    document.addEventListener("submit", function (event) {
+        if (event.target.matches && event.target.matches("[data-keep-scroll]")) {
+            rememberScroll();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", restoreScroll);
+
+    /* ------------------------------------------------ ticking without a reload */
+
+    /*
+     * Ticking an item off a grocery list posts in the background and the page
+     * updates itself, so a list stays exactly where it was with no flash of a
+     * reloading page.
+     *
+     * Four things have to move together: the row's struck-through look, the
+     * "3 of 12 bought" count, the label on the put-away button, and which rows
+     * the stock-up dialog offers. The dialog already holds a row for every line
+     * that has not been put away, so keeping it current is a matter of showing
+     * or hiding one and flipping its hidden include field.
+     *
+     * If the request fails for any reason the form is submitted normally, which
+     * is also what happens when JavaScript is off.
+     */
+
+    function stockUpRow(itemId) {
+        return document.querySelector("[data-stockup-row='" + itemId + "']");
+    }
+
+    function refreshStockUpControls() {
+        var rows = document.querySelectorAll("[data-stockup-row]");
+        var ready = 0;
+        Array.prototype.forEach.call(rows, function (row) {
+            if (!row.hidden) {
+                ready++;
+            }
+        });
+
+        var button = document.querySelector("[data-stockup-button]");
+        if (button) {
+            button.textContent = "Put " + ready + " bought " + (ready === 1 ? "item" : "items") + " away";
+            button.disabled = ready === 0;
+        }
+
+        var empty = document.querySelector("[data-stockup-empty]");
+        if (empty) {
+            empty.hidden = ready > 0;
+        }
+        var submit = document.querySelector("[data-stockup-submit]");
+        if (submit) {
+            submit.disabled = ready === 0;
+        }
+    }
+
+    function applyTick(button, purchased) {
+        button.setAttribute("aria-pressed", purchased ? "true" : "false");
+
+        var listItem = button.closest(".shoplist__item");
+        if (listItem) {
+            listItem.classList.toggle("shoplist__item--bought", purchased);
+        }
+
+        var counter = document.querySelector("[data-bought-count]");
+        if (counter) {
+            var current = parseInt(counter.textContent, 10) || 0;
+            counter.textContent = String(Math.max(0, current + (purchased ? 1 : -1)));
+        }
+
+        var row = stockUpRow(button.getAttribute("data-tick"));
+        if (row) {
+            row.hidden = !purchased;
+            var include = row.querySelector("[data-stockup-include]");
+            if (include) {
+                include.value = purchased ? "true" : "false";
+            }
+        }
+        refreshStockUpControls();
+    }
+
+    document.addEventListener("submit", function (event) {
+        var form = event.target;
+        if (!form.matches || !form.matches("[data-tick-form]") || typeof window.fetch !== "function") {
+            return;
+        }
+        var button = form.querySelector("[data-tick]");
+        if (!button) {
+            return;
+        }
+
+        event.preventDefault();
+        button.disabled = true;
+
+        fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { "X-Requested-With": "fetch" },
+            credentials: "same-origin"
+        }).then(function (response) {
+            if (!response.ok) {
+                throw new Error("Tick refused: " + response.status);
+            }
+            button.disabled = false;
+            applyTick(button, button.getAttribute("aria-pressed") !== "true");
+        }).catch(function () {
+            /* Something went wrong, most likely an expired session. Submitting
+               the ordinary way lets the server answer, redirect, or send the
+               cook to the sign-in page. */
+            rememberScroll();
+            form.submit();
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", refreshStockUpControls);
+
     document.addEventListener("click", function (event) {
         var opener = event.target.closest("[data-dialog-open]");
         if (opener) {

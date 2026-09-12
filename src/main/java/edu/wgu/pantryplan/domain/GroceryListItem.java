@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Table(name = "grocery_list_items")
@@ -45,6 +46,14 @@ public class GroceryListItem extends BaseEntity {
     @Column(name = "needs_review", nullable = false)
     private boolean needsReview;
 
+    /**
+     * When this line was added to the pantry, or null if it has not been.
+     * Ticking an item only means it is in the trolley; this is the later step
+     * of putting it away, and it keeps a line from being stocked twice.
+     */
+    @Column(name = "stocked_at")
+    private Instant stockedAt;
+
     protected GroceryListItem() {
     }
 
@@ -70,6 +79,28 @@ public class GroceryListItem extends BaseEntity {
 
     public void togglePurchased() {
         this.purchased = !this.purchased;
+    }
+
+    /**
+     * Records that this line went onto a shelf.
+     *
+     * @throws IllegalStateException if it has already been stocked, so a
+     *     resubmitted form cannot add the same shopping to the pantry twice
+     */
+    public void markStocked(Instant when) {
+        if (stockedAt != null) {
+            throw new IllegalStateException("Already added to the pantry");
+        }
+        this.stockedAt = when;
+    }
+
+    public boolean isStocked() {
+        return stockedAt != null;
+    }
+
+    /** Bought, but not yet put away. */
+    public boolean isReadyToStock() {
+        return purchased && stockedAt == null;
     }
 
     public GroceryList getGroceryList() {
@@ -118,5 +149,9 @@ public class GroceryListItem extends BaseEntity {
 
     public boolean isNeedsReview() {
         return needsReview;
+    }
+
+    public Instant getStockedAt() {
+        return stockedAt;
     }
 }

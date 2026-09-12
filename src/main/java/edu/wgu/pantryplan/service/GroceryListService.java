@@ -10,10 +10,14 @@ import edu.wgu.pantryplan.domain.Unit;
 import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.repository.GroceryListItemRepository;
 import edu.wgu.pantryplan.repository.GroceryListRepository;
+import edu.wgu.pantryplan.web.form.StockUpForm;
+import edu.wgu.pantryplan.web.form.StockUpRow;
+import edu.wgu.pantryplan.web.form.PantryItemForm;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,19 +41,96 @@ public class GroceryListService {
     /** The number of decimal places the database stores quantities at. */
     private static final int STORED_SCALE = 3;
 
+    /**
+     * Aisle order then name, matching how the detail page lists things, so the
+     * stock-up dialog runs in the order the cook walked the shop.
+     */
+    private static final Comparator<GroceryListItem> SHELF_ORDER =
+            Comparator.comparing(GroceryListItem::getCategory)
+                    .thenComparing(item -> item.getIngredient().getName(), String.CASE_INSENSITIVE_ORDER);
+
     private final GroceryListRepository groceryListRepository;
     private final GroceryListItemRepository groceryListItemRepository;
     private final MealPlanService mealPlanService;
     private final PantryCoverageService coverageService;
+    private final PantryService pantryService;
 
     public GroceryListService(GroceryListRepository groceryListRepository,
                               GroceryListItemRepository groceryListItemRepository,
                               MealPlanService mealPlanService,
-                              PantryCoverageService coverageService) {
+                              PantryCoverageService coverageService,
+                              PantryService pantryService) {
         this.groceryListRepository = groceryListRepository;
         this.groceryListItemRepository = groceryListItemRepository;
         this.mealPlanService = mealPlanService;
         this.coverageService = coverageService;
+        this.pantryService = pantryService;
+    }
+
+    /**
+     * Lines that could still be put away, ticked or not, in the order they
+     * appear on the list.
+     *
+     * <p>The stock-up dialog is built from all of them so that ticking an item
+     * only shows or hides a row the browser already has, rather than fetching
+     * the page again.
+     */
+    @Transactional(readOnly = true)
+    public List<GroceryListItem> stockable(GroceryList list) {
+        return list.getItems().stream()
+                .filter(item -> !item.isStocked())
+                .sorted(SHELF_ORDER)
+                .toList();
+    }
+
+    /** Bought lines waiting to be put away. */
+    @Transactional(readOnly = true)
+    public List<GroceryListItem> readyToStock(GroceryList list) {
+        return stockable(list).stream().filter(GroceryListItem::isPurchased).toList();
+    }
+
+    /**
+     * Puts a shop away: one pantry row per ticked line, then each line is
+     * marked stocked so it cannot be added again.
+     *
+     * <p>The whole thing is one transaction. If any row is rejected, nothing
+     * reaches the pantry and nothing is marked, so the cook can correct the
+     * dialog and submit it once.
+     *
+     * @return how many shelf entries were created
+     * @throws NoSuchElementException when a row names a line that is not on
+     *     this list, or one that has already been stocked
+     */
+    @Transactional
+    public int stockUp(Long listId, StockUpForm form, User user) {
+        GroceryList list = requireOwned(listId, user);
+        Instant now = Instant.now();
+        int stocked = 0;
+
+        for (StockUpRow row : form.included()) {
+            GroceryListItem item = list.getItems().stream()
+                    .filter(candidate -> candidate.getId().equals(row.getItemId()))
+                    .filter(GroceryListItem::isReadyToStock)
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "No bought item " + row.getItemId() + " waiting on this list"));
+
+            PantryItemForm pantryForm = new PantryItemForm();
+            /* The ingredient id is re-read from the saved line rather than
+               taken from the request, so a tampered row cannot stock someone
+               else's ingredient. PantryService scopes it to the owner again. */
+            pantryForm.setIngredientId(item.getIngredient().getId());
+            pantryForm.setQuantity(row.getQuantity());
+            pantryForm.setLocation(row.getLocation());
+            pantryForm.setPurchasedOn(form.getPurchasedOn());
+            pantryForm.setExpiresOn(row.getExpiresOn());
+            pantryService.create(pantryForm, user);
+
+            item.markStocked(now);
+            groceryListItemRepository.save(item);
+            stocked++;
+        }
+        return stocked;
     }
 
     /**
