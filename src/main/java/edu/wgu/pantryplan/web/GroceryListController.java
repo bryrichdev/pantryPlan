@@ -8,6 +8,7 @@ import edu.wgu.pantryplan.domain.User;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.GroceryListService;
 import edu.wgu.pantryplan.service.MealPlanService;
+import edu.wgu.pantryplan.service.PantryCoverageService;
 import edu.wgu.pantryplan.service.UnitConversionService;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.StockUpForm;
@@ -42,15 +43,18 @@ public class GroceryListController {
     private final GroceryListService groceryListService;
     private final MealPlanService mealPlanService;
     private final UnitConversionService conversionService;
+    private final PantryCoverageService coverageService;
     private final UserService userService;
 
     public GroceryListController(GroceryListService groceryListService,
                                  MealPlanService mealPlanService,
                                  UnitConversionService conversionService,
+                                 PantryCoverageService coverageService,
                                  UserService userService) {
         this.groceryListService = groceryListService;
         this.mealPlanService = mealPlanService;
         this.conversionService = conversionService;
+        this.coverageService = coverageService;
         this.userService = userService;
     }
 
@@ -93,7 +97,8 @@ public class GroceryListController {
     public String detail(@AuthenticationPrincipal AppUserDetails principal,
                          @PathVariable Long id,
                          Model model) {
-        return renderDetail(model, groceryListService.requireOwned(id, currentUser(principal)), null);
+        User user = currentUser(principal);
+        return renderDetail(model, groceryListService.requireOwned(id, user), user, null);
     }
 
     /**
@@ -116,7 +121,7 @@ public class GroceryListController {
         validateStockUp(form, result);
         if (result.hasErrors()) {
             /* The dialog reopens with the rows as they were typed. */
-            return renderDetail(model, list, form);
+            return renderDetail(model, list, user, form);
         }
 
         int stocked = groceryListService.stockUp(id, form, user);
@@ -165,7 +170,7 @@ public class GroceryListController {
      *
      * @param submitted the rejected form to show again, or null for a fresh one
      */
-    private String renderDetail(Model model, GroceryList list, StockUpForm submitted) {
+    private String renderDetail(Model model, GroceryList list, User user, StockUpForm submitted) {
         Map<Long, String> reviewReasons = new HashMap<>();
         for (GroceryListItem item : list.getItems()) {
             if (item.isNeedsReview()) {
@@ -174,6 +179,17 @@ public class GroceryListController {
                         conversionService.explainFailure(item.getUnit(), ingredient.getStockUnit(), ingredient));
             }
         }
+
+        /* For a stocked line, what the whole shelf holds of that ingredient,
+           which is usually more than this shop put there. One small query per
+           stocked line; a list has a handful, not hundreds. */
+        Map<Long, BigDecimal> onHandTotals = new HashMap<>();
+        for (GroceryListItem item : list.getItems()) {
+            if (item.isStocked()) {
+                onHandTotals.put(item.getId(), coverageService.onHandOf(user, item.getIngredient()));
+            }
+        }
+        model.addAttribute("onHandTotals", onHandTotals);
 
         List<GroceryListItem> stockable = groceryListService.stockable(list);
         model.addAttribute("groceryList", list);

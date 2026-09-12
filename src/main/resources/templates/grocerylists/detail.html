@@ -18,7 +18,7 @@
                 <a th:href="@{/meal-plans/{id}(id=${groceryList.mealPlan.id})}"
                    th:text="${groceryList.mealPlan.name}">This week</a></th:block>.
                 <span data-bought-count th:text="${groceryList.purchasedCount()}">3</span> of
-                <span th:text="${groceryList.itemCount()}">12</span>
+                <span th:text="${groceryList.itemCount()}">12</span> bought.
             </p>
         </div>
         <div class="actions">
@@ -91,9 +91,17 @@
 
                 <!-- What this line actually put on the shelf, and a way back. -->
                 <div class="shoplist__stocked" th:if="${item.stocked}">
-                    <span class="shoplist__stocked-amount"
-                          th:text="${@fmt.amount(item.stockedQuantity, item.stockedUnit)}">5 lb</span>
-                    <span class="shoplist__stocked-label">in pantry</span>
+                    <p class="shoplist__stocked-line">
+                        <span class="shoplist__stocked-amount"
+                              th:text="${@fmt.amount(item.stockedQuantity, item.stockedUnit)}">5 lb</span>
+                        <span class="shoplist__stocked-label">added</span>
+                    </p>
+                    <!-- The whole shelf, which is usually more than this shop
+                         put there, and never counts anything already expired. -->
+                    <p class="shoplist__stocked-line shoplist__stocked-line--total">
+                        <span th:text="${@fmt.amount(onHandTotals.get(item.id), item.stockedUnit)}">6.5 lb</span>
+                        <span class="shoplist__stocked-label">on hand</span>
+                    </p>
                     <form th:action="@{/grocery-lists/{id}/items/{itemId}/unstock(id=${groceryList.id},itemId=${item.id})}"
                           method="post" class="inline-form">
                         <button type="submit" class="linkbutton">Undo</button>

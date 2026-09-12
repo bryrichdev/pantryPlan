@@ -31,6 +31,7 @@ import edu.wgu.pantryplan.service.RecipeService;
 import edu.wgu.pantryplan.service.UserService;
 import edu.wgu.pantryplan.web.form.IngredientForm;
 import edu.wgu.pantryplan.web.form.MealPlanForm;
+import edu.wgu.pantryplan.web.form.PantryItemForm;
 import edu.wgu.pantryplan.web.form.PlanEntryForm;
 import edu.wgu.pantryplan.web.form.RecipeForm;
 import edu.wgu.pantryplan.web.form.RecipeLineForm;
@@ -489,5 +490,46 @@ class StockUpTests {
         assertTrue(page.contains("/items/" + item.getId() + "/unstock"), "with a way to undo it");
         assertFalse(page.contains("Put 1 bought item away"),
                 "and it is no longer offered in the stock-up dialog");
+    }
+
+    /**
+     * The two figures are different things: what this shop added, and what the
+     * pantry now holds of that ingredient altogether.
+     */
+    @Test
+    void aStockedLineShowsWhatItAddedAndWhatIsOnHand() throws Exception {
+        User user = cook("stockup-onhand@example.com");
+        Ingredient flour = ingredient(user, "Flour", Unit.POUND, null);
+        GroceryList list = listFor(user, "On hand week", recipe(user, "Bread", flour, "1", Unit.POUND));
+
+        /* Two pounds were already on the shelf, and one is long expired, so it
+           should not be counted. */
+        PantryItemForm existing = new PantryItemForm();
+        existing.setIngredientId(flour.getId());
+        existing.setQuantity(new BigDecimal("2"));
+        existing.setLocation(StorageLocation.PANTRY);
+        pantryService.create(existing, user);
+
+        PantryItemForm stale = new PantryItemForm();
+        stale.setIngredientId(flour.getId());
+        stale.setQuantity(new BigDecimal("9"));
+        stale.setLocation(StorageLocation.PANTRY);
+        stale.setExpiresOn(LocalDate.now().minusDays(30));
+        pantryService.create(stale, user);
+
+        GroceryListItem item = itemNamed(list, "Flour");
+        groceryListService.togglePurchased(list.getId(), item.getId(), user);
+        groceryListService.stockUp(list.getId(),
+                formOf(MONDAY, row(item, "5", StorageLocation.PANTRY, null)), user);
+
+        String page = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/grocery-lists/{id}", list.getId())
+                        .with(user(new AppUserDetails(user))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(page.contains("5 lb"), "what this shop added");
+        assertTrue(page.contains("7 lb"), "two pounds already there plus the five bought");
+        assertFalse(page.contains("16 lb"), "the expired bag is not counted");
     }
 }

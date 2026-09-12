@@ -481,35 +481,44 @@
     .stockup { max-height: none; }
 }
 
-/* ---------- a grocery line that is already on the shelf ---------- */
+/* ---------- a grocery line that is already on the shelf ----------
+   Two figures: what this shop added, and what the pantry now holds of that
+   ingredient altogether. They sit side by side whenever the row has the width
+   and drop onto their own lines only when it does not. */
 
 .shoplist__stocked {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: baseline;
-    gap: 0.4rem;
+    gap: 0.1rem 0.7rem;
     padding-left: 1rem;
     font-size: 0.85rem;
     color: var(--ink-soft);
     text-align: right;
 }
 
-.shoplist__stocked-amount {
-    font-weight: 600;
-    color: var(--herb-deep);
+/* Each figure wraps as a unit, so an amount is never split from its word. */
+.shoplist__stocked-line {
+    margin: 0;
     white-space: nowrap;
 }
 
-.shoplist__stocked-label { white-space: nowrap; }
+.shoplist__stocked-amount {
+    font-weight: 600;
+    color: var(--herb-deep);
+}
+
+.shoplist__stocked-label { color: var(--ink-soft); }
 
 .shoplist__stocked .linkbutton {
-    margin-left: 0;
+    margin: 0;
     font-size: 0.85rem;
 }
 
 @media (max-width: 40rem) {
-    /* Under the name rather than beside it: three more words do not fit on a
-       phone next to an ingredient name and its amount. */
+    /* Below the ingredient name rather than beside it, still on one line. */
     .shoplist__item { flex-wrap: wrap; }
 
     .shoplist__stocked {
@@ -517,6 +526,8 @@
         justify-content: flex-start;
         padding: 0.35rem 0 0 2.85rem;
     }
+
+    .shoplist__stocked .linkbutton { margin-left: auto; }
 }
 
 /* ---------- page headings that stay put ----------
@@ -525,17 +536,39 @@
    background span the page's padding, and the positive ones put the spacing
    back inside. */
 
-@media (min-width: 40.001rem) {
+.pagehead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 -1.5rem 1.5rem;
+    padding: 1rem 1.5rem;
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+}
+
+/* Anchored rows land below the heading rather than behind it. */
+.shoplist__item, .table tbody tr { scroll-margin-top: 9rem; }
+
+@media (max-width: 40rem) {
+    /* A phone screen is short, so the heading is tightened everywhere it can
+       be: it has to stay small enough to be worth the space it holds. */
     .pagehead {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        margin: 0 -1.5rem 1.5rem;
-        padding: 1rem 1.5rem;
-        background: var(--paper);
-        border-bottom: 1px solid var(--rule);
+        margin: 0 -1rem 1rem;
+        padding: 0.7rem 1rem;
+        gap: 0.6rem;
     }
 
-    /* Anchored rows land below the heading rather than behind it. */
-    .shoplist__item, .table tbody tr { scroll-margin-top: 9rem; }
+    .pagehead h1 {
+        font-size: 1.35rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .pagehead__note {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    .pagehead .actions .button { min-height: 2.5rem; }
+
+    .shoplist__item, .table tbody tr { scroll-margin-top: 12rem; }
 }
