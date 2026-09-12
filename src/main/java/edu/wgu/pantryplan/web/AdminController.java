@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The admin tab. Starting and ending "view as" is not handled here: those
@@ -25,6 +27,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final AuditLogService auditLogService;
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     public AdminController(AdminService adminService, AuditLogService auditLogService) {
         this.adminService = adminService;
@@ -47,6 +50,25 @@ public class AdminController {
         model.addAttribute("actions", AuditLogService.ACTIONS);
         model.addAttribute("pageSizes", AuditLogService.PAGE_SIZES);
         return "admin/logs";
+    }
+
+    /**
+     * Empties the log. Nothing records this in the log itself — the log is
+     * gone — so the admin who did it and the size of what went are written to
+     * the application log instead.
+     */
+    @PostMapping("/logs/clear")
+    public String clearLogs(@AuthenticationPrincipal AppUserDetails principal,
+                            RedirectAttributes redirectAttributes) {
+        int cleared = auditLogService.clear();
+        if (cleared == 0) {
+            redirectAttributes.addFlashAttribute("error", "There was nothing to clear.");
+        } else {
+            log.info("Admin {} cleared the audit log, {} entries", principal.getEmail(), cleared);
+            redirectAttributes.addFlashAttribute("message",
+                    "Cleared " + cleared + (cleared == 1 ? " entry." : " entries."));
+        }
+        return "redirect:/admin/logs";
     }
 
     @GetMapping("/users")

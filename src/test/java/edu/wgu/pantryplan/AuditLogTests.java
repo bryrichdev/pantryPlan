@@ -3,6 +3,7 @@ package edu.wgu.pantryplan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -201,5 +202,23 @@ class AuditLogTests {
         assertEquals(farAway.getTotalPages() - 1, farAway.getPage(), "a page past the end becomes the last page");
         assertTrue(farAway.getTotalEntries() > 0);
         assertTrue(!farAway.getEntries().isEmpty(), "and it has entries on it");
+    }
+
+    @Test
+    void clearsTheWholeLog() throws Exception {
+        User admin = admin("audit-clear-admin@example.com");
+        User cook = account("audit-clear-cook@example.com");
+
+        mockMvc.perform(post("/recipes").with(user(new AppUserDetails(cook))).with(csrf())
+                        .param("name", "Soon forgotten")
+                        .param("servings", "2"))
+                .andExpect(status().is3xxRedirection());
+        assertFalse(entries("recipes", "INSERT", cook.getEmail()).isEmpty(), "the change was recorded first");
+
+        mockMvc.perform(post("/admin/logs/clear").with(user(new AppUserDetails(admin))).with(csrf()))
+                .andExpect(redirectedUrl("/admin/logs"));
+
+        Long remaining = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log", Long.class);
+        assertEquals(0L, remaining, "nothing is left");
     }
 }

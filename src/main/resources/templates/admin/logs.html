@@ -14,7 +14,14 @@
                 admin too. Password hashes are never recorded.
             </p>
         </div>
+        <div class="actions">
+            <button type="button" class="button button--danger"
+                    th:if="${log.totalEntries > 0 or log.filtered}"
+                    data-dialog-open="clear-logs-dialog">Clear logs</button>
+        </div>
     </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
 
     <form th:action="@{/admin/logs}" method="get" class="filters filters--inline">
         <div class="filters__field">
@@ -113,6 +120,26 @@
         <span class="pager__total" th:text="|Page ${log.page + 1} of ${log.totalPages}|">Page 1 of 12</span>
     </nav>
 </main>
+
+<dialog id="clear-logs-dialog" class="dialog dialog--narrow" aria-labelledby="clear-logs-title">
+    <form th:action="@{/admin/logs/clear}" method="post" class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="clear-logs-title">Clear the log?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p>Every recorded change is removed, not only the ones shown by the current filters.</p>
+            <p class="field__hint">
+                Nothing else is touched: accounts, recipes, and pantry data stay as
+                they are. The log starts again from the next change made.
+            </p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger">Clear the log</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
 
 <footer th:replace="~{fragments/layout :: sitefooter}"></footer>
 </body>

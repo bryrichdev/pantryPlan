@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 /**
@@ -123,6 +124,21 @@ public class AuditLogService {
     /** The same search at the default page size. */
     public AuditLogPage search(String table, String action, String actor, int page) {
         return search(table, action, actor, page, DEFAULT_PAGE_SIZE);
+    }
+
+    /**
+     * Empties the log and returns how many rows went.
+     *
+     * <p>DELETE rather than TRUNCATE. It reports its own row count, which the
+     * admin sees, and it leaves the identity sequence where it is, so a cleared
+     * id is never handed out twice.
+     *
+     * <p>audit_log carries no trigger of its own, so this leaves nothing behind
+     * in the log. The clear is written to the application log instead.
+     */
+    @Transactional
+    public int clear() {
+        return jdbc.getJdbcTemplate().update("DELETE FROM audit_log");
     }
 
     /**
