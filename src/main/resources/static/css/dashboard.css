@@ -1,0 +1,329 @@
+/* PantryPrep — the home page: getting started, tiles, and the dashboard cards. */
+
+.home-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.home-head h1 { margin-bottom: 0.25rem; }
+
+.home-head__date {
+    margin: 0;
+    color: var(--ink-soft);
+}
+
+/* ---------- cards ---------- */
+
+.home .card {
+    background: #FFFFFF;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 1.15rem 1.25rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.home .card h2 {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    margin: 0 0 0.85rem;
+}
+
+.card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+}
+
+.card__head h2 { margin-bottom: 0; }
+.card__head a { font-size: 0.9rem; }
+
+.home-empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1rem;
+    background: var(--paper-sunk);
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius);
+    color: var(--ink-soft);
+}
+
+.home-empty p { margin: 0; }
+
+.home-note {
+    margin: 0.85rem 0 0;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+}
+
+.home-more {
+    margin: 0.6rem 0 0;
+    font-size: 0.9rem;
+}
+
+/* ---------- getting started ---------- */
+
+.home-start { max-width: 44rem; }
+
+.home-start__intro {
+    margin: -0.35rem 0 1rem;
+    color: var(--ink-soft);
+}
+
+.home-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+}
+
+.home-steps__step {
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--rule);
+    counter-increment: step;
+}
+
+.home-steps__step p {
+    margin: 0.2rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.93rem;
+}
+
+/* The step number, or a tick once the step is done. */
+.home-steps__mark {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 1px solid var(--herb);
+    color: var(--herb-deep);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.home-steps__mark::before { content: counter(step); }
+
+.home-steps__step.is-done .home-steps__mark {
+    background: var(--herb);
+    color: #FFFFFF;
+}
+
+.home-steps__step.is-done .home-steps__mark::before { content: "\2713"; }
+
+.home-steps__step.is-done strong {
+    color: var(--ink-soft);
+    text-decoration: line-through;
+}
+
+/* ---------- tiles ---------- */
+
+.home-tiles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+.home-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.9rem 1rem;
+    background: #FFFFFF;
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--rule);
+    border-radius: 5px;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.home-tile:hover { border-color: var(--herb); }
+
+.home-tile--bad { border-left-color: var(--rust); }
+.home-tile--warn { border-left-color: var(--amber); }
+
+.home-tile__count {
+    font-family: var(--serif);
+    font-size: 1.9rem;
+    line-height: 1.1;
+}
+
+.home-tile__label { font-weight: 600; }
+
+.home-tile__hint {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+}
+
+/* ---------- two columns ---------- */
+
+.home-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 0 1.25rem;
+    align-items: start;
+}
+
+/* ---------- this week ---------- */
+
+.home-week {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.home-week__day {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.55rem 0.5rem;
+    border-top: 1px solid var(--rule);
+}
+
+.home-week__day.is-today {
+    background: var(--herb-wash);
+    border-radius: var(--radius);
+    border-top-color: transparent;
+}
+
+.home-week__day.is-past { color: var(--ink-soft); }
+
+.home-week__label { font-weight: 600; }
+
+.home-week__meals {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.home-week__meals li + li { margin-top: 0.2rem; }
+
+.home-week__slot {
+    display: inline-block;
+    min-width: 4.75rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+}
+
+.home-week__meals .is-cooked a { color: var(--ink-soft); }
+
+.home-week__cooked {
+    margin-left: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--herb-deep);
+}
+
+.home-week__none {
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+}
+
+/* ---------- use it up, recently cooked ---------- */
+
+.home-list,
+.home-recent {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.home-list li,
+.home-recent li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--rule);
+}
+
+.home-list__main {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.home-recent span {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+}
+
+/* ---------- shopping ---------- */
+
+.home-shop__title {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+}
+
+.home-progress {
+    height: 0.55rem;
+    background: var(--paper-sunk);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.home-progress__bar {
+    display: block;
+    height: 100%;
+    background: var(--herb);
+}
+
+.home-shop__status {
+    margin: 0.5rem 0 0;
+    font-size: 0.92rem;
+}
+
+/* ---------- counts ---------- */
+
+.home-counts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.home-counts a {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--rule);
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.home-counts a:hover span { text-decoration: underline; }
+
+.home-counts strong { font-variant-numeric: tabular-nums; }
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 56rem) {
+    .home-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 40rem) {
+    .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+    .home-tile { padding: 0.75rem 0.85rem; }
+    .home-tile__count { font-size: 1.6rem; }
+    .home .card { padding: 1rem; }
+    .home-week__day { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
+    .home-head .actions { width: 100%; }
+    .home-head .actions .button { flex: 1 1 auto; text-align: center; }
+}
