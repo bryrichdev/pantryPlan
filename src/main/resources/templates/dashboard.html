@@ -1,39 +1,232 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<head th:replace="~{fragments/layout :: head('Home')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: topnav}"></header>
 
-<main class="page">
-    <h1 th:text="|Welcome back, ${displayName}|">Welcome back</h1>
-    <p class="lede">Pick up where you left off.</p>
+<main class="page home">
+    <div class="home-head">
+        <div>
+            <h1 th:text="${firstName != null} ? |Welcome back, ${firstName}| : 'Welcome back'">Welcome back, Sam</h1>
+            <p class="home-head__date" th:text="${today}">Monday, September 28</p>
+        </div>
+        <div class="actions" th:unless="${counts.isNew()}">
+            <a class="button button--quiet" th:href="@{/pantry}">Pantry</a>
+            <a class="button button--primary" th:href="@{/meal-plans}">Plan meals</a>
+        </div>
+    </div>
 
-    <ul class="tasklist">
-        <li class="tasklist__item">
-            <a th:href="@{/recipes}">Recipes</a>
-            <span>Store what you cook, with ingredients, steps, and tags.</span>
-        </li>
-        <li class="tasklist__item">
-            <a th:href="@{/ingredients}">Ingredients</a>
-            <span>Create and edit all ingredients you use for pantry items and recipes.</span>
-        </li>
-        <li class="tasklist__item">
-            <a th:href="@{/pantry}">Pantry</a>
-            <span>Track what is on the shelf and when it expires.</span>
-        </li>
-        <li class="tasklist__item">
-            <a th:href="@{/meal-plans}">Meal plans</a>
-            <span>Drop recipes into the week and set servings.</span>
-        </li>
-        <li class="tasklist__item">
-            <a th:href="@{/grocery-lists}">Grocery lists</a>
-            <span>Build a list from a plan, minus what you already have.</span>
-        </li>
-        <li class="tasklist__item">
-            <a th:href="@{/reports}">Reports</a>
-            <span>See what is running low and what you cook most.</span>
-        </li>
-    </ul>
+    <!-- ============ getting started, until the basics are in ============ -->
+    <section class="card home-start" th:unless="${counts.setupComplete()}">
+        <h2 th:text="${counts.isNew()} ? 'Get started' : 'Finish setting up'">Get started</h2>
+        <p class="home-start__intro" th:if="${counts.isNew()}">
+            PantryPrep plans your week around what you already have. Five steps get you there.
+        </p>
+        <p class="home-start__intro" th:unless="${counts.isNew()}">
+            A few steps are left before PantryPrep can build your grocery list.
+        </p>
+        <ol class="home-steps">
+            <li class="home-steps__step" th:classappend="${counts.ingredients() > 0} ? 'is-done'">
+                <span class="home-steps__mark" aria-hidden="true"></span>
+                <div>
+                    <a th:href="@{/ingredients}"><strong>Add your ingredients</strong></a>
+                    <span class="visually-hidden" th:if="${counts.ingredients() > 0}">(done)</span>
+                    <p>Everything you cook with. The fastest start is <em>Add starter ingredients</em> on the Ingredients page.</p>
+                </div>
+            </li>
+            <li class="home-steps__step" th:classappend="${counts.recipes() > 0} ? 'is-done'">
+                <span class="home-steps__mark" aria-hidden="true"></span>
+                <div>
+                    <a th:href="@{/recipes}"><strong>Save a few recipes</strong></a>
+                    <span class="visually-hidden" th:if="${counts.recipes() > 0}">(done)</span>
+                    <p>Type in your own, or add the starter recipes on the Recipes page and edit them to taste.</p>
+                </div>
+            </li>
+            <li class="home-steps__step" th:classappend="${counts.pantryItems() > 0} ? 'is-done'">
+                <span class="home-steps__mark" aria-hidden="true"></span>
+                <div>
+                    <a th:href="@{/pantry}"><strong>Stock your pantry</strong></a>
+                    <span class="visually-hidden" th:if="${counts.pantryItems() > 0}">(done)</span>
+                    <p>Enter what's in the pantry, fridge and freezer. Add expiry dates and this page tells you what to use first.</p>
+                </div>
+            </li>
+            <li class="home-steps__step" th:classappend="${counts.mealPlans() > 0} ? 'is-done'">
+                <span class="home-steps__mark" aria-hidden="true"></span>
+                <div>
+                    <a th:href="@{/meal-plans}"><strong>Plan your week</strong></a>
+                    <span class="visually-hidden" th:if="${counts.mealPlans() > 0}">(done)</span>
+                    <p>Make a meal plan and put recipes on the days you'll cook them.</p>
+                </div>
+            </li>
+            <li class="home-steps__step" th:classappend="${counts.groceryLists() > 0} ? 'is-done'">
+                <span class="home-steps__mark" aria-hidden="true"></span>
+                <div>
+                    <a th:href="@{/grocery-lists}"><strong>Build your grocery list</strong></a>
+                    <span class="visually-hidden" th:if="${counts.groceryLists() > 0}">(done)</span>
+                    <p>PantryPrep lists what the plan needs, minus what you already have, sorted by aisle.</p>
+                </div>
+            </li>
+        </ol>
+    </section>
+
+    <th:block th:unless="${counts.isNew()}">
+
+        <!-- ============ at a glance ============ -->
+        <nav class="home-tiles" aria-label="At a glance">
+            <a class="home-tile" th:classappend="${expiryCounts.expired() > 0} ? 'home-tile--bad'"
+               th:href="@{/reports/expired-pantry-items}">
+                <span class="home-tile__count" th:text="${expiryCounts.expired()}">1</span>
+                <span class="home-tile__label">Expired</span>
+                <span class="home-tile__hint">Past their date</span>
+            </a>
+            <a class="home-tile" th:classappend="${expiryCounts.soon() > 0} ? 'home-tile--warn'"
+               th:href="@{/reports/near-expired-pantry-items}">
+                <span class="home-tile__count" th:text="${expiryCounts.soon()}">3</span>
+                <span class="home-tile__label">Use soon</span>
+                <span class="home-tile__hint" th:text="|Within ${warningDays} days|">Within 7 days</span>
+            </a>
+            <a class="home-tile"
+               th:href="${week != null} ? @{/meal-plans/{id}(id=${week?.id()})} : @{/meal-plans}">
+                <span class="home-tile__count" th:text="${week != null} ? ${week?.mealsLeft()} : 0">5</span>
+                <span class="home-tile__label">Meals left</span>
+                <span class="home-tile__hint" th:text="${week != null} ? 'This week' : 'No plan this week'">This week</span>
+            </a>
+            <a class="home-tile"
+               th:href="${shopping != null} ? @{/grocery-lists/{id}(id=${shopping?.id()})} : @{/grocery-lists}">
+                <span class="home-tile__count" th:text="${shopping != null} ? ${shopping?.remaining()} : 0">8</span>
+                <span class="home-tile__label">To buy</span>
+                <span class="home-tile__hint" th:text="${shopping != null} ? 'On your latest list' : 'No list yet'">On your latest list</span>
+            </a>
+        </nav>
+
+        <div class="home-grid">
+            <div class="home-grid__column">
+
+                <!-- ============ this week's plan ============ -->
+                <section class="card">
+                    <div class="card__head">
+                        <h2>This week</h2>
+                        <a th:if="${week != null}" th:href="@{/meal-plans/{id}(id=${week.id()})}"
+                           th:text="${week.name()}">09/28 Meal Plan</a>
+                    </div>
+
+                    <ol class="home-week" th:if="${week != null and week.mealsPlanned() > 0}">
+                        <li class="home-week__day" th:each="day : ${week.days()}"
+                            th:classappend="${day.isToday()} ? 'is-today' : (${day.isPast()} ? 'is-past' : '')">
+                            <span class="home-week__label" th:text="${day.label()}">Today</span>
+                            <ul class="home-week__meals" th:unless="${day.meals().isEmpty()}">
+                                <li th:each="meal : ${day.meals()}" th:classappend="${meal.cooked()} ? 'is-cooked'">
+                                    <span class="home-week__slot" th:text="${@fmt.label(meal.slot())}">Dinner</span>
+                                    <a th:href="@{/recipes/{id}(id=${meal.recipeId()})}"
+                                       th:text="${meal.recipeName()}">Lentil soup</a>
+                                    <span class="home-week__cooked" th:if="${meal.cooked()}">Cooked</span>
+                                </li>
+                            </ul>
+                            <span class="home-week__none" th:if="${day.meals().isEmpty()}">Nothing planned</span>
+                        </li>
+                    </ol>
+
+                    <div class="home-empty" th:if="${week != null and week.mealsPlanned() == 0}">
+                        <p>This week's plan has no meals yet.</p>
+                        <a class="button button--quiet button--small"
+                           th:href="@{/meal-plans/{id}(id=${week.id()})}">Add meals</a>
+                    </div>
+
+                    <div class="home-empty" th:if="${week == null}">
+                        <p>No plan covers this week.</p>
+                        <a class="button button--quiet button--small" th:href="@{/meal-plans}">Plan this week</a>
+                    </div>
+
+                    <p class="home-note" th:if="${week != null and week.mealsPlanned() > 0 and week.groceryListId() == null}">
+                        No grocery list for this plan yet.
+                        <a th:href="@{/meal-plans/{id}(id=${week.id()})}">Build one from the plan</a>.
+                    </p>
+                </section>
+
+                <!-- ============ use it up ============ -->
+                <section class="card">
+                    <div class="card__head">
+                        <h2>Use it up</h2>
+                        <a th:href="@{/pantry}">Pantry</a>
+                    </div>
+                    <ul class="home-list" th:unless="${expiring.isEmpty()}">
+                        <li th:each="item : ${expiring}">
+                            <span class="home-list__main">
+                                <strong th:text="${item.name()}">Spinach</strong>
+                                <span class="muted" th:text="${@fmt.amount(item.quantity(), item.unit())}">200 g</span>
+                            </span>
+                            <span class="pill" th:classappend="${item.expired()} ? 'pill--bad' : 'pill--warn'"
+                                  th:text="${item.when()}">Expires tomorrow</span>
+                        </li>
+                    </ul>
+                    <p class="home-more" th:if="${expiryCounts.expired() + expiryCounts.soon() > expiring.size()}">
+                        <a th:href="@{/reports/near-expired-pantry-items}"
+                           th:text="|See all ${expiryCounts.expired() + expiryCounts.soon()}|">See all 9</a>
+                    </p>
+                    <div class="home-empty" th:if="${expiring.isEmpty()}">
+                        <p th:text="|Nothing expires in the next ${warningDays} days.|">Nothing expires in the next 7 days.</p>
+                    </div>
+                </section>
+            </div>
+
+            <div class="home-grid__column">
+
+                <!-- ============ shopping ============ -->
+                <section class="card">
+                    <div class="card__head">
+                        <h2>Shopping</h2>
+                        <a th:href="@{/grocery-lists}">All lists</a>
+                    </div>
+                    <th:block th:if="${shopping != null}">
+                        <a class="home-shop__title" th:href="@{/grocery-lists/{id}(id=${shopping.id()})}"
+                           th:text="${shopping.title()}">09/28 Meal Plan grocery list</a>
+                        <div class="home-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                             th:attr="aria-valuenow=${shopping.percentBought()},aria-label='Items bought'">
+                            <span class="home-progress__bar" th:style="|width: ${shopping.percentBought()}%|"></span>
+                        </div>
+                        <p class="home-shop__status" th:if="${shopping.total() == 0}">This list is empty.</p>
+                        <p class="home-shop__status" th:if="${shopping.total() > 0}"
+                           th:text="${shopping.remaining() == 0} ? |All ${shopping.total()} items bought.|
+                                    : |${shopping.bought()} of ${shopping.total()} bought, ${shopping.remaining()} to go.|">
+                            4 of 12 bought, 8 to go.
+                        </p>
+                        <p class="home-note" th:if="${shopping.toPutAway() > 0}">
+                            <a th:href="@{/grocery-lists/{id}(id=${shopping.id()})}"
+                               th:text="${shopping.toPutAway() == 1} ? 'Put 1 bought item away' : |Put ${shopping.toPutAway()} bought items away|">Put 3 bought items away</a>
+                            so your pantry stays current.
+                        </p>
+                    </th:block>
+                    <div class="home-empty" th:if="${shopping == null}">
+                        <p>No grocery list yet. Build one from a meal plan.</p>
+                        <a class="button button--quiet button--small" th:href="@{/grocery-lists}">Grocery lists</a>
+                    </div>
+                </section>
+
+                <!-- ============ what's in the account ============ -->
+                <section class="card">
+                    <h2>In your kitchen</h2>
+                    <ul class="home-counts">
+                        <li><a th:href="@{/recipes}"><span>Recipes</span><strong th:text="${counts.recipes()}">12</strong></a></li>
+                        <li><a th:href="@{/ingredients}"><span>Ingredients</span><strong th:text="${counts.ingredients()}">48</strong></a></li>
+                        <li><a th:href="@{/pantry}"><span>Pantry items</span><strong th:text="${counts.pantryItems()}">31</strong></a></li>
+                        <li><a th:href="@{/meal-plans}"><span>Meal plans</span><strong th:text="${counts.mealPlans()}">3</strong></a></li>
+                        <li><a th:href="@{/grocery-lists}"><span>Grocery lists</span><strong th:text="${counts.groceryLists()}">2</strong></a></li>
+                    </ul>
+                </section>
+
+                <!-- ============ recently cooked ============ -->
+                <section class="card" th:unless="${cooked.isEmpty()}">
+                    <h2>Recently cooked</h2>
+                    <ul class="home-recent">
+                        <li th:each="meal : ${cooked}">
+                            <a th:href="@{/recipes/{id}(id=${meal.recipeId()})}" th:text="${meal.recipeName()}">Lentil soup</a>
+                            <span th:text="${meal.ago()}">yesterday</span>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </th:block>
 </main>
 
 <footer th:replace="~{fragments/layout :: sitefooter}"></footer>
