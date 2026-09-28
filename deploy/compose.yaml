@@ -1,0 +1,55 @@
+# Production stack on the EC2 host. The CI deploy job copies this file to
+# /opt/pantryplan, and deploy.sh writes the .env it reads. For local
+# development, keep using the compose.yaml at the repo root.
+name: pantryplan
+
+services:
+  app:
+    image: ${APP_IMAGE}
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/pantryplan
+      DB_USERNAME: pantryplan
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65
+    # Loopback only. Caddy is the public entry point; deploy.sh health-checks here.
+    ports:
+      - "127.0.0.1:8080:8080"
+    mem_limit: 1g
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pantryplan
+      POSTGRES_USER: pantryplan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # /data is the separate EBS volume. It survives instance replacement
+    # and gets daily snapshots.
+    volumes:
+      - /data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pantryplan -d pantryplan"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live on the data volume, so a new instance reuses them.
+      - /data/caddy/data:/data
+      - /data/caddy/config:/config
+    depends_on:
+      - app
+    restart: unless-stopped

@@ -1,0 +1,55 @@
+#!/bin/bash
+# First-boot setup for the PantryPlan host. It installs Docker, mounts the
+# data volume, and stops. App deploys arrive later through SSM Run Command.
+set -euxo pipefail
+
+retry() {
+  local attempt=1
+  until "$@"; do
+    if [ "$attempt" -ge 10 ]; then
+      return 1
+    fi
+    attempt=$((attempt + 1))
+    sleep 10
+  done
+}
+
+# Docker and the Compose plugin. AL2023 does not package Compose.
+retry dnf install -y docker
+systemctl enable --now docker
+mkdir -p /usr/local/lib/docker/cli-plugins
+retry curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+  "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)"
+chmod 755 /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 1 GB swap as headroom for the JVM and Postgres on a 2 GB instance.
+if [ ! -f /swapfile ]; then
+  dd if=/dev/zero of=/swapfile bs=1M count=1024
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap defaults 0 0' >> /etc/fstab
+fi
+
+# Terraform attaches the data volume after launch. Wait for it to appear.
+device=/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${data_volume_serial}
+for _ in $(seq 1 60); do
+  [ -e "$device" ] && break
+  sleep 5
+done
+[ -e "$device" ]
+
+# Format only a blank volume. A reattached volume keeps its data.
+if ! blkid "$device"; then
+  mkfs.xfs "$device"
+fi
+
+mkdir -p /data
+uuid=$(blkid -s UUID -o value "$device")
+if ! grep -q "$uuid" /etc/fstab; then
+  echo "UUID=$uuid /data xfs defaults,nofail 0 2" >> /etc/fstab
+fi
+systemctl daemon-reload
+mount /data
+
+mkdir -p /data/postgres /data/caddy/data /data/caddy/config /opt/pantryplan

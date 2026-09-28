@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and edit. terraform.tfvars is gitignored.
+
+aws_region = "us-east-1"
+
+# Leave empty until you own the domain. Set it, apply, then add the A record.
+domain = ""
+
+# Set false if an earlier project already created GitHub's OIDC provider
+# in this AWS account (IAM > Identity providers).
+create_github_oidc_provider = true
