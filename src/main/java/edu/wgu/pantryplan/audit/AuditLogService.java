@@ -47,7 +47,8 @@ public class AuditLogService {
             "plan_entries", "Planned meals",
             "grocery_lists", "Grocery lists",
             "grocery_list_items", "Grocery list items",
-            "cook_logs", "Cooking history");
+            "cook_logs", "Cooking history",
+            "feedback", "Feedback");
 
     public static final Map<String, String> ACTIONS = orderedMap(
             "INSERT", "Created",
