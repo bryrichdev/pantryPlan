@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "ec2_assume" {
 }
 
 resource "aws_iam_role" "app" {
-  name               = "pantryprep-prod-instance"
+  name               = "pantryplan-prod-instance"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
 }
 
@@ -126,18 +126,18 @@ data "aws_iam_policy_document" "app" {
     sid     = "ReadAppParameters"
     actions = ["ssm:GetParameter"]
     resources = [
-      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/pantryprep/prod/*",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/pantryplan/prod/*",
     ]
   }
 }
 
 resource "aws_iam_role_policy" "app" {
-  name   = "pantryprep-prod-instance"
+  name   = "pantryplan-prod-instance"
   role   = aws_iam_role.app.id
   policy = data.aws_iam_policy_document.app.json
 }
 
 resource "aws_iam_instance_profile" "app" {
-  name = "pantryprep-prod-instance"
+  name = "pantryplan-prod-instance"
   role = aws_iam_role.app.name
 }

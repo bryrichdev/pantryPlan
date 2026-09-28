@@ -13,7 +13,7 @@ data "aws_iam_policy_document" "dlm_assume" {
 }
 
 resource "aws_iam_role" "dlm" {
-  name               = "pantryprep-prod-dlm"
+  name               = "pantryplan-prod-dlm"
   assume_role_policy = data.aws_iam_policy_document.dlm_assume.json
 }
 
