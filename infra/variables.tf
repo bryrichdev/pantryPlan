@@ -11,9 +11,15 @@ variable "domain" {
 }
 
 variable "github_repository" {
-  description = "owner/repo allowed to deploy. Case must match GitHub exactly."
+  description = "owner/repo, used for the gh variable commands in the outputs."
   type        = string
   default     = "bryrichdev/pantryPlan"
+}
+
+variable "github_oidc_sub_prefix" {
+  description = "Subject prefix GitHub puts in this repo's OIDC tokens. Read it with: gh api repos/OWNER/REPO/actions/oidc/customization/sub"
+  type        = string
+  default     = "repo:bryrichdev@316645314/pantryPlan@1379856595"
 }
 
 variable "create_github_oidc_provider" {
