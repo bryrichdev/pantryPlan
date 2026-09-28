@@ -89,7 +89,7 @@ resource "aws_vpc_security_group_ingress_rule" "http3" {
 
 resource "aws_vpc_security_group_egress_rule" "all" {
   security_group_id = aws_security_group.web.id
-  description       = "Package installs, image pulls, SSM, Let's Encrypt"
+  description       = "Package installs, image pulls, SSM, Lets Encrypt"
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
