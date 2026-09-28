@@ -39,3 +39,10 @@ build/
 !.env.example
 *.dump
 *.backup
+
+### Terraform ###
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+infra/terraform.tfvars
+infra/backend.hcl

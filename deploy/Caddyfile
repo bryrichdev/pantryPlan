@@ -1,0 +1,6 @@
+# SITE_ADDRESS is the domain (Caddy gets and renews a Let's Encrypt
+# certificate automatically) or ":80" when no domain is set yet.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy app:8080
+}
