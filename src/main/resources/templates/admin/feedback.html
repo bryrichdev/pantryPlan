@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Feedback')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Feedback</h1>
+            <p class="pagehead__note">
+                Problems and change requests sent from the button in the corner of
+                every page. Each shows who sent it and the page they were on.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <nav class="feedback-filter" aria-label="Show reports">
+        <a th:href="@{/admin/feedback(show='open')}" class="button"
+           th:classappend="${show == 'open'} ? 'button--primary' : 'button--quiet'"
+           th:attr="aria-current=${show == 'open'} ? 'page' : null"
+           th:text="|Open (${openCount})|">Open (3)</a>
+        <a th:href="@{/admin/feedback(show='resolved')}" class="button"
+           th:classappend="${show == 'resolved'} ? 'button--primary' : 'button--quiet'"
+           th:attr="aria-current=${show == 'resolved'} ? 'page' : null">Resolved</a>
+        <a th:href="@{/admin/feedback(show='all')}" class="button"
+           th:classappend="${show == 'all'} ? 'button--primary' : 'button--quiet'"
+           th:attr="aria-current=${show == 'all'} ? 'page' : null">All</a>
+    </nav>
+
+    <div class="empty" th:if="${#lists.isEmpty(reports)}">
+        <p th:if="${show == 'open'}">Nothing open. Every report has been dealt with.</p>
+        <p th:unless="${show == 'open'}">No reports here yet.</p>
+    </div>
+
+    <table class="table" th:unless="${#lists.isEmpty(reports)}">
+        <caption class="visually-hidden">Feedback reports</caption>
+        <thead>
+        <tr>
+            <th scope="col">Sent</th>
+            <th scope="col">From</th>
+            <th scope="col">Type</th>
+            <th scope="col">Report</th>
+            <th scope="col">Page</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="report : ${reports}">
+            <td class="feedback__when" th:text="${@fmt.dateTime(report.createdAt)}">Sep 28, 2026 at 5:04 PM</td>
+            <td th:text="${report.senderEmail}">cook@example.com</td>
+            <td>
+                <span class="pill"
+                      th:classappend="${report.kind.name() == 'PROBLEM'} ? 'pill--bad' : 'pill--warn'"
+                      th:text="${@fmt.label(report.kind)}">Problem</span>
+            </td>
+            <td class="feedback__report">
+                <strong th:text="${report.summary}">The grocery list skipped eggs</strong>
+                <p class="feedback__details" th:if="${report.details != null}"
+                   th:text="${report.details}">Details</p>
+            </td>
+            <td>
+                <a th:if="${report.pagePath != null}" th:href="@{${report.pagePath}}"
+                   th:text="${report.pagePath}">/grocery-lists/4</a>
+                <span th:unless="${report.pagePath != null}" class="muted">Unknown</span>
+            </td>
+            <td>
+                <span th:if="${report.open}">Open</span>
+                <span th:unless="${report.open}" class="muted"
+                      th:text="|Resolved ${@fmt.date(report.resolvedAt)}|">Resolved Sep 29, 2026</span>
+            </td>
+            <td class="table__actions">
+                <form th:action="@{/admin/feedback/{id}/status(id=${report.id})}" method="post" class="inline-form">
+                    <input type="hidden" name="show" th:value="${show}">
+                    <input type="hidden" name="status" th:value="${report.open} ? 'RESOLVED' : 'OPEN'">
+                    <button type="submit" class="linkbutton"
+                            th:text="${report.open} ? 'Mark resolved' : 'Reopen'">Mark resolved</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

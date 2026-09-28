@@ -1,9 +1,11 @@
 package edu.wgu.pantryplan.web;
 
 import edu.wgu.pantryplan.audit.AuditLogService;
+import edu.wgu.pantryplan.domain.FeedbackStatus;
 import edu.wgu.pantryplan.security.AppUserDetails;
 import edu.wgu.pantryplan.service.AdminService;
 import edu.wgu.pantryplan.service.BulkDeleteResult;
+import edu.wgu.pantryplan.service.FeedbackService;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -27,11 +29,47 @@ public class AdminController {
 
     private final AdminService adminService;
     private final AuditLogService auditLogService;
+    private final FeedbackService feedbackService;
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
-    public AdminController(AdminService adminService, AuditLogService auditLogService) {
+    public AdminController(AdminService adminService, AuditLogService auditLogService,
+                           FeedbackService feedbackService) {
         this.adminService = adminService;
         this.auditLogService = auditLogService;
+        this.feedbackService = feedbackService;
+    }
+
+    /**
+     * Problem reports and change requests, newest first. Open ones by default,
+     * since those are the ones still waiting on someone.
+     */
+    @GetMapping("/feedback")
+    public String feedback(@RequestParam(name = "show", defaultValue = "open") String show, Model model) {
+        String filter = feedbackFilter(show);
+        FeedbackStatus status = switch (filter) {
+            case "resolved" -> FeedbackStatus.RESOLVED;
+            case "all" -> null;
+            default -> FeedbackStatus.OPEN;
+        };
+        model.addAttribute("reports", feedbackService.list(status));
+        model.addAttribute("openCount", feedbackService.countOpen());
+        model.addAttribute("show", filter);
+        return "admin/feedback";
+    }
+
+    @PostMapping("/feedback/{id}/status")
+    public String setFeedbackStatus(@PathVariable Long id,
+                                    @RequestParam(name = "status") FeedbackStatus status,
+                                    @RequestParam(name = "show", defaultValue = "open") String show,
+                                    RedirectAttributes redirectAttributes) {
+        feedbackService.setStatus(id, status);
+        redirectAttributes.addFlashAttribute("message",
+                status == FeedbackStatus.RESOLVED ? "Marked resolved." : "Reopened.");
+        return "redirect:/admin/feedback?show=" + feedbackFilter(show);
+    }
+
+    private static String feedbackFilter(String show) {
+        return "resolved".equals(show) || "all".equals(show) ? show : "open";
     }
 
     /**

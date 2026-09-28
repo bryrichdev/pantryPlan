@@ -11,6 +11,7 @@
     <link rel="stylesheet" th:href="@{/css/dialog.css}">
     <link rel="stylesheet" th:href="@{/css/recipes.css}">
     <link rel="stylesheet" th:href="@{/css/plans.css}">
+    <link rel="stylesheet" th:href="@{/css/feedback.css}">
     <!-- Last, so its small-screen rules win over everything above. -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
     <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon.png}">
@@ -66,6 +67,9 @@
             <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/logs}"
                th:classappend="${#strings.startsWith(currentPath, '/admin/logs')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/logs')} ? 'page' : null">Logs</a>
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/feedback}"
+               th:classappend="${#strings.startsWith(currentPath, '/admin/feedback')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/feedback')} ? 'page' : null">Feedback</a>
         </nav>
 
         <div class="topnav__account">
@@ -88,6 +92,78 @@
 <footer th:fragment="sitefooter" class="sitefooter">
     <p>PantryPlan — plan the week, shop for what is missing.</p>
     <p>Questions? <a href="mailto:bryrich.dev@gmail.com">bryrich.dev@gmail.com</a></p>
+
+    <!-- The report button sits in the corner of every signed-in page. It lives
+         in the footer fragment because every page already includes it. -->
+    <th:block sec:authorize="isAuthenticated()">
+        <button type="button" class="feedback-fab" data-dialog-open="feedback-dialog">Report an issue</button>
+
+        <p class="feedback-toast notice notice--good" th:if="${feedbackSent}" role="status">
+            Thanks. Your report went to the admins.
+        </p>
+        <p class="feedback-toast notice notice--bad" th:if="${feedbackError}" th:text="${feedbackError}"
+           role="alert">Add a short summary</p>
+
+        <dialog id="feedback-dialog" class="dialog feedback-dialog" aria-labelledby="feedback-dialog-title">
+            <form th:action="@{/feedback}" method="post" class="dialog__form" data-feedback-form>
+                <input type="hidden" name="pagePath" th:value="${currentPath}">
+
+                <div class="dialog__head">
+                    <h2 id="feedback-dialog-title">Report an issue</h2>
+                    <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+                </div>
+
+                <div class="dialog__body">
+                    <fieldset class="field feedback-kind">
+                        <legend>What is this about?</legend>
+                        <label class="feedback-kind__option">
+                            <input type="radio" name="kind" value="PROBLEM" checked>
+                            Something is broken
+                        </label>
+                        <label class="feedback-kind__option">
+                            <input type="radio" name="kind" value="REQUEST">
+                            Request a change
+                        </label>
+                    </fieldset>
+
+                    <div class="field">
+                        <label for="feedback-summary">Summary</label>
+                        <input type="text" id="feedback-summary" name="summary" maxlength="120" required
+                               placeholder="The grocery list left out eggs">
+                    </div>
+
+                    <div class="field">
+                        <label for="feedback-details">Details</label>
+                        <textarea id="feedback-details" name="details" rows="5" maxlength="4000"></textarea>
+                        <p class="field__hint">
+                            Optional. For a problem, say what you did and what happened.
+                            The admins see your email and the page you were on.
+                        </p>
+                    </div>
+
+                    <p class="notice notice--bad" data-feedback-error role="alert" hidden></p>
+                </div>
+
+                <div class="dialog__foot">
+                    <button type="submit" class="button button--primary" data-feedback-submit>Send</button>
+                    <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+                </div>
+            </form>
+
+            <div class="dialog__form" data-feedback-done hidden>
+                <div class="dialog__head">
+                    <h2>Thanks</h2>
+                    <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+                </div>
+                <div class="dialog__body">
+                    <p>Your report went to the admins.</p>
+                </div>
+                <div class="dialog__foot">
+                    <button type="button" class="button button--primary" data-dialog-close>Close</button>
+                </div>
+            </div>
+        </dialog>
+    </th:block>
 </footer>
 
 </body>

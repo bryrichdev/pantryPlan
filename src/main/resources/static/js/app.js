@@ -250,6 +250,32 @@
         }
     }
 
+    /* ------------------------------------------------------ feedback dialog */
+
+    /*
+     * The report dialog opens on every page, so each opening starts it fresh:
+     * the form showing, the thank-you hidden, and no leftover error.
+     */
+    function resetFeedbackDialog(dialog) {
+        var form = dialog.querySelector("[data-feedback-form]");
+        var done = dialog.querySelector("[data-feedback-done]");
+        var error = dialog.querySelector("[data-feedback-error]");
+        var submit = dialog.querySelector("[data-feedback-submit]");
+        if (form) {
+            form.hidden = false;
+        }
+        if (done) {
+            done.hidden = true;
+        }
+        if (error) {
+            error.hidden = true;
+            error.textContent = "";
+        }
+        if (submit) {
+            submit.disabled = false;
+        }
+    }
+
     /* ------------------------------------------------------- repeating rows */
 
     /*
@@ -570,6 +596,62 @@
 
     document.addEventListener("DOMContentLoaded", refreshStockUpControls);
 
+    /*
+     * The report posts in the background so whatever the cook was typing on
+     * the page underneath stays put. 204 means saved; 400 carries the problem
+     * as text. Anything else, such as an expired session answered with the
+     * sign-in page, falls back to an ordinary submit so the server can respond.
+     */
+    document.addEventListener("submit", function (event) {
+        var form = event.target;
+        if (!form.matches || !form.matches("[data-feedback-form]") || typeof window.fetch !== "function") {
+            return;
+        }
+        var dialog = form.closest("dialog");
+        var error = form.querySelector("[data-feedback-error]");
+        var submit = form.querySelector("[data-feedback-submit]");
+
+        event.preventDefault();
+        if (submit) {
+            submit.disabled = true;
+        }
+
+        fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { "X-Requested-With": "fetch" },
+            credentials: "same-origin"
+        }).then(function (response) {
+            if (response.status === 204) {
+                form.reset();
+                form.hidden = true;
+                var done = dialog ? dialog.querySelector("[data-feedback-done]") : null;
+                if (done) {
+                    done.hidden = false;
+                    var closer = done.querySelector(".button[data-dialog-close]");
+                    if (closer) {
+                        closer.focus();
+                    }
+                }
+                return;
+            }
+            if (response.status === 400) {
+                return response.text().then(function (message) {
+                    if (error) {
+                        error.textContent = message;
+                        error.hidden = false;
+                    }
+                    if (submit) {
+                        submit.disabled = false;
+                    }
+                });
+            }
+            throw new Error("Report refused: " + response.status);
+        }).catch(function () {
+            form.submit();
+        });
+    });
+
     document.addEventListener("click", function (event) {
         var opener = event.target.closest("[data-dialog-open]");
         if (opener) {
@@ -587,6 +669,8 @@
                 fillEntryDialog(dialog, opener);
             } else if (dialog.id === "delete-dialog") {
                 fillDeleteDialog(dialog, opener);
+            } else if (dialog.id === "feedback-dialog") {
+                resetFeedbackDialog(dialog);
             }
             openDialog(dialog);
             return;
