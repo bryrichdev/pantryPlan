@@ -13,7 +13,7 @@ data "aws_iam_policy_document" "dlm_assume" {
 }
 
 resource "aws_iam_role" "dlm" {
-  name               = "pantryplan-prod-dlm"
+  name               = "pantryprep-prod-dlm"
   assume_role_policy = data.aws_iam_policy_document.dlm_assume.json
 }
 
@@ -23,13 +23,13 @@ resource "aws_iam_role_policy_attachment" "dlm" {
 }
 
 resource "aws_dlm_lifecycle_policy" "data" {
-  description        = "PantryPlan daily data snapshots"
+  description        = "PantryPrep daily data snapshots"
   execution_role_arn = aws_iam_role.dlm.arn
   state              = "ENABLED"
 
   policy_details {
     resource_types = ["VOLUME"]
-    target_tags    = { Backup = "pantryplan-daily" }
+    target_tags    = { Backup = "pantryprep-daily" }
 
     schedule {
       name      = "daily"

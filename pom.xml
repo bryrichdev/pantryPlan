@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>edu.wgu</groupId>
-    <artifactId>pantryplan</artifactId>
+    <artifactId>pantryprep</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>pantryplan</name>
-    <description>pantryplan</description>
+    <name>pantryprep</name>
+    <description>pantryprep</description>
     <url/>
     <licenses>
         <license/>

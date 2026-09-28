@@ -45,13 +45,13 @@ resource "aws_instance" "app" {
     ignore_changes = [ami, user_data]
   }
 
-  tags = { Name = "pantryplan-prod" }
+  tags = { Name = "pantryprep-prod" }
 }
 
 resource "aws_eip" "app" {
   domain = "vpc"
 
-  tags = { Name = "pantryplan-prod" }
+  tags = { Name = "pantryprep-prod" }
 }
 
 resource "aws_eip_association" "app" {
@@ -68,8 +68,8 @@ resource "aws_ebs_volume" "data" {
   encrypted         = true
 
   tags = {
-    Name   = "pantryplan-prod-data"
-    Backup = "pantryplan-daily"
+    Name   = "pantryprep-prod-data"
+    Backup = "pantryprep-daily"
   }
 
   lifecycle {
@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "ec2_assume" {
 }
 
 resource "aws_iam_role" "app" {
-  name               = "pantryplan-prod-instance"
+  name               = "pantryprep-prod-instance"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
 }
 
@@ -126,18 +126,18 @@ data "aws_iam_policy_document" "app" {
     sid     = "ReadAppParameters"
     actions = ["ssm:GetParameter"]
     resources = [
-      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/pantryplan/prod/*",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/pantryprep/prod/*",
     ]
   }
 }
 
 resource "aws_iam_role_policy" "app" {
-  name   = "pantryplan-prod-instance"
+  name   = "pantryprep-prod-instance"
   role   = aws_iam_role.app.id
   policy = data.aws_iam_policy_document.app.json
 }
 
 resource "aws_iam_instance_profile" "app" {
-  name = "pantryplan-prod-instance"
+  name = "pantryprep-prod-instance"
   role = aws_iam_role.app.name
 }

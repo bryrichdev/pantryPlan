@@ -5,7 +5,7 @@ set -euo pipefail
 
 image="$1"
 region="$2"
-app_dir=/opt/pantryplan
+app_dir=/opt/pantryprep
 registry="${image%%/*}"
 
 cd "$app_dir"
@@ -14,10 +14,10 @@ cd "$app_dir"
 cloud-init status --wait > /dev/null || true
 
 db_password=$(aws ssm get-parameter --region "$region" \
-  --name /pantryplan/prod/db_password --with-decryption \
+  --name /pantryprep/prod/db_password --with-decryption \
   --query Parameter.Value --output text)
 site_address=$(aws ssm get-parameter --region "$region" \
-  --name /pantryplan/prod/site_address \
+  --name /pantryprep/prod/site_address \
   --query Parameter.Value --output text)
 
 umask 077

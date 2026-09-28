@@ -46,7 +46,7 @@ data "aws_iam_policy_document" "github_assume" {
 }
 
 resource "aws_iam_role" "github_deploy" {
-  name               = "pantryplan-prod-github-deploy"
+  name               = "pantryprep-prod-github-deploy"
   assume_role_policy = data.aws_iam_policy_document.github_assume.json
 }
 
@@ -92,7 +92,7 @@ data "aws_iam_policy_document" "github_deploy" {
 }
 
 resource "aws_iam_role_policy" "github_deploy" {
-  name   = "pantryplan-prod-github-deploy"
+  name   = "pantryprep-prod-github-deploy"
   role   = aws_iam_role.github_deploy.id
   policy = data.aws_iam_policy_document.github_deploy.json
 }

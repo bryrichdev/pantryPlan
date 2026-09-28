@@ -1,5 +1,5 @@
 #!/bin/bash
-# First-boot setup for the PantryPlan host. It installs Docker, mounts the
+# First-boot setup for the PantryPrep host. It installs Docker, mounts the
 # data volume, and stops. App deploys arrive later through SSM Run Command.
 set -euxo pipefail
 
@@ -52,4 +52,4 @@ fi
 systemctl daemon-reload
 mount /data
 
-mkdir -p /data/postgres /data/caddy/data /data/caddy/config /opt/pantryplan
+mkdir -p /data/postgres /data/caddy/data /data/caddy/config /opt/pantryprep

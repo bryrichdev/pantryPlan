@@ -15,7 +15,7 @@ terraform {
   # Bucket and region come from backend.hcl (see README). S3 native locking
   # replaces the old DynamoDB lock table.
   backend "s3" {
-    key          = "pantryplan/prod/terraform.tfstate"
+    key          = "pantryprep/prod/terraform.tfstate"
     encrypt      = true
     use_lockfile = true
   }
@@ -26,7 +26,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "pantryplan"
+      Project     = "pantryprep"
       Environment = "prod"
       ManagedBy   = "terraform"
     }

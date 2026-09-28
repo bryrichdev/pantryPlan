@@ -10,13 +10,13 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = { Name = "pantryplan-prod" }
+  tags = { Name = "pantryprep-prod" }
 }
 
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
-  tags = { Name = "pantryplan-prod" }
+  tags = { Name = "pantryprep-prod" }
 }
 
 resource "aws_subnet" "public" {
@@ -24,7 +24,7 @@ resource "aws_subnet" "public" {
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, 1)
   availability_zone = data.aws_availability_zones.available.names[0]
 
-  tags = { Name = "pantryplan-prod-public" }
+  tags = { Name = "pantryprep-prod-public" }
 
   # The data volume lives in this AZ. Never let a changed AZ list move it.
   lifecycle {
@@ -45,7 +45,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = { Name = "pantryplan-prod-public" }
+  tags = { Name = "pantryprep-prod-public" }
 }
 
 resource "aws_route_table_association" "public" {
@@ -55,8 +55,8 @@ resource "aws_route_table_association" "public" {
 
 # Web traffic only. No SSH port: shell access goes through SSM Session Manager.
 resource "aws_security_group" "web" {
-  name        = "pantryplan-prod-web"
-  description = "HTTP and HTTPS to the PantryPlan host"
+  name        = "pantryprep-prod-web"
+  description = "HTTP and HTTPS to the PantryPrep host"
   vpc_id      = aws_vpc.main.id
 }
 
