@@ -1,14 +1,14 @@
 # Production stack on the EC2 host. The CI deploy job copies this file to
-# /opt/pantryplan, and deploy.sh writes the .env it reads. For local
+# /opt/pantryprep, and deploy.sh writes the .env it reads. For local
 # development, keep using the compose.yaml at the repo root.
-name: pantryplan
+name: pantryprep
 
 services:
   app:
     image: ${APP_IMAGE}
     environment:
-      DB_URL: jdbc:postgresql://db:5432/pantryplan
-      DB_USERNAME: pantryplan
+      DB_URL: jdbc:postgresql://db:5432/pantryprep
+      DB_USERNAME: pantryprep
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65
     # Loopback only. Caddy is the public entry point; deploy.sh health-checks here.
@@ -23,15 +23,15 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: pantryplan
-      POSTGRES_USER: pantryplan
+      POSTGRES_DB: pantryprep
+      POSTGRES_USER: pantryprep
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     # /data is the separate EBS volume. It survives instance replacement
     # and gets daily snapshots.
     volumes:
       - /data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pantryplan -d pantryplan"]
+      test: ["CMD-SHELL", "pg_isready -U pantryprep -d pantryprep"]
       interval: 5s
       timeout: 5s
       retries: 10

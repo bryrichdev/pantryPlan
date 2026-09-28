@@ -117,17 +117,17 @@ jobs:
             --arg region "$AWS_REGION" \
             '{commands: [
               "set -eu",
-              "install -d -m 755 /opt/pantryplan",
-              "echo \($compose) | base64 -d > /opt/pantryplan/compose.yaml",
-              "echo \($caddy) | base64 -d > /opt/pantryplan/Caddyfile",
-              "echo \($script) | base64 -d > /opt/pantryplan/deploy.sh",
-              "bash /opt/pantryplan/deploy.sh \($image) \($region)"
+              "install -d -m 755 /opt/pantryprep",
+              "echo \($compose) | base64 -d > /opt/pantryprep/compose.yaml",
+              "echo \($caddy) | base64 -d > /opt/pantryprep/Caddyfile",
+              "echo \($script) | base64 -d > /opt/pantryprep/deploy.sh",
+              "bash /opt/pantryprep/deploy.sh \($image) \($region)"
             ]}')
 
           command_id=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name AWS-RunShellScript \
-            --comment "pantryplan ${IMAGE_TAG:0:7}" \
+            --comment "pantryprep ${IMAGE_TAG:0:7}" \
             --timeout-seconds 900 \
             --parameters "$params" \
             --query Command.CommandId --output text)

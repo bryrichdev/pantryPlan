@@ -1,5 +1,5 @@
 /*
- * PantryPlan browser behaviour.
+ * PantryPrep browser behaviour.
  *
  * Two features live here: modal dialogs built on the native <dialog> element,
  * and the repeating ingredient rows on the recipe form. Neither does any
@@ -457,7 +457,7 @@
      * Grocery ticks no longer reload at all, but this still covers the case
      * where that fails and the form is submitted the ordinary way.
      */
-    var SCROLL_KEY = "pantryplan:scroll";
+    var SCROLL_KEY = "pantryprep:scroll";
 
     function rememberScroll() {
         try {

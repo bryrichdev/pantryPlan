@@ -1,6 +1,6 @@
-# PantryPlan deployment
+# PantryPrep deployment
 
-PantryPlan runs on one EC2 Graviton instance (`t4g.small`). Docker Compose runs three containers on it:
+PantryPrep runs on one EC2 Graviton instance (`t4g.small`). Docker Compose runs three containers on it:
 
 - **caddy**: terminates HTTPS with an automatic Let's Encrypt certificate.
 - **app**: the Spring Boot image from ECR.
@@ -28,7 +28,7 @@ You need the AWS CLI, Terraform 1.10 or later, and the GitHub CLI (`gh`). Run ev
 
 ```bash
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-BUCKET=pantryplan-tfstate-$ACCOUNT_ID
+BUCKET=pantryprep-tfstate-$ACCOUNT_ID
 aws s3api create-bucket --bucket "$BUCKET" --region us-east-1
 aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
 ```
@@ -71,12 +71,12 @@ Merge to `main` or push to it. The first run creates the `production` environmen
 | Task | How |
 |---|---|
 | Shell on the server | `aws ssm start-session --target <instance_id>` (needs the Session Manager plugin) |
-| App logs | In a session: `cd /opt/pantryplan && sudo docker compose logs -f app` |
+| App logs | In a session: `cd /opt/pantryprep && sudo docker compose logs -f app` |
 | Roll back | Actions > CI/CD > Run workflow on `main`. Enter an earlier commit SHA as `image_tag`. |
-| Database shell | `sudo docker compose exec db psql -U pantryplan` |
+| Database shell | `sudo docker compose exec db psql -U pantryprep` |
 | Replace the server | `terraform apply -replace=aws_instance.app`, then redeploy. The data volume reattaches. |
 | Restore a backup | Create a volume from the snapshot in the instance's AZ. Then run `terraform state rm aws_volume_attachment.data aws_ebs_volume.data`, `terraform import aws_ebs_volume.data <new-volume-id>` and `terraform apply -replace=aws_instance.app`. Redeploy. |
 
 The data volume has `prevent_destroy`. `terraform destroy` stops on it on purpose. To tear everything down, remove that lifecycle block first.
 
-The database password is generated once and stored in SSM Parameter Store at `/pantryplan/prod/db_password`. Postgres applies it only when it creates the database. Do not taint `random_password.db`.
+The database password is generated once and stored in SSM Parameter Store at `/pantryprep/prod/db_password`. Postgres applies it only when it creates the database. Do not taint `random_password.db`.

@@ -1,7 +1,7 @@
 # Image registry and runtime configuration for the app.
 
 resource "aws_ecr_repository" "app" {
-  name                 = "pantryplan"
+  name                 = "pantryprep"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -34,13 +34,13 @@ resource "random_password" "db" {
 }
 
 resource "aws_ssm_parameter" "db_password" {
-  name  = "/pantryplan/prod/db_password"
+  name  = "/pantryprep/prod/db_password"
   type  = "SecureString"
   value = random_password.db.result
 }
 
 resource "aws_ssm_parameter" "site_address" {
-  name  = "/pantryplan/prod/site_address"
+  name  = "/pantryprep/prod/site_address"
   type  = "String"
   value = var.domain != "" ? var.domain : ":80"
 }

@@ -6,7 +6,7 @@
 --
 -- The database cannot see who is signed in, so the application tells it. At
 -- the start of each read-write transaction it sets two transaction-local
--- settings, pantryplan.actor and pantryplan.impersonator, to the signed-in
+-- settings, pantryprep.actor and pantryprep.impersonator, to the signed-in
 -- account's email and, when an admin is viewing as that account, the admin's
 -- email. A change with no actor (registration, migrations, psql) is recorded
 -- with an empty actor.
@@ -64,8 +64,8 @@ BEGIN
         TG_TABLE_NAME,
         TG_OP,
         (COALESCE(new_json, old_json) ->> 'id')::BIGINT,
-        NULLIF(current_setting('pantryplan.actor', true), ''),
-        NULLIF(current_setting('pantryplan.impersonator', true), ''),
+        NULLIF(current_setting('pantryprep.actor', true), ''),
+        NULLIF(current_setting('pantryprep.impersonator', true), ''),
         old_json,
         new_json
     );

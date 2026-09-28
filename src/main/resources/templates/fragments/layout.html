@@ -5,7 +5,7 @@
 <head th:fragment="head(pageTitle)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="|PantryPlan - ${pageTitle}|">PantryPlan</title>
+    <title th:text="|PantryPrep - ${pageTitle}|">PantryPrep</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <link rel="stylesheet" th:href="@{/css/tables.css}">
     <link rel="stylesheet" th:href="@{/css/dialog.css}">
@@ -25,7 +25,7 @@
     <div class="impersonation" th:if="${impersonatorName != null}" role="status">
         <p class="impersonation__text">
             <th:block th:text="${impersonatorName}">Admin</th:block>, you are viewing
-            PantryPlan as <strong th:text="${currentUserName}">Cook</strong>.
+            PantryPrep as <strong th:text="${currentUserName}">Cook</strong>.
             Anything you change here changes their account.
         </p>
         <form th:action="@{/admin/impersonate/exit}" method="post" class="inline-form">
@@ -33,7 +33,7 @@
         </form>
     </div>
     <div class="topnav__inner">
-        <a class="wordmark" th:href="@{/}">PantryPlan</a>
+        <a class="wordmark" th:href="@{/}">PantryPrep</a>
 
         <!-- Only shown on narrow screens, where the links fold away behind it. -->
         <button type="button" class="topnav__toggle" sec:authorize="isAuthenticated()"
@@ -90,7 +90,7 @@
 </div>
 
 <footer th:fragment="sitefooter" class="sitefooter">
-    <p>PantryPlan — plan the week, shop for what is missing.</p>
+    <p>PantryPrep — plan the week, shop for what is missing.</p>
     <p>Questions? <a href="mailto:bryrich.dev@gmail.com">bryrich.dev@gmail.com</a></p>
 
     <!-- The report button sits in the corner of every signed-in page. It lives
