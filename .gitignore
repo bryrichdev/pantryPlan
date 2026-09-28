@@ -32,6 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 .DS_Store
+__pycache__/
 
 # Local container secrets and database exports
 .env

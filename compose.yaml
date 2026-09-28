@@ -5,8 +5,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_URL: jdbc:postgresql://db:5432/pantryprep
-      DB_USERNAME: pantryprep
+      DB_URL: jdbc:postgresql://db:5432/pantryplan
+      DB_USERNAME: pantryplan
       DB_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       db:
@@ -18,17 +18,18 @@ services:
       - "127.0.0.1:5432:5432"
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: pantryprep
-      POSTGRES_USER: pantryprep
+      POSTGRES_DB: pantryplan
+      POSTGRES_USER: pantryplan
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pantryprep-db:/var/lib/postgresql/data
+      - pantryplan-db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pantryprep -d pantryprep"]
+      test: ["CMD-SHELL", "pg_isready -U pantryplan -d pantryplan"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
 
 volumes:
-  pantryprep-db:
+  # Existing data volumes keep their physical identity across the rebrand.
+  pantryplan-db:

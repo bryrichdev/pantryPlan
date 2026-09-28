@@ -55,8 +55,8 @@ resource "aws_route_table_association" "public" {
 
 # Web traffic only. No SSH port: shell access goes through SSM Session Manager.
 resource "aws_security_group" "web" {
-  name        = "pantryprep-prod-web"
-  description = "HTTP and HTTPS to the PantryPrep host"
+  name        = "pantryplan-prod-web"
+  description = "HTTP and HTTPS to the PantryPlan host"
   vpc_id      = aws_vpc.main.id
 }
 

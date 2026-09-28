@@ -1,8 +1,9 @@
 # Image registry and runtime configuration for the app.
 
 resource "aws_ecr_repository" "app" {
-  name                 = "pantryprep"
-  image_tag_mutability = "MUTABLE"
+  # Physical names survive a product rebrand; existing rollback images live here.
+  name                 = "pantryplan"
+  image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
     scan_on_push = true
@@ -17,9 +18,10 @@ resource "aws_ecr_lifecycle_policy" "app" {
       rulePriority = 1
       description  = "Keep the 15 most recent images for rollback"
       selection = {
-        tagStatus   = "any"
-        countType   = "imageCountMoreThan"
-        countNumber = 15
+        tagStatus      = "tagged"
+        tagPatternList = ["*"]
+        countType      = "imageCountMoreThan"
+        countNumber    = 15
       }
       action = { type = "expire" }
     }]
@@ -34,13 +36,13 @@ resource "random_password" "db" {
 }
 
 resource "aws_ssm_parameter" "db_password" {
-  name  = "/pantryprep/prod/db_password"
+  name  = "/pantryplan/prod/db_password"
   type  = "SecureString"
   value = random_password.db.result
 }
 
 resource "aws_ssm_parameter" "site_address" {
-  name  = "/pantryprep/prod/site_address"
+  name  = "/pantryplan/prod/site_address"
   type  = "String"
   value = var.domain != "" ? var.domain : ":80"
 }

@@ -1,51 +1,111 @@
 #!/usr/bin/env bash
-# Runs on the EC2 host through SSM Run Command, sent by the CI deploy job.
-# Usage: deploy.sh <image-uri> <aws-region>
-set -euo pipefail
+# Usage: bash <staged-release>/deploy.sh <image@sha256:digest> <aws-region> <public-url>
+set -Eeuo pipefail
 
-image="$1"
-region="$2"
-app_dir=/opt/pantryprep
+image="${1:?image is required}"
+region="${2:?region is required}"
+public_url="${3:?public URL is required}"
+release_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+app_dir=${PANTRYPREP_DEPLOY_DIR:-/opt/pantryplan}
 registry="${image%%/*}"
-
+[[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] || { echo "Deploy by digest only" >&2; exit 1; }
+[[ "$release_dir" != "$app_dir" ]]
 cd "$app_dir"
-
-# The first deploy can arrive while first-boot setup is still running.
-cloud-init status --wait > /dev/null || true
+umask 077
+# Serialize on the host: a timed-out Actions runner can leave SSM alive.
+exec 9>"$app_dir/.deploy.lock"
+flock -w 60 9
+cloud-init status --wait > /dev/null
+mountpoint -q /data
 
 db_password=$(aws ssm get-parameter --region "$region" \
-  --name /pantryprep/prod/db_password --with-decryption \
+  --name /pantryplan/prod/db_password --with-decryption \
   --query Parameter.Value --output text)
 site_address=$(aws ssm get-parameter --region "$region" \
-  --name /pantryprep/prod/site_address \
-  --query Parameter.Value --output text)
-
-umask 077
-cat > .env <<EOF
-APP_IMAGE=$image
-SITE_ADDRESS=$site_address
-POSTGRES_PASSWORD=$db_password
-EOF
-umask 022
-
+  --name /pantryplan/prod/site_address --query Parameter.Value --output text)
+printf 'APP_IMAGE=%s\nSITE_ADDRESS=%s\nPOSTGRES_PASSWORD=%s\n' \
+  "$image" "$site_address" "$db_password" > "$release_dir/.env"
+docker compose --project-directory "$release_dir" -f "$release_dir/compose.yaml" \
+  --env-file "$release_dir/.env" config --quiet
 aws ecr get-login-password --region "$region" \
   | docker login --username AWS --password-stdin "$registry"
+docker pull "$image"
 
-docker compose pull --quiet
-docker compose up -d --remove-orphans
-
-echo "Waiting for the app to answer on /login"
-for _ in $(seq 1 36); do
-  if curl -fsS -o /dev/null http://127.0.0.1:8080/login; then
-    echo "Deployed $image"
-    # Drop images no container uses, older than a week. Keeps the disk clear.
-    docker image prune -af --filter "until=168h" > /dev/null
-    exit 0
+backup_dir=$(mktemp -d "$app_dir/rollback.XXXXXX")
+previous_image=""
+if [[ -f compose.yaml ]]; then
+  container=$(docker compose ps -aq app)
+  if [[ -n "$container" ]]; then
+    previous_image=$(docker inspect --format '{{.Image}}' "$container")
+    # Preserve the actual image even if its old mutable tag moved.
+    docker image tag "$previous_image" pantryprep-rollback:previous
+    for file in compose.yaml Caddyfile .env; do
+      cp -p "$file" "$backup_dir/$file"
+    done
+    sed 's|^APP_IMAGE=.*|APP_IMAGE=pantryprep-rollback:previous|' \
+      "$backup_dir/.env" > "$backup_dir/.env.restore"
   fi
-  sleep 5
-done
+fi
 
-echo "App did not become healthy within 3 minutes" >&2
-docker compose ps >&2
-docker compose logs --tail 100 app >&2
-exit 1
+health_check() {
+  local attempt code
+  for attempt in $(seq 1 24); do
+    code=$(curl -sS --connect-timeout 3 --max-time 5 -o /dev/null -w '%{http_code}' \
+      http://127.0.0.1:8080/login) || code=000
+    if [[ "$code" == 200 ]]; then
+      code=$(curl -sS --connect-timeout 3 --max-time 5 -o /dev/null -w '%{http_code}' \
+        "${public_url%/}/login") || code=000
+      [[ "$code" == 200 ]] && return 0
+    fi
+    sleep 5
+  done
+  return 1
+}
+
+reload_proxy() {
+  local attempt
+  # A newly created Caddy container may not have opened its admin listener yet.
+  for attempt in $(seq 1 12); do
+    if docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+recover() {
+  local failure=$?
+  trap - ERR
+  set +e
+  docker compose logs --tail 100 app >&2
+  if [[ -n "$previous_image" ]]; then
+    echo "Release failed; restoring the previous image and configuration." >&2
+    cp -p "$backup_dir/compose.yaml" compose.yaml
+    cp -p "$backup_dir/Caddyfile" Caddyfile
+    cp -p "$backup_dir/.env.restore" .env
+    if docker compose up -d --pull never --remove-orphans \
+        && reload_proxy \
+        && health_check; then
+      echo "Previous release restored." >&2
+    else
+      echo "ROLLBACK FAILED. Inspect $backup_dir and the Compose logs." >&2
+    fi
+  else
+    echo "First deployment failed; no previous release exists." >&2
+  fi
+  exit "$failure"
+}
+
+trap recover ERR
+for file in compose.yaml Caddyfile .env; do
+  cp "$release_dir/$file" "$file"
+done
+# Keep already-installed DB/proxy versions stable during an app release.
+docker compose up -d --pull missing --remove-orphans
+reload_proxy
+health_check
+trap - ERR
+echo "Deployed $image"
+# Backup bundles contain credentials and remain root-only for recovery.
+docker image prune -f --filter "until=168h" > /dev/null || true
