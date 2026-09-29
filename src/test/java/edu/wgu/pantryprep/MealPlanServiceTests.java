@@ -117,6 +117,17 @@ class MealPlanServiceTests {
         return pantryService.create(form, user);
     }
 
+    private PantryItem stockAt(User user, Ingredient ingredient, String quantity, StorageLocation location,
+                               LocalDate purchasedOn, LocalDate expiresOn) {
+        PantryItemForm form = new PantryItemForm();
+        form.setIngredientId(ingredient.getId());
+        form.setQuantity(new java.math.BigDecimal(quantity));
+        form.setLocation(location);
+        form.setPurchasedOn(purchasedOn);
+        form.setExpiresOn(expiresOn);
+        return pantryService.create(form, user);
+    }
+
     private Recipe recipeUsing(User user, String name, int servings, Ingredient ingredient,
                                String quantity, Unit unit) {
         RecipeForm form = new RecipeForm();
@@ -362,6 +373,81 @@ class MealPlanServiceTests {
         Recipe refreshed = recipeService.requireOwned(chili.getId(), user);
         assertEquals(0, refreshed.getTimesCooked());
         assertNull(refreshed.getLastCookedAt());
+    }
+
+    @Test
+    void undoingCookingPutsStockBackIntoTheRowItCameFrom() {
+        User user = cook("plan-undo-same-row@example.com");
+        Ingredient rice = ingredient(user, "Rice", Unit.GRAM);
+        LocalDate expires = LocalDate.now().plusDays(60);
+        PantryItem bag = stockAt(user, rice, "500", StorageLocation.PANTRY, null, expires);
+        Recipe pilaf = recipeUsing(user, "Pilaf", 4, rice, "100", Unit.GRAM);
+        MealPlan created = plan(user, "Same row week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(pilaf, MONDAY, MealSlot.DINNER, 4), user);
+
+        mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+        mealPlanService.markEntryNotCooked(created.getId(), entry.getId(), user);
+
+        List<PantryItem> rows = pantryService.findAll(user);
+        assertEquals(1, rows.size(), "no second line appears for the same rice");
+        assertEquals(bag.getId(), rows.getFirst().getId());
+        assertEquals(0, new java.math.BigDecimal("500").compareTo(rows.getFirst().getQuantity()));
+        assertEquals(expires, rows.getFirst().getExpiresOn());
+    }
+
+    @Test
+    void undoingCookingRecreatesARowTheMealUsedUpWithItsPlaceAndDates() {
+        User user = cook("plan-undo-emptied-row@example.com");
+        Ingredient peas = ingredient(user, "Peas", Unit.GRAM);
+        LocalDate bought = LocalDate.now().minusDays(3);
+        LocalDate expires = LocalDate.now().plusDays(90);
+        stockAt(user, peas, "100", StorageLocation.FREEZER, bought, expires);
+        Recipe soup = recipeUsing(user, "Pea soup", 4, peas, "100", Unit.GRAM);
+        MealPlan created = plan(user, "Emptied row week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(soup, MONDAY, MealSlot.DINNER, 4), user);
+
+        mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+        assertTrue(pantryService.findAll(user).isEmpty(), "cooking removes the row it empties");
+        mealPlanService.markEntryNotCooked(created.getId(), entry.getId(), user);
+
+        List<PantryItem> rows = pantryService.findAll(user);
+        assertEquals(1, rows.size());
+        PantryItem back = rows.getFirst();
+        assertEquals(StorageLocation.FREEZER, back.getLocation(), "not the ingredient's default location");
+        assertEquals(bought, back.getPurchasedOn());
+        assertEquals(expires, back.getExpiresOn());
+        assertEquals(0, new java.math.BigDecimal("100").compareTo(back.getQuantity()));
+    }
+
+    @Test
+    void undoingCookingReturnsEachShareToTheRowItCameFrom() {
+        User user = cook("plan-undo-two-rows@example.com");
+        Ingredient milk = ingredient(user, "Milk", Unit.MILLILITER);
+        LocalDate sooner = LocalDate.now().plusDays(2);
+        LocalDate later = LocalDate.now().plusDays(9);
+        stockAt(user, milk, "60", StorageLocation.FRIDGE, null, sooner);
+        PantryItem fresh = stockAt(user, milk, "200", StorageLocation.FRIDGE, null, later);
+        Recipe pancakes = recipeUsing(user, "Pancakes", 4, milk, "100", Unit.MILLILITER);
+        MealPlan created = plan(user, "Two rows week");
+        PlanEntry entry = mealPlanService.addEntry(created.getId(),
+                entryFor(pancakes, MONDAY, MealSlot.BREAKFAST, 4), user);
+
+        mealPlanService.markEntryCooked(created.getId(), entry.getId(), user);
+        List<PantryItem> afterCooking = pantryService.findAll(user);
+        assertEquals(1, afterCooking.size(), "the sooner carton was used up first");
+        assertEquals(0, new java.math.BigDecimal("160").compareTo(afterCooking.getFirst().getQuantity()));
+
+        mealPlanService.markEntryNotCooked(created.getId(), entry.getId(), user);
+
+        List<PantryItem> rows = pantryService.findAll(user);
+        assertEquals(2, rows.size());
+        PantryItem later200 = rows.stream().filter(row -> later.equals(row.getExpiresOn())).findFirst().orElseThrow();
+        PantryItem sooner60 = rows.stream().filter(row -> sooner.equals(row.getExpiresOn())).findFirst().orElseThrow();
+        assertEquals(fresh.getId(), later200.getId());
+        assertEquals(0, new java.math.BigDecimal("200").compareTo(later200.getQuantity()));
+        assertEquals(0, new java.math.BigDecimal("60").compareTo(sooner60.getQuantity()));
     }
 
     @Test

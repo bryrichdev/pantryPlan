@@ -27,7 +27,11 @@ class BrandingMigrationTests {
                     .target("15").load().migrate();
             var flyway = Flyway.configure()
                     .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()).load();
-            assertEquals(1, flyway.migrate().migrationsExecuted);
+            // Later migrations run here too, so look for V16 by version
+            // instead of counting what ran.
+            var upgrade = flyway.migrate();
+            assertTrue(upgrade.migrations.stream().anyMatch(migration -> "16".equals(migration.version)),
+                    "upgrading from V15 applies the branding migration");
             flyway.validate();
             try (var connection = DriverManager.getConnection(
                     postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());

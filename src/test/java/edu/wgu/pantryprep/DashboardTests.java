@@ -240,7 +240,7 @@ class DashboardTests {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        assertTrue(page.contains("Welcome back, Sam"));
+        assertTrue(page.contains("Welcome, Sam"));
         assertTrue(page.contains("Get started"));
         assertTrue(page.contains("Add your ingredients"));
         assertFalse(page.contains("home-tiles"), "no dashboard until there is something on it");
