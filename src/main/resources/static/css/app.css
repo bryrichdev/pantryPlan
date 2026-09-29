@@ -327,7 +327,7 @@ h1 {
 .sitefooter {
     border-top: 1px solid var(--rule);
     background: var(--paper-sunk);
-    padding: 1.5rem;
+    padding: 0.75rem 1.5rem;
     text-align: center;
     font-size: 0.86rem;
     color: var(--ink-soft);

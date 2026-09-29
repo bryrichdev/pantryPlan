@@ -31,7 +31,9 @@
 body:has(.bulkbar:not([hidden])) .feedback-fab { display: none; }
 
 /* Room under the footer text so the button never covers it. */
-.sitefooter:has(.feedback-fab) { padding-bottom: 4.75rem; }
+@media (max-width: 40rem) {
+    .sitefooter:has(.feedback-fab) { padding-bottom: 4.75rem; }
+}
 
 /* ---------- confirmation after a no-JavaScript submit ---------- */
 
