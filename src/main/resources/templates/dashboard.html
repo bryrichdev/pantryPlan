@@ -153,7 +153,7 @@
                         <li th:each="item : ${expiring}">
                             <span class="home-list__main">
                                 <strong th:text="${item.name()}">Spinach</strong>
-                                <span class="muted" th:text="${@fmt.amount(item.quantity(), item.unit())}">200 g</span>
+                                <span class="muted" th:text="${@fmt.pantryAmount(item.quantity(), item.unit())}">200 g</span>
                             </span>
                             <span class="pill" th:classappend="${item.expired()} ? 'pill--bad' : 'pill--warn'"
                                   th:text="${item.when()}">Expires tomorrow</span>

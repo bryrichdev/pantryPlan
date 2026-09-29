@@ -41,7 +41,7 @@ public class PantryExpiryReport extends Report {
         for (PantryItem item : matching) {
             rows.add(new ReportRow(List.of(
                     item.getIngredient().getName(),
-                    ReportText.quantity(item.getQuantity()) + " " + item.getUnit().getAbbreviation(),
+                    ReportText.pantryQuantity(item.getQuantity()) + " " + item.getUnit().getAbbreviation(),
                     ReportText.label(item.getLocation()),
                     ReportText.date(item.getExpiresOn()),
                     expiryStatus(item.getExpiresOn()))));

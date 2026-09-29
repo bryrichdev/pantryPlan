@@ -39,7 +39,7 @@ public class PantryStockReport extends Report {
             rows.add(new ReportRow(List.of(
                     ingredient.getName(),
                     ReportText.label(ingredient.getCategory()),
-                    ReportText.quantity(total.quantity()) + " " + ingredient.getStockUnit().getAbbreviation())));
+                    ReportText.pantryQuantity(total.quantity()) + " " + ingredient.getStockUnit().getAbbreviation())));
         }
         setRows(rows);
     }
