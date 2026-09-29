@@ -79,7 +79,7 @@
             </td>
             <td th:text="${item.ingredient.name}">Flour</td>
             <td>
-                <span th:text="${@fmt.amount(item.quantity, item.unit)}">500 g</span>
+                <span th:text="${@fmt.pantryAmount(item.quantity, item.unit)}">500 g</span>
                 <span class="pill pill--bad" th:if="${item.quantity.signum() == 0}">Out</span>
             </td>
             <td><span class="badge" th:text="${@fmt.label(item.location)}">Pantry</span></td>
@@ -95,7 +95,7 @@
                         data-dialog-open="pantry-dialog" data-mode="edit"
                         th:attr="data-id=${item.id},
                                  data-ingredient=${item.ingredient.id},
-                                 data-quantity=${item.quantity},
+                                 data-quantity=${@fmt.pantryQuantity(item.quantity)},
                                  data-unit=${item.unit},
                                  data-location=${item.location},
                                  data-purchased=${item.purchasedOn},
@@ -137,7 +137,7 @@
                     <option value="">Choose an ingredient</option>
                     <option th:each="option : ${ingredientOptions}"
                             th:value="${option.id}" th:text="${option.name}"
-                            th:with="usualAmount=${@fmt.quantity(option.defaultQuantity)}"
+                            th:with="usualAmount=${@fmt.pantryQuantity(option.defaultQuantity)}"
                             th:attr="data-unit=${option.stockUnit.abbreviation},
                                      data-location=${option.defaultLocation},
                                      data-quantity=${usualAmount}">Flour</option>
@@ -150,7 +150,7 @@
                 <label for="pantry-quantity">Amount</label>
                 <div class="measure">
                     <input type="number" id="pantry-quantity" th:field="*{quantity}"
-                           step="0.001" min="0" inputmode="decimal">
+                           step="0.1" min="0" inputmode="decimal">
                     <span class="measure__unit" data-pantry-unit>&mdash;</span>
                 </div>
                 <p class="field__hint">
