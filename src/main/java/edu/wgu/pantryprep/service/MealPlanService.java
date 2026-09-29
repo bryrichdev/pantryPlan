@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -323,11 +324,16 @@ public class MealPlanService {
             item.deduct(deducted);
             remaining = remaining.subtract(deducted);
 
+            boolean emptied = item.getQuantity().signum() == 0;
             if (deducted.signum() > 0) {
-                cookLogRepository.save(new CookLog(user, entry, ingredient, deducted,
-                        ingredient.getStockUnit(), cookedAt));
+                CookLog log = new CookLog(user, entry, ingredient, item, deducted,
+                        ingredient.getStockUnit(), cookedAt);
+                if (emptied) {
+                    log.sourceRowRemoved();
+                }
+                cookLogRepository.save(log);
             }
-            if (item.getQuantity().signum() == 0) {
+            if (emptied) {
                 pantryItemRepository.delete(item);
             }
         }
@@ -335,7 +341,7 @@ public class MealPlanService {
 
     private void undoCooking(PlanEntry entry, User user, CookUndoResult result) {
         List<CookLog> logs = cookLogRepository.findAllByPlanEntryAndReversedFalse(entry);
-        Map<Long, RestoredIngredient> restored = new LinkedHashMap<>();
+        Map<CookLog, BigDecimal> amounts = new LinkedHashMap<>();
 
         /* Validate every conversion before changing anything. An ingredient's
            stock unit can be edited after a meal was cooked; in that unusual
@@ -348,22 +354,31 @@ public class MealPlanService {
                 result.recordUnrestorableLog();
                 return;
             }
-            RestoredIngredient existing = restored.get(ingredient.getId());
-            BigDecimal total = amount.get().setScale(3, RoundingMode.HALF_UP);
-            if (existing != null) {
-                total = total.add(existing.quantity());
-            }
-            restored.put(ingredient.getId(), new RestoredIngredient(ingredient, total));
+            amounts.put(log, amount.get().setScale(3, RoundingMode.HALF_UP));
         }
 
-        /* Cook logs record the amount, not the original pantry row. Restored
-           stock therefore becomes one fresh row in the ingredient's default
-           location, with no invented purchase or expiry date. */
-        for (RestoredIngredient restoration : restored.values()) {
-            if (restoration.quantity().signum() > 0) {
-                pantryItemRepository.save(new PantryItem(user, restoration.ingredient(),
-                        restoration.quantity().setScale(3, RoundingMode.HALF_UP)));
+        /* Each deduction goes back to the row it came from. Logs written before
+           cook logs recorded their row cannot do that; they are combined per
+           ingredient into one fresh row in the default location, as before. */
+        Map<Long, RestoredIngredient> legacy = new LinkedHashMap<>();
+        for (Map.Entry<CookLog, BigDecimal> restoration : amounts.entrySet()) {
+            CookLog log = restoration.getKey();
+            BigDecimal quantity = restoration.getValue();
+            if (quantity.signum() <= 0) {
+                continue;
             }
+            if (log.hasSource()) {
+                returnToSource(user, log, quantity);
+                continue;
+            }
+            Ingredient ingredient = log.getIngredient();
+            RestoredIngredient existing = legacy.get(ingredient.getId());
+            legacy.put(ingredient.getId(), new RestoredIngredient(ingredient,
+                    existing == null ? quantity : existing.quantity().add(quantity)));
+        }
+        for (RestoredIngredient restoration : legacy.values()) {
+            pantryItemRepository.save(new PantryItem(user, restoration.ingredient(),
+                    restoration.quantity().setScale(3, RoundingMode.HALF_UP)));
         }
         for (CookLog log : logs) {
             log.markReversed();
@@ -375,6 +390,39 @@ public class MealPlanService {
         planEntryRepository.flush();
         reconcileRecipeCookingHistory(entry.getRecipe());
         result.recordUncooked();
+    }
+
+    /**
+     * Puts one deduction back where it came from. That is the original row
+     * when it still exists. Cooking deletes a row it empties, so otherwise it
+     * is a row with the same location and dates (one an earlier log in this
+     * undo may have just recreated), and failing that a new copy of the
+     * original row.
+     */
+    private void returnToSource(User user, CookLog log, BigDecimal quantity) {
+        Ingredient ingredient = log.getIngredient();
+        PantryItem target = null;
+        if (log.getSourcePantryItemId() != null) {
+            target = pantryItemRepository.findByIdAndUser(log.getSourcePantryItemId(), user)
+                    .filter(item -> item.getIngredient().getId().equals(ingredient.getId()))
+                    .orElse(null);
+        }
+        if (target == null) {
+            target = pantryItemRepository.findAllByUserAndIngredient(user, ingredient).stream()
+                    .filter(item -> item.getLocation() == log.getSourceLocation()
+                            && Objects.equals(item.getPurchasedOn(), log.getSourcePurchasedOn())
+                            && Objects.equals(item.getExpiresOn(), log.getSourceExpiresOn()))
+                    .min(Comparator.comparing(PantryItem::getId))
+                    .orElse(null);
+        }
+        if (target == null) {
+            target = new PantryItem(user, ingredient, BigDecimal.ZERO.setScale(3));
+            target.setLocation(log.getSourceLocation());
+            target.setPurchasedOn(log.getSourcePurchasedOn());
+            target.setExpiresOn(log.getSourceExpiresOn());
+        }
+        target.restore(quantity);
+        pantryItemRepository.save(target);
     }
 
     private void reconcileRecipeCookingHistory(Recipe recipe) {
