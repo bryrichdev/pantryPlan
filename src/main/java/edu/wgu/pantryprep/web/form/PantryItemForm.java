@@ -23,7 +23,7 @@ public class PantryItemForm {
 
     @NotNull(message = "Enter how much you have")
     @DecimalMin(value = "0.000", message = "Amount cannot be negative")
-    @Digits(integer = 7, fraction = 1, message = "Use up to one decimal place")
+    @Digits(integer = 7, fraction = 3, message = "Use up to three decimal places")
     private BigDecimal quantity;
 
     @NotNull(message = "Choose where it is stored")

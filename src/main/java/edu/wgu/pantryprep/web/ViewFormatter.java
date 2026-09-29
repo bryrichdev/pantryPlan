@@ -1,8 +1,8 @@
 package edu.wgu.pantryprep.web;
 
 import edu.wgu.pantryprep.domain.Unit;
+import edu.wgu.pantryprep.format.KitchenAmounts;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -44,38 +44,12 @@ public class ViewFormatter {
         return trimmed.scale() < 0 ? trimmed.setScale(0).toPlainString() : trimmed.toPlainString();
     }
 
+    /**
+     * An amount the way a cook says it: "1 lb 8 oz", "750 g", "¾ cup 1 tbsp".
+     * See {@link KitchenAmounts}. Form fields keep using {@link #quantity}.
+     */
     public String amount(BigDecimal value, Unit unit) {
-        if (value == null || unit == null) {
-            return "";
-        }
-        return quantity(value) + " " + unit.getAbbreviation();
-    }
-
-    /**
-     * A pantry amount rounded to one decimal place, for display and for
-     * prefilling the pantry form: 453.592 becomes 453.6 and 2.000 becomes 2.
-     * Stock is still stored to three places, so cooking and unit conversions
-     * stay exact; only what the cook sees is rounded.
-     */
-    public String pantryQuantity(BigDecimal value) {
-        if (value == null) {
-            return "";
-        }
-        return quantity(value.setScale(1, RoundingMode.HALF_UP));
-    }
-
-    /**
-     * A pantry amount with its unit. A trace that rounds to zero shows as
-     * "< 0.1" so it never reads as empty while some is still on the shelf.
-     */
-    public String pantryAmount(BigDecimal value, Unit unit) {
-        if (value == null || unit == null) {
-            return "";
-        }
-        if (value.signum() > 0 && value.setScale(1, RoundingMode.HALF_UP).signum() == 0) {
-            return "< 0.1 " + unit.getAbbreviation();
-        }
-        return pantryQuantity(value) + " " + unit.getAbbreviation();
+        return KitchenAmounts.format(value, unit);
     }
 
     /**

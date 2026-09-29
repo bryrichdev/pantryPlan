@@ -79,7 +79,7 @@
             </td>
             <td th:text="${item.ingredient.name}">Flour</td>
             <td>
-                <span th:text="${@fmt.pantryAmount(item.quantity, item.unit)}">500 g</span>
+                <span th:text="${@fmt.amount(item.quantity, item.unit)}">500 g</span>
                 <span class="pill pill--bad" th:if="${item.quantity.signum() == 0}">Out</span>
             </td>
             <td><span class="badge" th:text="${@fmt.label(item.location)}">Pantry</span></td>
@@ -95,11 +95,12 @@
                         data-dialog-open="pantry-dialog" data-mode="edit"
                         th:attr="data-id=${item.id},
                                  data-ingredient=${item.ingredient.id},
-                                 data-quantity=${@fmt.pantryQuantity(item.quantity)},
+                                 data-quantity=${@fmt.quantity(item.quantity)},
                                  data-unit=${item.unit},
                                  data-location=${item.location},
                                  data-purchased=${item.purchasedOn},
-                                 data-expires=${item.expiresOn}">Edit</button>
+                                 data-expires=${item.expiresOn}"
+                        th:data-amount-label="${@fmt.amount(item.quantity, item.unit)}">Edit</button>
                 <button type="button" class="linkbutton linkbutton--danger"
                         data-dialog-open="delete-dialog"
                         th:attr="data-name=${item.ingredient.name},
@@ -137,7 +138,7 @@
                     <option value="">Choose an ingredient</option>
                     <option th:each="option : ${ingredientOptions}"
                             th:value="${option.id}" th:text="${option.name}"
-                            th:with="usualAmount=${@fmt.pantryQuantity(option.defaultQuantity)}"
+                            th:with="usualAmount=${@fmt.quantity(option.defaultQuantity)}"
                             th:attr="data-unit=${option.stockUnit.abbreviation},
                                      data-location=${option.defaultLocation},
                                      data-quantity=${usualAmount}">Flour</option>
@@ -150,9 +151,10 @@
                 <label for="pantry-quantity">Amount</label>
                 <div class="measure">
                     <input type="number" id="pantry-quantity" th:field="*{quantity}"
-                           step="0.1" min="0" inputmode="decimal">
+                           step="any" min="0" inputmode="decimal">
                     <span class="measure__unit" data-pantry-unit>&mdash;</span>
                 </div>
+                <p class="field__hint" data-pantry-current hidden></p>
                 <p class="field__hint">
                     Counted in the unit set on the ingredient. Change it there to
                     change it everywhere.

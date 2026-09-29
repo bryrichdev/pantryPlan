@@ -1,5 +1,6 @@
 package edu.wgu.pantryprep.report;
 
+import edu.wgu.pantryprep.format.KitchenAmounts;
 import edu.wgu.pantryprep.domain.Ingredient;
 import edu.wgu.pantryprep.domain.PantryItem;
 import java.math.BigDecimal;
@@ -39,7 +40,7 @@ public class PantryStockReport extends Report {
             rows.add(new ReportRow(List.of(
                     ingredient.getName(),
                     ReportText.label(ingredient.getCategory()),
-                    ReportText.pantryQuantity(total.quantity()) + " " + ingredient.getStockUnit().getAbbreviation())));
+                    KitchenAmounts.format(total.quantity(), ingredient.getStockUnit()))));
         }
         setRows(rows);
     }

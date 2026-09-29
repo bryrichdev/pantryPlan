@@ -1,5 +1,6 @@
 package edu.wgu.pantryprep.report;
 
+import edu.wgu.pantryprep.format.KitchenAmounts;
 import edu.wgu.pantryprep.domain.PantryItem;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,7 +42,7 @@ public class PantryExpiryReport extends Report {
         for (PantryItem item : matching) {
             rows.add(new ReportRow(List.of(
                     item.getIngredient().getName(),
-                    ReportText.pantryQuantity(item.getQuantity()) + " " + item.getUnit().getAbbreviation(),
+                    KitchenAmounts.format(item.getQuantity(), item.getUnit()),
                     ReportText.label(item.getLocation()),
                     ReportText.date(item.getExpiresOn()),
                     expiryStatus(item.getExpiresOn()))));
