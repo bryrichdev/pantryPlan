@@ -93,13 +93,13 @@
                 <div class="shoplist__stocked" th:if="${item.stocked}">
                     <p class="shoplist__stocked-line">
                         <span class="shoplist__stocked-amount"
-                              th:text="${@fmt.pantryAmount(item.stockedQuantity, item.stockedUnit)}">5 lb</span>
+                              th:text="${@fmt.amount(item.stockedQuantity, item.stockedUnit)}">5 lb</span>
                         <span class="shoplist__stocked-label">added</span>
                     </p>
                     <!-- The whole shelf, which is usually more than this shop
                          put there, and never counts anything already expired. -->
                     <p class="shoplist__stocked-line shoplist__stocked-line--total">
-                        <span th:text="${@fmt.pantryAmount(onHandTotals.get(item.id), item.stockedUnit)}">6.5 lb</span>
+                        <span th:text="${@fmt.amount(onHandTotals.get(item.id), item.stockedUnit)}">6.5 lb</span>
                         <span class="shoplist__stocked-label">on hand</span>
                     </p>
                     <form th:action="@{/grocery-lists/{id}/items/{itemId}/unstock(id=${groceryList.id},itemId=${item.id})}"

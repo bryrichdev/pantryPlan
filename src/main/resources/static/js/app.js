@@ -152,6 +152,15 @@
             quantityInput.removeAttribute("data-autofilled");
         }
 
+        /* The amount box takes a plain number in the stocking unit. While
+           editing, a note shows the same amount the way the list reads it. */
+        var current = dialog.querySelector("[data-pantry-current]");
+        if (current) {
+            var label = mode === "edit" ? trigger.getAttribute("data-amount-label") : "";
+            current.textContent = label ? "On the shelf now: " + label + "." : "";
+            current.hidden = !label;
+        }
+
         dialog.setAttribute("data-mode", mode || "create");
         syncPantryUnit(dialog);
         title.textContent = mode === "edit" ? "Edit pantry item" : "Add pantry item";
