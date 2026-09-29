@@ -91,16 +91,20 @@
                       th:if="${!item.isExpired(today) and item.isExpiringWithin(warningDays, today)}">Use soon</span>
             </td>
             <td class="table__actions">
+                <!-- Formatted first in th:with: Thymeleaf does not allow bean
+                     references such as @fmt inside th:attr. -->
                 <button type="button" class="linkbutton"
                         data-dialog-open="pantry-dialog" data-mode="edit"
+                        th:with="shelfQuantity=${@fmt.quantity(item.quantity)},
+                                 shelfLabel=${@fmt.amount(item.quantity, item.unit)}"
                         th:attr="data-id=${item.id},
                                  data-ingredient=${item.ingredient.id},
-                                 data-quantity=${@fmt.quantity(item.quantity)},
+                                 data-quantity=${shelfQuantity},
+                                 data-amount-label=${shelfLabel},
                                  data-unit=${item.unit},
                                  data-location=${item.location},
                                  data-purchased=${item.purchasedOn},
-                                 data-expires=${item.expiresOn}"
-                        th:data-amount-label="${@fmt.amount(item.quantity, item.unit)}">Edit</button>
+                                 data-expires=${item.expiresOn}">Edit</button>
                 <button type="button" class="linkbutton linkbutton--danger"
                         data-dialog-open="delete-dialog"
                         th:attr="data-name=${item.ingredient.name},
