@@ -103,6 +103,7 @@ public class GroupController {
         try {
             KitchenGroup group = groupService.create(form.getName(), form.getDescription(), user);
             redirectAttributes.addFlashAttribute("message", "Group created. Invite people from here.");
+            redirectAttributes.addFlashAttribute("celebrate", true);
             return "redirect:/groups/" + group.getId();
         } catch (GroupRuleException ex) {
             model.addAttribute("error", ex.getMessage());
@@ -117,6 +118,7 @@ public class GroupController {
         try {
             KitchenGroup group = inviteService.accept(invitationId, currentUser(principal));
             redirectAttributes.addFlashAttribute("message", "You joined " + group.getName() + ".");
+            redirectAttributes.addFlashAttribute("celebrate", true);
             return "redirect:/groups/" + group.getId();
         } catch (GroupRuleException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -155,6 +157,7 @@ public class GroupController {
         try {
             KitchenGroup group = inviteService.joinByLink(token, currentUser(principal));
             redirectAttributes.addFlashAttribute("message", "Welcome to " + group.getName() + ".");
+            redirectAttributes.addFlashAttribute("celebrate", true);
             return "redirect:/groups/" + group.getId();
         } catch (GroupRuleException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -390,6 +393,7 @@ public class GroupController {
         try {
             Recipe copy = sharedRecipeService.copyToAccount(id, recipeId, name, currentUser(principal));
             redirectAttributes.addFlashAttribute("message", "Copied to your recipes. It's yours to edit.");
+            redirectAttributes.addFlashAttribute("celebrate", true);
             return "redirect:/recipes/" + copy.getId();
         } catch (GroupRuleException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -415,6 +419,7 @@ public class GroupController {
                         + " because you already had that name.";
             }
             redirectAttributes.addFlashAttribute("message", message);
+            redirectAttributes.addFlashAttribute("celebrate", true);
         }
         if (!result.skipped().isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Skipped: " + String.join("; ", result.skipped()) + ".");

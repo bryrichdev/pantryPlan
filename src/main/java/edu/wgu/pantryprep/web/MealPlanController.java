@@ -208,6 +208,7 @@ public class MealPlanController {
         } else {
             redirectAttributes.addFlashAttribute("message",
                     "Filled " + added + (added == 1 ? " meal." : " meals."));
+            redirectAttributes.addFlashAttribute("celebrate", true);
         }
         return "redirect:/meal-plans/" + id;
     }
