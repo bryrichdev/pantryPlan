@@ -236,6 +236,29 @@ h1 {
     outline-offset: 0;
 }
 
+/* Every single-choice dropdown draws its own arrow, inset from the right
+   edge by the same amount as the text is from the left, instead of the
+   browser's arrow jammed against the border. The :not() selectors lift this
+   above the per-page select rules, whose background shorthand would
+   otherwise erase the arrow. Font size is left alone so the phone rule that
+   stops iOS zooming into small fields still applies. */
+select:not([multiple]):not([size]) {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%234A5C50' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    background-size: 0.7rem auto;
+    padding-right: 2.1rem;
+    cursor: pointer;
+}
+
+select:not([multiple]):not([size]):disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .field__hint {
     margin: 0.3rem 0 0;
     font-size: 0.82rem;

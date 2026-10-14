@@ -57,6 +57,14 @@ public class Recipe extends BaseEntity {
     @Column(name = "last_cooked_at")
     private Instant lastCookedAt;
 
+    /**
+     * For a recipe copied from a group, the fingerprint of the original as it
+     * was when copied. Null for recipes written in this account. Editing the
+     * copy leaves it alone, since it records where the copy came from.
+     */
+    @Column(name = "copied_from_hash", length = 64)
+    private String copiedFromHash;
+
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recipe_tags", joinColumns = @JoinColumn(name = "recipe_id"))
     @Column(name = "tag", nullable = false, length = 40)
@@ -214,6 +222,14 @@ public class Recipe extends BaseEntity {
 
     public List<RecipeLine> getLines() {
         return Collections.unmodifiableList(lines);
+    }
+
+    public String getCopiedFromHash() {
+        return copiedFromHash;
+    }
+
+    public void setCopiedFromHash(String copiedFromHash) {
+        this.copiedFromHash = copiedFromHash;
     }
 
     public Set<KitchenGroup> getSharedWithGroups() {

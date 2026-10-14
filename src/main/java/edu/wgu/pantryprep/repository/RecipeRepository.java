@@ -43,6 +43,13 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     boolean existsByUserAndNameIgnoreCase(User user, String name);
 
+    /** This account's copy of a recipe with the given fingerprint, if it has one. */
+    Optional<Recipe> findFirstByUserAndCopiedFromHash(User user, String copiedFromHash);
+
+    /** Fingerprints of every recipe this account copied from a group. */
+    @Query("SELECT r.copiedFromHash FROM Recipe r WHERE r.user = :user AND r.copiedFromHash IS NOT NULL")
+    List<String> findCopiedHashes(@Param("user") User user);
+
     /** Recipes shared into a group, with their owners loaded for display. */
     @Query("""
             SELECT r FROM Recipe r
