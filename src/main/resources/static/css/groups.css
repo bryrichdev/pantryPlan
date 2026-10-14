@@ -1,24 +1,8 @@
 /* Groups: sharing recipes with friends and family. */
 
-.sharegroups {
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    padding: 0.75rem 1rem 0.5rem;
-    max-width: 46rem;
-}
-
-.sharegroups legend {
-    font-weight: 600;
-    padding: 0 0.35rem;
-}
-
-.sharegroups__option {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin: 0 1.25rem 0.5rem 0;
-    font-weight: normal;
-}
+/* The share checkboxes reuse .checkset from plans.css, one group per line
+   like the meal plan's slot choices. */
+.sharegroups { max-width: 46rem; }
 
 .sharedwith {
     color: var(--ink-soft);
@@ -33,7 +17,15 @@
 
 .group-role-form select {
     width: auto;
-    padding-block: 0.2rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-left: 0.5rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background-color: #FFFFFF;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
 }
 
 .group-roles {
@@ -98,7 +90,17 @@
     font-weight: normal;
 }
 
+/* Several buttons in one table cell, each in its own form. Forms are blocks,
+   so without this they stack; this lines them up on one row instead. */
+.group-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
 @media (max-width: 40rem) {
+    .group-actions { justify-content: flex-start; }
     .group-newlink__row { flex-direction: column; }
     .group-role-form { flex-wrap: wrap; }
 }

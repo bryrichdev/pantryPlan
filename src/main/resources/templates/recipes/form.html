@@ -78,9 +78,9 @@
         </div>
 
         <!-- Sharing ---------------------------------------------------- -->
-        <fieldset class="field sharegroups" th:unless="${#lists.isEmpty(shareableGroups)}">
+        <fieldset class="checkset sharegroups" th:unless="${#lists.isEmpty(shareableGroups)}">
             <legend>Share with groups</legend>
-            <label class="sharegroups__option" th:each="group : ${shareableGroups}">
+            <label class="checkset__item" th:each="group : ${shareableGroups}">
                 <input type="checkbox" th:field="*{groupIds}" th:value="${group.id}">
                 <span th:text="${group.name}">Family</span>
             </label>

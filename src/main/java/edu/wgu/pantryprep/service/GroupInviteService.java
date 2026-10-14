@@ -9,6 +9,7 @@ import edu.wgu.pantryprep.domain.User;
 import edu.wgu.pantryprep.repository.GroupInvitationRepository;
 import edu.wgu.pantryprep.repository.GroupInviteLinkRepository;
 import edu.wgu.pantryprep.repository.KitchenGroupRepository;
+import edu.wgu.pantryprep.repository.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -35,10 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
  * number of uses. Joining takes a use with one conditional UPDATE, so the
  * last use cannot be taken twice.
  *
- * <p><b>Email invitations.</b> These name an email, never an account. The
- * person inviting gets the same answer whether or not anyone has signed up
- * with it, so the form cannot be used to find out who uses PantryPrep. The
- * invitation shows on the Groups page of whoever signs in with that email.
+ * <p><b>Email invitations.</b> These go only to an email that already has a
+ * PantryPrep account, so nobody waits on an invitation that cannot arrive.
+ * That does tell an owner or admin whether an email is registered; only they
+ * can send invitations, and only while they hold that role. The invitation
+ * shows on the Groups page of whoever is signed in with that email.
  *
  * <p>Neither can make anyone more than a member. Admin is granted by hand.
  */
@@ -59,15 +61,18 @@ public class GroupInviteService {
     private final KitchenGroupRepository groupRepository;
     private final GroupInviteLinkRepository linkRepository;
     private final GroupInvitationRepository invitationRepository;
+    private final UserRepository userRepository;
 
     public GroupInviteService(GroupService groupService,
                               KitchenGroupRepository groupRepository,
                               GroupInviteLinkRepository linkRepository,
-                              GroupInvitationRepository invitationRepository) {
+                              GroupInvitationRepository invitationRepository,
+                              UserRepository userRepository) {
         this.groupService = groupService;
         this.groupRepository = groupRepository;
         this.linkRepository = linkRepository;
         this.invitationRepository = invitationRepository;
+        this.userRepository = userRepository;
     }
 
     /** A new link and its token. The token is not stored and cannot be shown again. */
@@ -171,9 +176,8 @@ public class GroupInviteService {
      * Invites an email address. Inviting the same address again renews the
      * invitation rather than adding a second one.
      *
-     * @throws GroupRuleException when someone in the group already uses that
-     *         email, or too many invitations are waiting. Group managers can
-     *         see members' emails anyway, so saying so reveals nothing new.
+     * @throws GroupRuleException when no account uses that email, someone in
+     *         the group already does, or too many invitations are waiting
      */
     @Transactional
     public GroupInvitation inviteByEmail(Long groupId, User actor, String email, GroupRole role) {
@@ -183,6 +187,10 @@ public class GroupInviteService {
         }
         KitchenGroup group = mine.getGroup();
         String address = normalize(email);
+        if (!userRepository.existsByEmailIgnoreCase(address)) {
+            throw new GroupRuleException("No PantryPrep account uses " + address
+                    + ". Ask them to sign up first, or send them an invite link.");
+        }
         boolean alreadyIn = groupService.members(group).stream()
                 .anyMatch(m -> m.getUser().getEmail().equalsIgnoreCase(address));
         if (alreadyIn) {

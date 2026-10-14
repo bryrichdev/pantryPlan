@@ -37,14 +37,16 @@
                 <td><span class="badge" th:text="${invitation.role.label}">Member</span></td>
                 <td th:text="${@fmt.date(invitation.expiresAt)}">Oct 28, 2026</td>
                 <td class="table__actions">
-                    <form th:action="@{/groups/invitations/{id}/accept(id=${invitation.id})}" method="post"
-                          class="inline-form">
-                        <button type="submit" class="button button--primary">Join</button>
-                    </form>
-                    <form th:action="@{/groups/invitations/{id}/decline(id=${invitation.id})}" method="post"
-                          class="inline-form">
-                        <button type="submit" class="linkbutton">Decline</button>
-                    </form>
+                    <div class="group-actions">
+                        <form th:action="@{/groups/invitations/{id}/accept(id=${invitation.id})}" method="post"
+                              class="inline-form">
+                            <button type="submit" class="button button--primary button--small">Join</button>
+                        </form>
+                        <form th:action="@{/groups/invitations/{id}/decline(id=${invitation.id})}" method="post"
+                              class="inline-form">
+                            <button type="submit" class="linkbutton">Decline</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             </tbody>
@@ -72,7 +74,8 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="membership : ${memberships}">
+            <tr th:each="membership : ${memberships}" class="table__row--link"
+                th:attr="data-row-href=@{/groups/{id}(id=${membership.group.id})}">
                 <td>
                     <a th:href="@{/groups/{id}(id=${membership.group.id})}"
                        th:text="${membership.group.name}">Family</a>

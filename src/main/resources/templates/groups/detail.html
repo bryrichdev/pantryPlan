@@ -38,10 +38,32 @@
             <p th:unless="${me.role.canShareRecipes()}">Nothing shared yet.</p>
         </div>
 
-        <table class="table" th:unless="${#lists.isEmpty(recipes)}">
+        <!-- Shown once something is ticked. The buttons post the table's form
+             to different addresses. Taking out is offered to anyone who
+             could have shared something here; the server still checks each
+             recipe and leaves any that are not theirs to take out. -->
+        <div class="bulkbar" data-bulk-bar hidden th:unless="${#lists.isEmpty(recipes)}">
+            <span class="bulkbar__count"><span data-bulk-count>0</span> selected</span>
+            <button type="submit" form="shared-recipes" class="button button--primary button--small"
+                    th:formaction="@{/groups/{g}/recipes/bulk-copy(g=${group.id})}">Copy to my recipes</button>
+            <button type="submit" form="shared-recipes" class="button button--quiet button--small"
+                    th:if="${me.role.canShareRecipes()}"
+                    th:formaction="@{/groups/{g}/recipes/bulk-unshare(g=${group.id})}">Take out of group</button>
+            <button type="button" class="linkbutton" data-bulk-clear>Clear selection</button>
+        </div>
+
+        <!-- One form for the whole table, so each row's Take out button posts
+             it to that recipe's own address instead of nesting a form. -->
+        <form id="shared-recipes" method="post" data-bulk-form
+              th:action="@{/groups/{g}/recipes/bulk-copy(g=${group.id})}"
+              th:unless="${#lists.isEmpty(recipes)}">
+        <table class="table">
             <caption class="visually-hidden">Recipes shared with this group</caption>
             <thead>
             <tr>
+                <th scope="col" class="table__check">
+                    <input type="checkbox" data-select-all aria-label="Select every shared recipe">
+                </th>
                 <th scope="col">Recipe</th>
                 <th scope="col">Shared by</th>
                 <th scope="col">Meal type</th>
@@ -50,7 +72,12 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="recipe : ${recipes}">
+            <tr th:each="recipe : ${recipes}" class="table__row--link"
+                th:attr="data-row-href=@{/groups/{g}/recipes/{r}(g=${group.id}, r=${recipe.id})}">
+                <td class="table__check">
+                    <input type="checkbox" name="ids" th:value="${recipe.id}" data-select-row
+                           th:attr="aria-label=|Select ${recipe.name}|">
+                </td>
                 <td>
                     <a th:href="@{/groups/{g}/recipes/{r}(g=${group.id}, r=${recipe.id})}"
                        th:text="${recipe.name}">Chili</a>
@@ -59,15 +86,20 @@
                 <td th:text="${recipe.mealType ?: '—'}">Dinner</td>
                 <td th:text="${recipe.servings}">4</td>
                 <td class="table__actions">
-                    <form th:if="${unshareable.contains(recipe.id)}"
-                          th:action="@{/groups/{g}/recipes/{r}/unshare(g=${group.id}, r=${recipe.id})}"
-                          method="post" class="inline-form">
-                        <button type="submit" class="linkbutton linkbutton--danger">Take out</button>
-                    </form>
+                    <span th:if="${recipe.user.id == myUserId}" class="muted">Yours</span>
+                    <span th:if="${recipe.user.id != myUserId and copiedIds.contains(recipe.id)}"
+                          class="muted">Copied</span>
+                    <button th:if="${recipe.user.id != myUserId and !copiedIds.contains(recipe.id)}"
+                            type="submit" class="linkbutton"
+                            th:formaction="@{/groups/{g}/recipes/{r}/copy(g=${group.id}, r=${recipe.id})}">Copy</button>
+                    <button th:if="${unshareable.contains(recipe.id)}" type="submit"
+                            class="linkbutton linkbutton--danger"
+                            th:formaction="@{/groups/{g}/recipes/{r}/unshare(g=${group.id}, r=${recipe.id})}">Take out</button>
                 </td>
             </tr>
             </tbody>
         </table>
+        </form>
     </section>
 
     <!-- People ---------------------------------------------------------- -->
@@ -178,7 +210,7 @@
 
             <div class="group-invite__panel">
                 <h3>Invite by email</h3>
-                <p class="footnote">They will see it on their Groups page when signed in with that email.</p>
+                <p class="footnote">They need a PantryPrep account. The invitation waits on their Groups page.</p>
                 <form th:action="@{/groups/{g}/invitations(g=${group.id})}" th:object="${emailForm}" method="post"
                       class="form">
                     <div class="field">

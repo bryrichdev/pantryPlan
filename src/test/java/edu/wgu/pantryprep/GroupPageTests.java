@@ -93,13 +93,16 @@ class GroupPageTests {
     @Test
     void groupPagesRenderForTheOwner() throws Exception {
         User owner = cook("gp-render@example.com");
+        cook("someone@example.com");
         KitchenGroup group = groupService.create("Family", "Home cooking", owner);
         sharedChili(owner, group);
         inviteService.inviteByEmail(group.getId(), owner, "someone@example.com", GroupRole.MEMBER);
         inviteService.createLink(group.getId(), owner, GroupRole.MEMBER, 7, 3);
 
-        mockMvc.perform(get("/groups").with(user(login(owner))))
-                .andExpect(status().isOk());
+        String list = mockMvc.perform(get("/groups").with(user(login(owner))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(list.contains("data-row-href=\"/groups/" + group.getId() + "\""), "the whole row opens the group");
         String page = mockMvc.perform(get("/groups/{id}", group.getId()).with(user(login(owner))))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -201,6 +204,63 @@ class GroupPageTests {
     }
 
     @Test
+    void selectedRecipesCanBeCopiedInOneGo() throws Exception {
+        User owner = cook("gp-bulk@example.com");
+        User member = cook("gp-bulk-m@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, member, GroupRole.MEMBER);
+        Recipe chili = sharedChili(owner, group);
+
+        String page = mockMvc.perform(get("/groups/{id}", group.getId()).with(user(login(member))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(page.contains("data-select-all"));
+        assertTrue(page.contains("/groups/" + group.getId() + "/recipes/bulk-copy"));
+
+        mockMvc.perform(post("/groups/{id}/recipes/bulk-copy", group.getId())
+                        .with(user(login(member))).with(csrf())
+                        .param("ids", chili.getId().toString()))
+                .andExpect(redirectedUrl("/groups/" + group.getId()))
+                .andExpect(flash().attribute("message", "Copied 1 recipe to your recipes."));
+        assertEquals(1, recipeService.findAll(member).size());
+
+        mockMvc.perform(post("/groups/{id}/recipes/bulk-unshare", group.getId())
+                        .with(user(login(member))).with(csrf())
+                        .param("ids", chili.getId().toString()))
+                .andExpect(flash().attribute("error", "Left in: Chili is not yours to take out."));
+    }
+
+    @Test
+    void theRowCopyButtonCopiesOnceAndThenShowsCopied() throws Exception {
+        User owner = cook("gp-rowcopy@example.com");
+        User member = cook("gp-rowcopy-m@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, member, GroupRole.MEMBER);
+        Recipe chili = sharedChili(owner, group);
+
+        String before = mockMvc.perform(get("/groups/{id}", group.getId()).with(user(login(member))))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(before.contains("/groups/" + group.getId() + "/recipes/" + chili.getId() + "/copy"));
+
+        mockMvc.perform(post("/groups/{g}/recipes/{r}/copy", group.getId(), chili.getId())
+                        .with(user(login(member))).with(csrf()))
+                .andExpect(redirectedUrl("/groups/" + group.getId()))
+                .andExpect(flash().attribute("message", "Copied 1 recipe to your recipes."));
+
+        String after = mockMvc.perform(get("/groups/{id}", group.getId()).with(user(login(member))))
+                .andReturn().getResponse().getContentAsString();
+        assertFalse(after.contains("/groups/" + group.getId() + "/recipes/" + chili.getId() + "/copy\""),
+                "the row no longer offers the copy");
+        assertTrue(after.contains(">Copied<"));
+
+        String detail = mockMvc.perform(get("/groups/{g}/recipes/{r}", group.getId(), chili.getId())
+                        .with(user(login(member))))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(detail.contains("You already copied this recipe"));
+        assertEquals(1, recipeService.findAll(member).size());
+    }
+
+    @Test
     void joiningByLinkPreviewsFirstAndJoinsOnPost() throws Exception {
         User owner = cook("gp-join@example.com");
         User guest = cook("gp-join-g@example.com");
@@ -224,21 +284,24 @@ class GroupPageTests {
     }
 
     @Test
-    void emailInvitesAnswerTheSameWhetherOrNotTheAccountExists() throws Exception {
-        User owner = cook("gp-enum@example.com");
-        cook("gp-enum-real@example.com");
+    void emailInvitesGoOnlyToExistingAccounts() throws Exception {
+        User owner = cook("gp-invite@example.com");
+        cook("gp-invite-real@example.com");
         KitchenGroup group = groupService.create("Family", null, owner);
 
-        String real = (String) mockMvc.perform(post("/groups/{id}/invitations", group.getId())
+        mockMvc.perform(post("/groups/{id}/invitations", group.getId())
                         .with(user(login(owner))).with(csrf())
-                        .param("email", "gp-enum-real@example.com").param("role", "MEMBER"))
-                .andReturn().getFlashMap().get("message");
-        String ghost = (String) mockMvc.perform(post("/groups/{id}/invitations", group.getId())
-                        .with(user(login(owner))).with(csrf())
-                        .param("email", "gp-enum-ghost@example.com").param("role", "MEMBER"))
-                .andReturn().getFlashMap().get("message");
+                        .param("email", "GP-Invite-Real@example.com").param("role", "MEMBER"))
+                .andExpect(flash().attribute("message",
+                        "Invitation sent to gp-invite-real@example.com. It is waiting on their Groups page."));
 
-        assertEquals(real.replace("gp-enum-real", "X"), ghost.replace("gp-enum-ghost", "X"));
+        mockMvc.perform(post("/groups/{id}/invitations", group.getId())
+                        .with(user(login(owner))).with(csrf())
+                        .param("email", "gp-invite-ghost@example.com").param("role", "MEMBER"))
+                .andExpect(flash().attribute("error",
+                        "No PantryPrep account uses gp-invite-ghost@example.com. "
+                                + "Ask them to sign up first, or send them an invite link."));
+        assertEquals(1, inviteService.openInvitations(group).size());
     }
 
     @Test

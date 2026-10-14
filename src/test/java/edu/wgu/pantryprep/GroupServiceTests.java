@@ -229,14 +229,13 @@ class GroupServiceTests {
     }
 
     @Test
-    void invitingAnEmailWithNoAccountLooksTheSameAsAnyOtherInvite() {
+    void anEmailWithNoAccountCannotBeInvited() {
         User owner = cook("grp-noacct@example.com");
         KitchenGroup group = groupService.create("Family", null, owner);
 
-        var invitation = inviteService.inviteByEmail(group.getId(), owner, "nobody-here@example.com", GroupRole.VIEWER);
-
-        assertEquals("nobody-here@example.com", invitation.getEmail());
-        assertEquals(1, inviteService.openInvitations(group).size());
+        assertThrows(GroupRuleException.class,
+                () -> inviteService.inviteByEmail(group.getId(), owner, "nobody-here@example.com", GroupRole.VIEWER));
+        assertTrue(inviteService.openInvitations(group).isEmpty());
     }
 
     // ------------------------------------------------------------ permissions
@@ -488,6 +487,133 @@ class GroupServiceTests {
         sharedRecipeService.unshare(group.getId(), stew.getId(), owner);
         assertTrue(sharedIn(group).isEmpty(), "the owner took someone else's recipe out");
         assertTrue(recipeRepository.findById(soup.getId()).isPresent(), "unsharing never deletes the recipe");
+    }
+
+    @Test
+    void bulkCopyRenamesClashesSkipsOwnRecipesAndSharesIngredientsAcrossTheBatch() {
+        User owner = cook("grp-bulkcopy@example.com");
+        User cousin = cook("grp-bulkcopy-c@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, cousin, GroupRole.MEMBER);
+
+        Ingredient cumin = ingredient(owner, "Cumin");
+        Recipe chili = sharedRecipe(owner, group, "Chili", cumin);
+        Recipe tacos = sharedRecipe(owner, group, "Tacos", cumin);
+        Recipe mine = sharedRecipe(cousin, group, "Soup");
+        recipeService.create(recipeForm("chili"), cousin);
+
+        SharedRecipeService.BulkResult result = sharedRecipeService.copyAllToAccount(
+                group.getId(), List.of(chili.getId(), tacos.getId(), mine.getId()), cousin);
+
+        assertEquals(2, result.done());
+        assertEquals(1, result.renamed().size(), "the clashing chili was copied under a new name");
+        assertEquals(1, result.skipped().size(), "the cook's own soup was left alone");
+        List<String> names = recipeService.findAll(cousin).stream().map(Recipe::getName).toList();
+        assertTrue(names.contains("Chili (Cook grp-bulkcopy)"));
+        assertTrue(names.contains("Tacos"));
+        assertEquals(1, ingredientRepository.findAllByUserOrderByNameAsc(cousin).stream()
+                .filter(i -> i.getName().equalsIgnoreCase("Cumin")).count(),
+                "both recipes need cumin, and it was created once");
+    }
+
+    @Test
+    void bulkUnshareTakesOutOnlyWhatTheMemberMayTakeOut() {
+        User owner = cook("grp-bulkout@example.com");
+        User member = cook("grp-bulkout-m@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, member, GroupRole.MEMBER);
+        Recipe theirs = sharedRecipe(owner, group, "Stew");
+        Recipe soup = sharedRecipe(member, group, "Soup");
+        Recipe pie = sharedRecipe(member, group, "Pie");
+
+        SharedRecipeService.BulkResult byMember = sharedRecipeService.unshareAll(
+                group.getId(), List.of(theirs.getId(), soup.getId(), pie.getId()), member);
+        assertEquals(2, byMember.done());
+        assertEquals(1, byMember.skipped().size());
+        assertEquals(List.of("Stew"), sharedIn(group).stream().map(Recipe::getName).toList());
+
+        SharedRecipeService.BulkResult byOwner = sharedRecipeService.unshareAll(
+                group.getId(), List.of(theirs.getId()), owner);
+        assertEquals(1, byOwner.done());
+        assertTrue(sharedIn(group).isEmpty());
+    }
+
+    @Test
+    void bulkActionsAreRefusedToOutsiders() {
+        User owner = cook("grp-bulkx@example.com");
+        User stranger = cook("grp-bulkx-s@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        Recipe stew = sharedRecipe(owner, group, "Stew");
+
+        assertThrows(NoSuchElementException.class,
+                () -> sharedRecipeService.copyAllToAccount(group.getId(), List.of(stew.getId()), stranger));
+        assertThrows(NoSuchElementException.class,
+                () -> sharedRecipeService.unshareAll(group.getId(), List.of(stew.getId()), stranger));
+    }
+
+    @Test
+    void theSameRecipeCannotBeCopiedTwiceUntilItChanges() {
+        User owner = cook("grp-once@example.com");
+        User cousin = cook("grp-once-c@example.com");
+        KitchenGroup family = groupService.create("Family", null, owner);
+        KitchenGroup friends = groupService.create("Friends", null, cousin);
+        join(family, owner, cousin, GroupRole.MEMBER);
+        join(friends, cousin, owner, GroupRole.MEMBER);
+        RecipeForm chiliForm = recipeForm("Chili", ingredient(owner, "Cumin"));
+        chiliForm.setGroupIds(Set.of(family.getId(), friends.getId()));
+        Recipe chili = recipeService.create(chiliForm, owner);
+
+        Recipe copy = sharedRecipeService.copyToAccount(family.getId(), chili.getId(), "Aunt's chili", cousin);
+        assertTrue(copy.getCopiedFromHash().matches("[0-9a-f]{64}"));
+
+        assertThrows(GroupRuleException.class,
+                () -> sharedRecipeService.copyToAccount(family.getId(), chili.getId(), "Chili again", cousin),
+                "a new name does not make it a new recipe");
+        assertThrows(GroupRuleException.class,
+                () -> sharedRecipeService.copyToAccount(friends.getId(), chili.getId(), "Chili thrice", cousin),
+                "nor does finding it in another group");
+        SharedRecipeService.BulkResult bulk = sharedRecipeService.copyAllToAccount(
+                family.getId(), List.of(chili.getId()), cousin);
+        assertEquals(0, bulk.done());
+        assertEquals(List.of("Chili is already in your recipes"), bulk.skipped());
+        assertEquals(Set.of(chili.getId()), sharedRecipeService.alreadyCopied(family, cousin));
+
+        RecipeForm edit = RecipeForm.from(recipeService.requireOwned(chili.getId(), owner));
+        edit.setInstructions("Now with beans.");
+        edit.removeBlankLines();
+        recipeService.update(chili.getId(), edit, owner);
+
+        assertTrue(sharedRecipeService.alreadyCopied(family, cousin).isEmpty(), "the new version is not copied yet");
+        Recipe second = sharedRecipeService.copyToAccount(family.getId(), chili.getId(), "Chili with beans", cousin);
+        assertNotEquals(copy.getCopiedFromHash(), second.getCopiedFromHash());
+    }
+
+    @Test
+    void deletingACopyAllowsCopyingAgain() {
+        User owner = cook("grp-recopy@example.com");
+        User cousin = cook("grp-recopy-c@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, cousin, GroupRole.MEMBER);
+        Recipe chili = sharedRecipe(owner, group, "Chili");
+
+        Recipe copy = sharedRecipeService.copyToAccount(group.getId(), chili.getId(), null, cousin);
+        recipeService.delete(copy.getId(), cousin);
+
+        sharedRecipeService.copyToAccount(group.getId(), chili.getId(), null, cousin);
+        assertEquals(1, recipeService.findAll(cousin).size());
+    }
+
+    @Test
+    void theDatabaseHoldsOneCopyPerFingerprintPerAccount() {
+        User user = cook("grp-onecopy@example.com");
+        String fingerprint = "a".repeat(64);
+        Recipe first = new Recipe(user, "Chili", 4);
+        first.setCopiedFromHash(fingerprint);
+        recipeRepository.saveAndFlush(first);
+
+        Recipe second = new Recipe(user, "Chili (Sam)", 4);
+        second.setCopiedFromHash(fingerprint);
+        assertThrows(DataIntegrityViolationException.class, () -> recipeRepository.saveAndFlush(second));
     }
 
     // --------------------------------------------------------------- removing

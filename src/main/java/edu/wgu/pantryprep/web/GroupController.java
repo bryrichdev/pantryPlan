@@ -187,6 +187,7 @@ public class GroupController {
         model.addAttribute("members", members);
         model.addAttribute("recipes", recipes);
         model.addAttribute("unshareable", unshareable);
+        model.addAttribute("copiedIds", sharedRecipeService.alreadyCopied(group, user));
 
         if (me.getRole().canManageMembers()) {
             model.addAttribute("links", inviteService.activeLinks(group));
@@ -329,10 +330,7 @@ public class GroupController {
         return "redirect:/groups/" + id + "#invite";
     }
 
-    /**
-     * The reply is the same whether or not the email has an account, so this
-     * form cannot be used to find out who uses PantryPrep.
-     */
+    /** Invites an existing account by its email; an unknown email is refused. */
     @PostMapping("/{id}/invitations")
     public String invite(@AuthenticationPrincipal AppUserDetails principal,
                          @PathVariable Long id,
@@ -346,8 +344,7 @@ public class GroupController {
         return attempt(redirectAttributes, "redirect:/groups/" + id + "#invite", () -> {
             GroupInvitation invitation = inviteService.inviteByEmail(
                     id, currentUser(principal), form.getEmail(), form.getRole());
-            return "Invitation saved for " + invitation.getEmail()
-                    + ". It will be on their Groups page when they sign in with that email.";
+            return "Invitation sent to " + invitation.getEmail() + ". It is waiting on their Groups page.";
         });
     }
 
@@ -384,6 +381,12 @@ public class GroupController {
                        @PathVariable Long recipeId,
                        @RequestParam(name = "name", required = false) String name,
                        RedirectAttributes redirectAttributes) {
+        /* The Copy button on a group page's row sends no name. It works like a
+           one-recipe bulk copy: a clashing name gets the owner's name added,
+           and the cook stays on the group page. */
+        if (name == null) {
+            return bulkCopy(principal, id, List.of(recipeId), redirectAttributes);
+        }
         try {
             Recipe copy = sharedRecipeService.copyToAccount(id, recipeId, name, currentUser(principal));
             redirectAttributes.addFlashAttribute("message", "Copied to your recipes. It's yours to edit.");
@@ -392,6 +395,52 @@ public class GroupController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/groups/" + id + "/recipes/" + recipeId;
         }
+    }
+
+    @PostMapping("/{id}/recipes/bulk-copy")
+    public String bulkCopy(@AuthenticationPrincipal AppUserDetails principal,
+                           @PathVariable Long id,
+                           @RequestParam(name = "ids", required = false) List<Long> ids,
+                           RedirectAttributes redirectAttributes) {
+        if (ids == null || ids.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Nothing was selected.");
+            return "redirect:/groups/" + id;
+        }
+        SharedRecipeService.BulkResult result =
+                sharedRecipeService.copyAllToAccount(id, ids, currentUser(principal));
+        if (result.done() > 0) {
+            String message = "Copied " + count(result.done(), "recipe") + " to your recipes.";
+            if (!result.renamed().isEmpty()) {
+                message += " Saved " + String.join(", ", result.renamed())
+                        + " because you already had that name.";
+            }
+            redirectAttributes.addFlashAttribute("message", message);
+        }
+        if (!result.skipped().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Skipped: " + String.join("; ", result.skipped()) + ".");
+        }
+        return "redirect:/groups/" + id;
+    }
+
+    @PostMapping("/{id}/recipes/bulk-unshare")
+    public String bulkUnshare(@AuthenticationPrincipal AppUserDetails principal,
+                              @PathVariable Long id,
+                              @RequestParam(name = "ids", required = false) List<Long> ids,
+                              RedirectAttributes redirectAttributes) {
+        if (ids == null || ids.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Nothing was selected.");
+            return "redirect:/groups/" + id;
+        }
+        SharedRecipeService.BulkResult result =
+                sharedRecipeService.unshareAll(id, ids, currentUser(principal));
+        if (result.done() > 0) {
+            redirectAttributes.addFlashAttribute("message",
+                    "Took " + count(result.done(), "recipe") + " out of the group. They are still in their owners' accounts.");
+        }
+        if (!result.skipped().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Left in: " + String.join("; ", result.skipped()) + ".");
+        }
+        return "redirect:/groups/" + id;
     }
 
     @PostMapping("/{id}/recipes/{recipeId}/unshare")
@@ -419,6 +468,10 @@ public class GroupController {
         return result.getAllErrors().isEmpty()
                 ? "Check the form and try again."
                 : result.getAllErrors().get(0).getDefaultMessage();
+    }
+
+    private static String count(int n, String noun) {
+        return n + " " + noun + (n == 1 ? "" : "s");
     }
 
     private static String article(GroupRole role) {

@@ -64,35 +64,52 @@
     <!-- Copy ------------------------------------------------------------ -->
     <section class="section group-copy" th:unless="${plan.ownRecipe()}">
         <h2>Copy to your recipes</h2>
-        <p>
-            You get your own copy to edit, plan, and cook from your own pantry.
-            Later changes by <span th:text="${recipe.user.displayName}">Sam</span>
-            will not change your copy.
-        </p>
-        <ul class="group-copy__plan" th:unless="${#lists.isEmpty(recipe.lines)}">
-            <li th:unless="${#lists.isEmpty(plan.reusedIngredients())}">
-                Uses your
-                <span th:text="${#strings.listJoin(plan.reusedIngredients(), ', ')}">Butter, Eggs</span>.
-            </li>
-            <li th:unless="${#lists.isEmpty(plan.newIngredients())}">
-                Adds to your ingredients:
-                <span th:text="${#strings.listJoin(plan.newIngredients(), ', ')}">Cumin</span>.
-            </li>
-        </ul>
 
-        <form th:action="@{/groups/{g}/recipes/{r}/copy(g=${group.id}, r=${recipe.id})}" method="post"
-              class="form">
-            <div class="field">
-                <label for="copy-name">Name for your copy</label>
-                <input type="text" id="copy-name" name="name" maxlength="150" required
-                       th:value="${plan.nameTaken()} ? |${recipe.name} (${recipe.user.displayName})| : ${recipe.name}">
-                <p class="field__hint" th:if="${plan.nameTaken()}">
-                    You already have a recipe called <strong th:text="${recipe.name}">Chili</strong>,
-                    so the copy needs a different name.
-                </p>
-            </div>
-            <button type="submit" class="button button--primary">Copy to my recipes</button>
-        </form>
+        <!-- Matched by fingerprint, so this holds even if the copy was renamed
+             or the recipe reached the cook through another group. -->
+        <th:block th:if="${plan.alreadyCopied()}">
+            <p>
+                You already copied this recipe. It is in your recipes as
+                <a th:href="@{/recipes/{id}(id=${plan.existingCopyId()})}"
+                   th:text="${plan.existingCopyName()}">Chili</a>.
+            </p>
+            <p class="footnote">
+                If <span th:text="${recipe.user.displayName}">Sam</span> changes it, you can
+                copy the new version.
+            </p>
+        </th:block>
+
+        <th:block th:unless="${plan.alreadyCopied()}">
+            <p>
+                You get your own copy to edit, plan, and cook from your own pantry.
+                Later changes by <span th:text="${recipe.user.displayName}">Sam</span>
+                will not change your copy.
+            </p>
+            <ul class="group-copy__plan" th:unless="${#lists.isEmpty(recipe.lines)}">
+                <li th:unless="${#lists.isEmpty(plan.reusedIngredients())}">
+                    Uses your
+                    <span th:text="${#strings.listJoin(plan.reusedIngredients(), ', ')}">Butter, Eggs</span>.
+                </li>
+                <li th:unless="${#lists.isEmpty(plan.newIngredients())}">
+                    Adds to your ingredients:
+                    <span th:text="${#strings.listJoin(plan.newIngredients(), ', ')}">Cumin</span>.
+                </li>
+            </ul>
+
+            <form th:action="@{/groups/{g}/recipes/{r}/copy(g=${group.id}, r=${recipe.id})}" method="post"
+                  class="form">
+                <div class="field">
+                    <label for="copy-name">Name for your copy</label>
+                    <input type="text" id="copy-name" name="name" maxlength="150" required
+                           th:value="${plan.nameTaken()} ? |${recipe.name} (${recipe.user.displayName})| : ${recipe.name}">
+                    <p class="field__hint" th:if="${plan.nameTaken()}">
+                        You already have a recipe called <strong th:text="${recipe.name}">Chili</strong>,
+                        so the copy needs a different name.
+                    </p>
+                </div>
+                <button type="submit" class="button button--primary">Copy to my recipes</button>
+            </form>
+        </th:block>
     </section>
 
     <section class="section">
