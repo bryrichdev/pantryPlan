@@ -1,5 +1,6 @@
 package edu.wgu.pantryprep.repository;
 
+import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.User;
 import java.util.List;
@@ -39,6 +40,30 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
                         @Param("name") String name,
                         @Param("ingredient") String ingredient,
                         @Param("tag") String tag);
+
+    boolean existsByUserAndNameIgnoreCase(User user, String name);
+
+    /** Recipes shared into a group, with their owners loaded for display. */
+    @Query("""
+            SELECT r FROM Recipe r
+            JOIN r.sharedWithGroups g
+            JOIN FETCH r.user
+            WHERE g = :group
+            ORDER BY LOWER(r.name), r.id
+            """)
+    List<Recipe> findSharedWith(@Param("group") KitchenGroup group);
+
+    /**
+     * One recipe, but only if it is shared into the group. Group members reach
+     * other people's recipes through this and nothing else.
+     */
+    @Query("""
+            SELECT r FROM Recipe r
+            JOIN r.sharedWithGroups g
+            JOIN FETCH r.user
+            WHERE r.id = :id AND g = :group
+            """)
+    Optional<Recipe> findSharedRecipe(@Param("id") Long id, @Param("group") KitchenGroup group);
 
     /**
      * Bulk delete for account removal. See AccountDeletionService for why the

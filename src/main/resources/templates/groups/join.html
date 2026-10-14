@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Join a group')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <p class="crumb"><a th:href="@{/groups}">Groups</a></p>
+
+    <th:block th:if="${preview == null}">
+        <h1>This invite link does not work</h1>
+        <p class="lede">
+            It may have expired, been used up, or been turned off. Ask whoever sent it
+            for a new one.
+        </p>
+        <p><a th:href="@{/groups}">Back to your groups</a></p>
+    </th:block>
+
+    <th:block th:if="${preview != null}">
+        <h1 th:text="|Join ${preview.group().name}?|">Join Family?</h1>
+        <p class="pagehead__note" th:if="${preview.group().description}"
+           th:text="${preview.group().description}">Recipes from home.</p>
+
+        <dl class="factgrid">
+            <div class="factgrid__item">
+                <dt>Owner</dt>
+                <dd th:text="${preview.group().owner.displayName}">Sam</dd>
+            </div>
+            <div class="factgrid__item">
+                <dt>People</dt>
+                <dd th:text="${preview.memberCount()}">4</dd>
+            </div>
+            <div class="factgrid__item">
+                <dt>You would join as</dt>
+                <dd th:text="${preview.role().label}">Member</dd>
+            </div>
+        </dl>
+
+        <p class="footnote">
+            Everyone in the group will see your name, and the recipes you choose to
+            share with it. Your pantry, meal plans, and grocery lists stay private.
+        </p>
+
+        <div class="actions" th:unless="${preview.alreadyMember()}">
+            <form th:action="@{/groups/join/{token}(token=${token})}" method="post" class="inline-form">
+                <button type="submit" class="button button--primary">Join group</button>
+            </form>
+            <a class="button button--quiet" th:href="@{/groups}">Not now</a>
+        </div>
+        <p th:if="${preview.alreadyMember()}">
+            You are already in this group.
+            <a th:href="@{/groups/{id}(id=${preview.group().id})}">Open it</a>.
+        </p>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

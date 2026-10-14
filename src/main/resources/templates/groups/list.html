@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Groups')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page">
+    <div class="pagehead">
+        <div>
+            <h1>Groups</h1>
+            <p class="pagehead__note">
+                Share recipes with friends and family. Anyone in a group can copy a
+                shared recipe into their own account and cook from their own pantry.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <section class="section" th:unless="${#lists.isEmpty(invitations)}">
+        <h2>Invitations for you</h2>
+        <table class="table">
+            <caption class="visually-hidden">Groups that have invited you</caption>
+            <thead>
+            <tr>
+                <th scope="col">Group</th>
+                <th scope="col">Owner</th>
+                <th scope="col">You would join as</th>
+                <th scope="col">Expires</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="invitation : ${invitations}">
+                <td th:text="${invitation.group.name}">Family</td>
+                <td th:text="${invitation.group.owner.displayName}">Sam</td>
+                <td><span class="badge" th:text="${invitation.role.label}">Member</span></td>
+                <td th:text="${@fmt.date(invitation.expiresAt)}">Oct 28, 2026</td>
+                <td class="table__actions">
+                    <form th:action="@{/groups/invitations/{id}/accept(id=${invitation.id})}" method="post"
+                          class="inline-form">
+                        <button type="submit" class="button button--primary">Join</button>
+                    </form>
+                    <form th:action="@{/groups/invitations/{id}/decline(id=${invitation.id})}" method="post"
+                          class="inline-form">
+                        <button type="submit" class="linkbutton">Decline</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section">
+        <h2>Your groups</h2>
+
+        <div class="empty empty--tight" th:if="${#lists.isEmpty(memberships)}">
+            <p>
+                You are not in any groups yet. Create your own below, or ask someone
+                for an invite link.
+            </p>
+        </div>
+
+        <table class="table" th:unless="${#lists.isEmpty(memberships)}">
+            <caption class="visually-hidden">Groups you belong to</caption>
+            <thead>
+            <tr>
+                <th scope="col">Group</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Your role</th>
+                <th scope="col">People</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="membership : ${memberships}">
+                <td>
+                    <a th:href="@{/groups/{id}(id=${membership.group.id})}"
+                       th:text="${membership.group.name}">Family</a>
+                </td>
+                <td th:text="${membership.group.owner.displayName}">Sam</td>
+                <td><span class="badge" th:text="${membership.role.label}">Owner</span></td>
+                <td th:text="${memberCounts.get(membership.group.id)}">4</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section" th:unless="${ownsGroup}">
+        <h2>Create your group</h2>
+        <p class="footnote">
+            Each account can create one group and join as many others as it is invited to.
+        </p>
+        <form th:action="@{/groups}" th:object="${groupForm}" method="post" class="form">
+            <div class="field">
+                <label for="group-name">Name</label>
+                <input type="text" id="group-name" th:field="*{name}" maxlength="80"
+                       placeholder="The Richards family">
+                <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</p>
+            </div>
+            <div class="field">
+                <label for="group-description">Description</label>
+                <textarea id="group-description" th:field="*{description}" rows="2" maxlength="500"></textarea>
+                <p class="field__hint">Optional.</p>
+                <p class="field__error" th:if="${#fields.hasErrors('description')}"
+                   th:errors="*{description}">Description error</p>
+            </div>
+            <button type="submit" class="button button--primary">Create group</button>
+        </form>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

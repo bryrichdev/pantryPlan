@@ -13,6 +13,7 @@
     <link rel="stylesheet" th:href="@{/css/plans.css}">
     <link rel="stylesheet" th:href="@{/css/feedback.css}">
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/groups.css}">
     <!-- Last, so its small-screen rules win over everything above. -->
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
     <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon.png}">
@@ -62,6 +63,9 @@
             <a th:href="@{/reports}"
                th:classappend="${#strings.startsWith(currentPath, '/reports')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/reports')} ? 'page' : null">Reports</a>
+            <a th:href="@{/groups}"
+               th:classappend="${#strings.startsWith(currentPath, '/groups')} ? 'is-active' : ''"
+               th:attr="aria-current=${#strings.startsWith(currentPath, '/groups')} ? 'page' : null">Groups</a>
             <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}"
                th:classappend="${#strings.startsWith(currentPath, '/admin/users')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/users')} ? 'page' : null">Admin</a>

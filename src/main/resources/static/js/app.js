@@ -259,6 +259,24 @@
         }
     }
 
+    /*
+     * A general yes-or-no dialog. The button that opens it says where the
+     * form posts and what to ask, so one dialog serves every row of a table.
+     */
+    function fillConfirmDialog(dialog, trigger) {
+        var form = dialog.querySelector("[data-confirm-form]");
+        var url = trigger.getAttribute("data-confirm-url");
+        if (url) {
+            form.action = url;
+        }
+        dialog.querySelector("[data-confirm-title]").textContent =
+            trigger.getAttribute("data-confirm-title") || "Are you sure?";
+        dialog.querySelector("[data-confirm-message]").textContent =
+            trigger.getAttribute("data-confirm-message") || "";
+        dialog.querySelector("[data-confirm-submit]").textContent =
+            trigger.getAttribute("data-confirm-label") || "Confirm";
+    }
+
     /* ------------------------------------------------------ feedback dialog */
 
     /*
@@ -605,6 +623,12 @@
 
     document.addEventListener("DOMContentLoaded", refreshStockUpControls);
 
+    document.addEventListener("focusin", function (event) {
+        if (event.target.matches && event.target.matches("[data-select-on-focus]")) {
+            event.target.select();
+        }
+    });
+
     /*
      * The report posts in the background so whatever the cook was typing on
      * the page underneath stays put. 204 means saved; 400 carries the problem
@@ -678,6 +702,8 @@
                 fillEntryDialog(dialog, opener);
             } else if (dialog.id === "delete-dialog") {
                 fillDeleteDialog(dialog, opener);
+            } else if (dialog.id === "confirm-dialog") {
+                fillConfirmDialog(dialog, opener);
             } else if (dialog.id === "feedback-dialog") {
                 resetFeedbackDialog(dialog);
             }
@@ -699,6 +725,23 @@
         var navToggle = event.target.closest("[data-nav-toggle]");
         if (navToggle) {
             setMenuOpen(navToggle, navToggle.getAttribute("aria-expanded") !== "true");
+            return;
+        }
+
+        /* Copies a field's text, such as a new invite link. Falls back to
+           selecting it, so the cook can copy by hand where the clipboard
+           is not available. */
+        var copier = event.target.closest("[data-copy]");
+        if (copier) {
+            var source = document.getElementById(copier.getAttribute("data-copy"));
+            if (source) {
+                source.select();
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(source.value).then(function () {
+                        copier.textContent = "Copied";
+                    });
+                }
+            }
             return;
         }
 

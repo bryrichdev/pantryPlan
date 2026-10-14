@@ -1,0 +1,104 @@
+/* Groups: sharing recipes with friends and family. */
+
+.sharegroups {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem 0.5rem;
+    max-width: 46rem;
+}
+
+.sharegroups legend {
+    font-weight: 600;
+    padding: 0 0.35rem;
+}
+
+.sharegroups__option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 1.25rem 0.5rem 0;
+    font-weight: normal;
+}
+
+.sharedwith {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+}
+
+.group-role-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.group-role-form select {
+    width: auto;
+    padding-block: 0.2rem;
+}
+
+.group-roles {
+    margin-top: 1rem;
+    max-width: 46rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+}
+
+.group-roles summary { cursor: pointer; }
+
+.group-invite {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.group-invite__panel {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    background: var(--paper);
+}
+
+.group-invite__panel h3 { margin-top: 0; }
+.group-invite__panel .form { max-width: none; }
+
+.group-subhead { margin-top: 1.75rem; }
+
+.group-newlink { max-width: 46rem; }
+.group-newlink p { margin-top: 0; }
+
+.group-newlink__row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.group-newlink__row input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.group-copy {
+    border: 1px solid var(--herb);
+    background: var(--herb-wash);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    max-width: 46rem;
+}
+
+.group-copy h2 { margin-top: 0; }
+.group-copy__plan { padding-left: 1.2rem; }
+
+.checkline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: normal;
+}
+
+@media (max-width: 40rem) {
+    .group-newlink__row { flex-direction: column; }
+    .group-role-form { flex-wrap: wrap; }
+}

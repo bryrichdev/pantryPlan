@@ -1,5 +1,6 @@
 package edu.wgu.pantryprep.web.form;
 
+import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -58,6 +59,13 @@ public class RecipeForm {
 
     private List<RecipeLineForm> lines = new ArrayList<>();
 
+    /**
+     * Groups to share the recipe with, as ticked checkboxes. When none are
+     * ticked the browser sends nothing, which binds as an empty set and
+     * unshares the recipe everywhere.
+     */
+    private Set<Long> groupIds = new LinkedHashSet<>();
+
     public static RecipeForm from(Recipe recipe) {
         RecipeForm form = new RecipeForm();
         form.setId(recipe.getId());
@@ -71,6 +79,7 @@ public class RecipeForm {
         form.setInstructions(recipe.getInstructions());
         form.setTagsCsv(String.join(", ", recipe.getTags()));
         recipe.getLines().forEach(line -> form.getLines().add(RecipeLineForm.from(line)));
+        recipe.getSharedWithGroups().stream().map(KitchenGroup::getId).forEach(form.getGroupIds()::add);
         form.ensureOneEmptyRow();
         return form;
     }
@@ -200,5 +209,13 @@ public class RecipeForm {
 
     public void setLines(List<RecipeLineForm> lines) {
         this.lines = lines == null ? new ArrayList<>() : lines;
+    }
+
+    public Set<Long> getGroupIds() {
+        return groupIds;
+    }
+
+    public void setGroupIds(Set<Long> groupIds) {
+        this.groupIds = groupIds == null ? new LinkedHashSet<>() : new LinkedHashSet<>(groupIds);
     }
 }
