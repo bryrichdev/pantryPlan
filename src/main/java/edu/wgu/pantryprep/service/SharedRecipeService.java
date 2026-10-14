@@ -149,8 +149,7 @@ public class SharedRecipeService {
         if (!ownsRecipe && !mine.getRole().canManageMembers()) {
             throw new GroupPermissionException("A " + mine.getRole() + " cannot remove other people's recipes");
         }
-        recipe.getSharedWithGroups().removeIf(group -> group.getId().equals(groupId));
-        recipeRepository.save(recipe);
+        recipeRepository.deleteShare(recipe.getId(), mine.getGroup().getId());
     }
 
     /** Whether this member may take this recipe out of the group. */

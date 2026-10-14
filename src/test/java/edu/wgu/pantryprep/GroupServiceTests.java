@@ -460,20 +460,34 @@ class GroupServiceTests {
     }
 
     @Test
-    void onlyTheSharerOrAManagerCanTakeARecipeOut() {
-        User owner = cook("grp-unshare@example.com");
-        User a = cook("grp-unshare-a@example.com");
-        User b = cook("grp-unshare-b@example.com");
+    void aMemberCannotTakeSomeoneElsesRecipeOut() {
+        User owner = cook("grp-unshare-x@example.com");
+        User a = cook("grp-unshare-xa@example.com");
+        User b = cook("grp-unshare-xb@example.com");
         KitchenGroup group = groupService.create("Family", null, owner);
         join(group, owner, a, GroupRole.MEMBER);
         join(group, owner, b, GroupRole.MEMBER);
         Recipe soup = sharedRecipe(a, group, "Soup");
-        Recipe stew = sharedRecipe(a, group, "Stew");
 
         assertThrows(GroupPermissionException.class, () -> sharedRecipeService.unshare(group.getId(), soup.getId(), b));
+    }
+
+    @Test
+    void theSharerOrAManagerCanTakeARecipeOut() {
+        User owner = cook("grp-unshare@example.com");
+        User a = cook("grp-unshare-a@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, a, GroupRole.MEMBER);
+        Recipe soup = sharedRecipe(a, group, "Soup");
+        Recipe stew = sharedRecipe(a, group, "Stew");
+
         sharedRecipeService.unshare(group.getId(), soup.getId(), a);
+        assertEquals(List.of("Stew"), sharedIn(group).stream().map(Recipe::getName).toList(),
+                "the sharer took their own recipe out");
+
         sharedRecipeService.unshare(group.getId(), stew.getId(), owner);
-        assertTrue(sharedIn(group).isEmpty());
+        assertTrue(sharedIn(group).isEmpty(), "the owner took someone else's recipe out");
+        assertTrue(recipeRepository.findById(soup.getId()).isPresent(), "unsharing never deletes the recipe");
     }
 
     // --------------------------------------------------------------- removing

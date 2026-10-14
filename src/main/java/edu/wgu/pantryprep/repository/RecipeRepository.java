@@ -66,6 +66,16 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     Optional<Recipe> findSharedRecipe(@Param("id") Long id, @Param("group") KitchenGroup group);
 
     /**
+     * Takes one recipe out of one group with a direct delete, rather than by
+     * editing the recipe's loaded collection and relying on a later flush.
+     * Clearing afterwards drops any copy of that collection already loaded.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = "DELETE FROM recipe_shares WHERE recipe_id = :recipeId AND group_id = :groupId",
+            nativeQuery = true)
+    int deleteShare(@Param("recipeId") Long recipeId, @Param("groupId") Long groupId);
+
+    /**
      * Bulk delete for account removal. See AccountDeletionService for why the
      * order of these calls matters. Child rows go through ON DELETE CASCADE.
      */
