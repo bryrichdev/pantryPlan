@@ -61,6 +61,14 @@
         <span class="badge" th:each="tag : ${recipe.tags}" th:text="${tag}">italian</span>
     </p>
 
+    <p class="sharedwith" th:unless="${#sets.isEmpty(recipe.sharedWithGroups)}">
+        Shared with
+        <th:block th:each="group, iter : ${recipe.sharedWithGroups}">
+            <a th:href="@{/groups/{id}(id=${group.id})}" th:text="${group.name}">Family</a><th:block
+                th:unless="${iter.last}">, </th:block>
+        </th:block>
+    </p>
+
     <section class="section">
         <h2>Ingredients</h2>
 

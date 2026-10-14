@@ -1,6 +1,7 @@
 package edu.wgu.pantryprep.service;
 
 import edu.wgu.pantryprep.domain.Ingredient;
+import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.RecipeLine;
 import edu.wgu.pantryprep.domain.RecipePreset;
@@ -41,15 +42,18 @@ public class RecipeService {
     private final PlanEntryRepository planEntryRepository;
     private final IngredientRepository ingredientRepository;
     private final RecipePresetRepository recipePresetRepository;
+    private final GroupService groupService;
 
     public RecipeService(RecipeRepository recipeRepository,
                          PlanEntryRepository planEntryRepository,
                          IngredientRepository ingredientRepository,
-                         RecipePresetRepository recipePresetRepository) {
+                         RecipePresetRepository recipePresetRepository,
+                         GroupService groupService) {
         this.recipeRepository = recipeRepository;
         this.planEntryRepository = planEntryRepository;
         this.ingredientRepository = ingredientRepository;
         this.recipePresetRepository = recipePresetRepository;
+        this.groupService = groupService;
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +84,7 @@ public class RecipeService {
                 .orElseThrow(() -> new NoSuchElementException("No recipe " + id + " for this account"));
         recipe.getTags().size();
         recipe.getLines().forEach(line -> line.getIngredient().getName());
+        recipe.getSharedWithGroups().forEach(KitchenGroup::getName);
         return recipe;
     }
 
@@ -97,6 +102,7 @@ public class RecipeService {
         Recipe recipe = new Recipe(user, form.getName().trim(), form.getServings());
         applyForm(recipe, form);
         replaceLines(recipe, form, user);
+        applyShares(recipe, form.getGroupIds(), user);
         return recipeRepository.save(recipe);
     }
 
@@ -107,7 +113,41 @@ public class RecipeService {
         recipe.setServings(form.getServings());
         applyForm(recipe, form);
         replaceLines(recipe, form, user);
+        applyShares(recipe, form.getGroupIds(), user);
         return recipeRepository.save(recipe);
+    }
+
+    /**
+     * Makes the recipe shared with exactly the chosen groups.
+     *
+     * <p>Every chosen group must be one the cook can share into right now, read
+     * from their memberships rather than trusted from the form. The ingredients
+     * travel with the recipe: members see them on it and get their own copies
+     * of any they lack when they copy it. The database checks the same rule as
+     * a backstop.
+     *
+     * @throws NoSuchElementException when a chosen group is not shareable
+     */
+    private void applyShares(Recipe recipe, Set<Long> groupIds, User user) {
+        Set<Long> wanted = groupIds == null ? Set.of() : groupIds;
+        Map<Long, KitchenGroup> shareable = new HashMap<>();
+        for (KitchenGroup group : groupService.shareableGroups(user)) {
+            shareable.put(group.getId(), group);
+        }
+        for (Long id : wanted) {
+            if (!shareable.containsKey(id)) {
+                throw new NoSuchElementException("No group " + id + " this account can share to");
+            }
+        }
+        recipe.getSharedWithGroups().removeIf(group -> !wanted.contains(group.getId()));
+        Set<Long> already = recipe.getSharedWithGroups().stream()
+                .map(KitchenGroup::getId)
+                .collect(Collectors.toSet());
+        for (Long id : wanted) {
+            if (!already.contains(id)) {
+                recipe.getSharedWithGroups().add(shareable.get(id));
+            }
+        }
     }
 
     private void applyForm(Recipe recipe, RecipeForm form) {

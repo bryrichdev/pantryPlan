@@ -7,6 +7,8 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -62,6 +64,18 @@ public class Recipe extends BaseEntity {
 
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<RecipeLine> lines = new ArrayList<>();
+
+    /**
+     * Groups whose members can see and copy this recipe. The recipe stays in
+     * this account; sharing never hands it over. The database refuses a share
+     * into a group where the owner is not allowed to share, and withdraws
+     * shares when the owner leaves or becomes a viewer.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "recipe_shares",
+            joinColumns = @JoinColumn(name = "recipe_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id"))
+    private Set<KitchenGroup> sharedWithGroups = new LinkedHashSet<>();
 
     protected Recipe() {
     }
@@ -200,5 +214,13 @@ public class Recipe extends BaseEntity {
 
     public List<RecipeLine> getLines() {
         return Collections.unmodifiableList(lines);
+    }
+
+    public Set<KitchenGroup> getSharedWithGroups() {
+        return sharedWithGroups;
+    }
+
+    public boolean isSharedWith(KitchenGroup group) {
+        return sharedWithGroups.contains(group);
     }
 }

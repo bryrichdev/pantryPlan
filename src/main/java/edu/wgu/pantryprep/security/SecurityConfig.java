@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
@@ -72,7 +73,11 @@ public class SecurityConfig {
                         .loginProcessingUrl("/login")
                         .usernameParameter("email")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/dashboard", true)
+                        /* Not "always": someone sent to sign in from a page,
+                           such as a group invite link, goes back to it after.
+                           Signing in from the login page itself still lands
+                           on the dashboard. */
+                        .defaultSuccessUrl("/dashboard")
                         .failureUrl("/login?error")
                         .permitAll())
                 .logout(logout -> logout
@@ -86,6 +91,10 @@ public class SecurityConfig {
                         .sessionFixation(fixation -> fixation.migrateSession()))
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
+                        /* Invite links carry their token in the path. This
+                           keeps any page's full URL from being sent to another
+                           site as a Referer. */
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.SAME_ORIGIN))
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; img-src 'self' data:; "
                                         + "object-src 'none'; frame-ancestors 'none'; "

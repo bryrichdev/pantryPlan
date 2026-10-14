@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${group.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page"
+      th:with="canManage=${me.role.canManageMembers()}, isOwner=${me.role.canEditGroup()}">
+    <p class="crumb"><a th:href="@{/groups}">Groups</a></p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="pagehead">
+        <div>
+            <h1 th:text="${group.name}">Family</h1>
+            <p class="pagehead__note" th:if="${group.description}" th:text="${group.description}">
+                Recipes from home.
+            </p>
+            <p class="pagehead__note">
+                You are <span class="badge" th:text="${me.role.label}">Member</span>
+                in this group.
+            </p>
+        </div>
+        <div class="actions" th:if="${me.role.canLeave()}">
+            <button type="button" class="button button--quiet" data-dialog-open="leave-dialog">Leave group</button>
+        </div>
+    </div>
+
+    <!-- Shared recipes ------------------------------------------------- -->
+    <section class="section">
+        <h2>Shared recipes</h2>
+
+        <div class="empty empty--tight" th:if="${#lists.isEmpty(recipes)}">
+            <p th:if="${me.role.canShareRecipes()}">
+                Nothing shared yet. Tick this group under "Share with groups" when you
+                <a th:href="@{/recipes/new}">create</a> or edit a recipe.
+            </p>
+            <p th:unless="${me.role.canShareRecipes()}">Nothing shared yet.</p>
+        </div>
+
+        <table class="table" th:unless="${#lists.isEmpty(recipes)}">
+            <caption class="visually-hidden">Recipes shared with this group</caption>
+            <thead>
+            <tr>
+                <th scope="col">Recipe</th>
+                <th scope="col">Shared by</th>
+                <th scope="col">Meal type</th>
+                <th scope="col">Serves</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="recipe : ${recipes}">
+                <td>
+                    <a th:href="@{/groups/{g}/recipes/{r}(g=${group.id}, r=${recipe.id})}"
+                       th:text="${recipe.name}">Chili</a>
+                </td>
+                <td th:text="${recipe.user.id == myUserId} ? 'You' : ${recipe.user.displayName}">Sam</td>
+                <td th:text="${recipe.mealType ?: '—'}">Dinner</td>
+                <td th:text="${recipe.servings}">4</td>
+                <td class="table__actions">
+                    <form th:if="${unshareable.contains(recipe.id)}"
+                          th:action="@{/groups/{g}/recipes/{r}/unshare(g=${group.id}, r=${recipe.id})}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="linkbutton linkbutton--danger">Take out</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- People ---------------------------------------------------------- -->
+    <section class="section">
+        <h2 th:text="|People (${#lists.size(members)})|">People (4)</h2>
+
+        <table class="table">
+            <caption class="visually-hidden">People in this group</caption>
+            <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col" th:if="${canManage}">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Joined</th>
+                <th scope="col" th:if="${canManage}"><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="member : ${members}"
+                th:with="manageable=${member.id != me.id and me.role.outranksForManagement(member.role)}">
+                <td>
+                    <span th:text="${member.user.displayName}">Sam</span>
+                    <span class="muted" th:if="${member.id == me.id}">(you)</span>
+                </td>
+                <td th:if="${canManage}" th:text="${member.user.email}">sam@example.com</td>
+                <td><span class="badge" th:text="${member.role.label}">Member</span></td>
+                <td th:text="${@fmt.date(member.createdAt)}">Oct 1, 2026</td>
+                <td class="table__actions" th:if="${canManage}">
+                    <form th:if="${manageable}"
+                          th:action="@{/groups/{g}/members/{m}/role(g=${group.id}, m=${member.id})}"
+                          method="post" class="inline-form group-role-form">
+                        <label class="visually-hidden" th:for="|role-${member.id}|">Role</label>
+                        <select name="role" th:id="|role-${member.id}|">
+                            <option th:each="option : ${me.role.assignableRoles()}"
+                                    th:value="${option}" th:text="${option.label}"
+                                    th:selected="${option == member.role}">Member</option>
+                        </select>
+                        <button type="submit" class="linkbutton">Change</button>
+                    </form>
+                    <button th:if="${manageable}" type="button" class="linkbutton linkbutton--danger"
+                            data-dialog-open="confirm-dialog"
+                            th:attr="data-confirm-url=@{/groups/{g}/members/{m}/remove(g=${group.id}, m=${member.id})},
+                                     data-confirm-title='Remove from group?',
+                                     data-confirm-message=|Remove ${member.user.displayName} from ${group.name}? Recipes they shared here will be taken out. Their own recipes are not touched.|,
+                                     data-confirm-label='Remove'">Remove</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <details class="group-roles">
+            <summary>What each role can do</summary>
+            <ul>
+                <li><strong>Owner</strong>: everything, including renaming, transferring, and deleting the group.</li>
+                <li><strong>Admin</strong>: invite people, remove members and viewers, change their roles, and take any recipe out.</li>
+                <li><strong>Member</strong>: share their own recipes, and view and copy everyone's.</li>
+                <li><strong>Viewer</strong>: view and copy recipes, but not share.</li>
+            </ul>
+        </details>
+    </section>
+
+    <!-- Invite ---------------------------------------------------------- -->
+    <section class="section" id="invite" th:if="${canManage}">
+        <h2>Invite people</h2>
+
+        <div class="notice notice--good group-newlink" th:if="${newLinkUrl}" role="status">
+            <p>
+                <strong>Your new invite link.</strong>
+                Copy it now. For security it is not stored and will not be shown again.
+            </p>
+            <div class="group-newlink__row">
+                <label class="visually-hidden" for="new-link">Invite link</label>
+                <input type="text" id="new-link" readonly th:value="${newLinkUrl}" data-select-on-focus>
+                <button type="button" class="button button--quiet" data-copy="new-link">Copy</button>
+            </div>
+        </div>
+
+        <div class="group-invite">
+            <div class="group-invite__panel">
+                <h3>Invite link</h3>
+                <p class="footnote">Anyone signed in who has the link can join until it expires.</p>
+                <form th:action="@{/groups/{g}/links(g=${group.id})}" th:object="${linkForm}" method="post"
+                      class="form">
+                    <div class="fieldrow">
+                        <div class="field">
+                            <label for="link-role">Joins as</label>
+                            <select id="link-role" th:field="*{role}">
+                                <option th:each="option : ${invitableRoles}" th:value="${option}"
+                                        th:text="${option.label}">Member</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="link-days">Works for</label>
+                            <select id="link-days" th:field="*{lifetimeDays}">
+                                <option th:each="days : ${lifetimes}" th:value="${days}"
+                                        th:text="${days == 1} ? '1 day' : |${days} days|">7 days</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="link-uses">Max uses</label>
+                            <input type="number" id="link-uses" th:field="*{maxUses}" min="1" max="100"
+                                   placeholder="No limit">
+                        </div>
+                    </div>
+                    <button type="submit" class="button button--primary">Create link</button>
+                </form>
+            </div>
+
+            <div class="group-invite__panel">
+                <h3>Invite by email</h3>
+                <p class="footnote">They will see it on their Groups page when signed in with that email.</p>
+                <form th:action="@{/groups/{g}/invitations(g=${group.id})}" th:object="${emailForm}" method="post"
+                      class="form">
+                    <div class="field">
+                        <label for="invite-email">Email</label>
+                        <input type="email" id="invite-email" th:field="*{email}" maxlength="255" autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label for="invite-role">Joins as</label>
+                        <select id="invite-role" th:field="*{role}">
+                            <option th:each="option : ${invitableRoles}" th:value="${option}"
+                                    th:text="${option.label}">Member</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="button button--primary">Send invitation</button>
+                </form>
+            </div>
+        </div>
+
+        <h3 class="group-subhead">Working links</h3>
+        <p class="muted" th:if="${#lists.isEmpty(links)}">No working links.</p>
+        <table class="table" th:unless="${#lists.isEmpty(links)}">
+            <caption class="visually-hidden">Invite links that still work</caption>
+            <thead>
+            <tr>
+                <th scope="col">Joins as</th>
+                <th scope="col">Expires</th>
+                <th scope="col">Used</th>
+                <th scope="col">Made by</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="link : ${links}">
+                <td><span class="badge" th:text="${link.role.label}">Member</span></td>
+                <td th:text="${@fmt.dateTime(link.expiresAt)}">Oct 21, 2026</td>
+                <td th:text="${link.maxUses != null} ? |${link.useCount} of ${link.maxUses}| : |${link.useCount}, no limit|">0</td>
+                <td th:text="${link.createdBy != null} ? ${link.createdBy.displayName} : 'Former member'">Sam</td>
+                <td class="table__actions">
+                    <form th:action="@{/groups/{g}/links/{l}/revoke(g=${group.id}, l=${link.id})}" method="post"
+                          class="inline-form">
+                        <button type="submit" class="linkbutton linkbutton--danger">Turn off</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <h3 class="group-subhead">Waiting invitations</h3>
+        <p class="muted" th:if="${#lists.isEmpty(invitations)}">No invitations waiting.</p>
+        <table class="table" th:unless="${#lists.isEmpty(invitations)}">
+            <caption class="visually-hidden">Email invitations not yet accepted</caption>
+            <thead>
+            <tr>
+                <th scope="col">Email</th>
+                <th scope="col">Joins as</th>
+                <th scope="col">Expires</th>
+                <th scope="col">Invited by</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="invitation : ${invitations}">
+                <td th:text="${invitation.email}">pat@example.com</td>
+                <td><span class="badge" th:text="${invitation.role.label}">Member</span></td>
+                <td th:text="${@fmt.date(invitation.expiresAt)}">Oct 28, 2026</td>
+                <td th:text="${invitation.invitedBy != null} ? ${invitation.invitedBy.displayName} : 'Former member'">Sam</td>
+                <td class="table__actions">
+                    <form th:action="@{/groups/{g}/invitations/{i}/revoke(g=${group.id}, i=${invitation.id})}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="linkbutton linkbutton--danger">Withdraw</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Owner settings -------------------------------------------------- -->
+    <section class="section" th:if="${isOwner}">
+        <h2>Group settings</h2>
+
+        <form th:action="@{/groups/{g}/edit(g=${group.id})}" th:object="${groupForm}" method="post" class="form">
+            <div class="field">
+                <label for="edit-name">Name</label>
+                <input type="text" id="edit-name" th:field="*{name}" maxlength="80">
+            </div>
+            <div class="field">
+                <label for="edit-description">Description</label>
+                <textarea id="edit-description" th:field="*{description}" rows="2" maxlength="500"></textarea>
+            </div>
+            <button type="submit" class="button button--primary">Save details</button>
+        </form>
+
+        <h3 class="group-subhead">Transfer ownership</h3>
+        <p class="muted" th:if="${#lists.isEmpty(transferCandidates)}">
+            Invite someone first. Ownership can only go to someone already in the group.
+        </p>
+        <form th:unless="${#lists.isEmpty(transferCandidates)}"
+              th:action="@{/groups/{g}/transfer(g=${group.id})}" method="post" class="form">
+            <div class="field">
+                <label for="transfer-to">New owner</label>
+                <select id="transfer-to" name="memberId" required>
+                    <option value="">Choose someone</option>
+                    <option th:each="candidate : ${transferCandidates}" th:value="${candidate.id}"
+                            th:text="${candidate.user.displayName}">Pat</option>
+                </select>
+                <p class="field__hint">
+                    You stay on as an admin. Someone who already owns a group cannot take this one.
+                </p>
+            </div>
+            <label class="checkline">
+                <input type="checkbox" required>
+                I understand I will no longer own this group
+            </label>
+            <button type="submit" class="button button--quiet">Transfer</button>
+        </form>
+
+        <h3 class="group-subhead">Delete group</h3>
+        <p>
+            Everyone is removed and nothing stays shared. Each person keeps their own
+            recipes and any copies they made.
+        </p>
+        <button type="button" class="button button--danger" data-dialog-open="delete-group-dialog">Delete group</button>
+    </section>
+</main>
+
+<dialog id="confirm-dialog" class="dialog dialog--narrow" aria-labelledby="confirm-dialog-title">
+    <form method="post" class="dialog__form" data-confirm-form th:action="@{/groups}">
+        <div class="dialog__head">
+            <h2 id="confirm-dialog-title" data-confirm-title>Are you sure?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-confirm-message>Are you sure?</p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-confirm-submit>Confirm</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="leave-dialog" class="dialog dialog--narrow" aria-labelledby="leave-dialog-title"
+        th:if="${me.role.canLeave()}">
+    <form th:action="@{/groups/{g}/leave(g=${group.id})}" method="post" class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="leave-dialog-title">Leave this group?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p>
+                Recipes you shared here will be taken out. Copies you made stay in your
+                account. You will need a new invite to come back.
+            </p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger">Leave group</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Stay</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="delete-group-dialog" class="dialog dialog--narrow" aria-labelledby="delete-group-title"
+        th:if="${me.role.canEditGroup()}">
+    <form th:action="@{/groups/{g}/delete(g=${group.id})}" method="post" class="dialog__form">
+        <div class="dialog__head">
+            <h2 id="delete-group-title">Delete this group?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p th:text="|Delete ${group.name} for everyone? This cannot be undone.|">Delete?</p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger">Delete group</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Keep it</button>
+        </div>
+    </form>
+</dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

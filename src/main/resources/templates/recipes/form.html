@@ -77,6 +77,22 @@
                th:errors="*{tagsCsv}">Tags error</p>
         </div>
 
+        <!-- Sharing ---------------------------------------------------- -->
+        <fieldset class="field sharegroups" th:unless="${#lists.isEmpty(shareableGroups)}">
+            <legend>Share with groups</legend>
+            <label class="sharegroups__option" th:each="group : ${shareableGroups}">
+                <input type="checkbox" th:field="*{groupIds}" th:value="${group.id}">
+                <span th:text="${group.name}">Family</span>
+            </label>
+            <p class="field__hint">
+                People in these groups can view this recipe and copy it, with its
+                ingredients, into their own accounts. Your pantry and plans stay private.
+            </p>
+        </fieldset>
+        <!-- Outside the fieldset so it still shows for a cook with no groups
+             left to offer, such as one just made a viewer. -->
+        <p class="field__error" th:if="${#fields.hasErrors('groupIds')}" th:errors="*{groupIds}">Group error</p>
+
         <!-- Ingredient lines ------------------------------------------- -->
         <fieldset class="lines">
             <legend>Ingredients</legend>

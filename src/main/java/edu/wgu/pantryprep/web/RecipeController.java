@@ -2,12 +2,14 @@ package edu.wgu.pantryprep.web;
 
 import edu.wgu.pantryprep.domain.Ingredient;
 import edu.wgu.pantryprep.domain.IngredientCategory;
+import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.RecipeClassification;
 import edu.wgu.pantryprep.domain.StorageLocation;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
 import edu.wgu.pantryprep.security.AppUserDetails;
+import edu.wgu.pantryprep.service.GroupService;
 import edu.wgu.pantryprep.service.IngredientService;
 import edu.wgu.pantryprep.service.BulkDeleteResult;
 import edu.wgu.pantryprep.service.RecipeInUseException;
@@ -45,13 +47,16 @@ public class RecipeController {
     private final RecipeService recipeService;
     private final IngredientService ingredientService;
     private final UserService userService;
+    private final GroupService groupService;
 
     public RecipeController(RecipeService recipeService,
                             IngredientService ingredientService,
-                            UserService userService) {
+                            UserService userService,
+                            GroupService groupService) {
         this.recipeService = recipeService;
         this.ingredientService = ingredientService;
         this.userService = userService;
+        this.groupService = groupService;
     }
 
     @ModelAttribute("units")
@@ -142,8 +147,10 @@ public class RecipeController {
     public String createForm(@AuthenticationPrincipal AppUserDetails principal, Model model) {
         RecipeForm form = new RecipeForm();
         form.ensureOneEmptyRow();
+        User user = currentUser(principal);
         model.addAttribute("form", form);
-        model.addAttribute("ingredientOptions", ingredientService.findAll(currentUser(principal)));
+        model.addAttribute("ingredientOptions", ingredientService.findAll(user));
+        model.addAttribute("shareableGroups", groupService.shareableGroups(user));
         return "recipes/form";
     }
 
@@ -155,6 +162,7 @@ public class RecipeController {
         Recipe recipe = recipeService.requireOwned(id, user);
         model.addAttribute("form", RecipeForm.from(recipe));
         model.addAttribute("ingredientOptions", ingredientService.findAll(user));
+        model.addAttribute("shareableGroups", groupService.shareableGroups(user));
         return "recipes/form";
     }
 
@@ -184,9 +192,18 @@ public class RecipeController {
                     "You already have a recipe with that name");
         }
 
+        List<KitchenGroup> shareableGroups = groupService.shareableGroups(user);
+        Set<Long> shareableIds = new HashSet<>();
+        shareableGroups.forEach(group -> shareableIds.add(group.getId()));
+        if (!shareableIds.containsAll(form.getGroupIds())) {
+            result.rejectValue("groupIds", "groupIds.unknown",
+                    "You can only share with groups where you are a member, admin, or owner");
+        }
+
         if (result.hasErrors()) {
             form.ensureOneEmptyRow();
             model.addAttribute("ingredientOptions", ingredientService.findAll(user));
+            model.addAttribute("shareableGroups", shareableGroups);
             return "recipes/form";
         }
 
