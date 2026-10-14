@@ -83,7 +83,7 @@
                 <span class="pill pill--bad" th:if="${item.quantity.signum() == 0}">Out</span>
             </td>
             <td><span class="badge" th:text="${@fmt.label(item.location)}">Pantry</span></td>
-            <td th:text="${@fmt.date(item.purchasedOn)}"></td>
+            <td class="table__minor" th:text="${@fmt.date(item.purchasedOn)}"></td>
             <td>
                 <span th:text="${@fmt.date(item.expiresOn)}"></span>
                 <span class="pill pill--bad" th:if="${item.isExpired(today)}">Expired</span>

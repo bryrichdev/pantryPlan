@@ -19,6 +19,28 @@
         </section>
         <div th:replace="~{fragments/sample-list :: samplelist}"></div>
     </div>
+
+    <section class="howto" aria-labelledby="howto-title">
+        <h2 id="howto-title" class="howto__title">How it works</h2>
+        <ol class="howto__steps">
+            <li class="howto__step">
+                <h3>Save what you cook</h3>
+                <p>Start from dozens of starter recipes or type in your own. Each one knows its ingredients.</p>
+            </li>
+            <li class="howto__step">
+                <h3>Plan the week</h3>
+                <p>Put recipes on days yourself, or let PantryPrep fill the week, using up what is about to expire first.</p>
+            </li>
+            <li class="howto__step">
+                <h3>Shop for what is missing</h3>
+                <p>The grocery list takes away what is already on your shelves and sorts the rest by aisle.</p>
+            </li>
+        </ol>
+        <p class="howto__more">
+            Cooking for a household? Make a group, share recipes with family and friends, and
+            everyone copies what they like into their own kitchen.
+        </p>
+    </section>
 </main>
 
 <footer th:replace="~{fragments/layout :: sitefooter}"></footer>

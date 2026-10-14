@@ -52,7 +52,7 @@
                        th:attr="aria-label=|Select ${account.displayName}|">
             </td>
             <td th:text="${account.displayName}">Cook</td>
-            <td th:text="${account.email}">cook@example.com</td>
+            <td class="table__wide" th:text="${account.email}">cook@example.com</td>
             <td>
                 <span class="badge" th:if="${account.admin}">Admin</span>
                 <span th:unless="${account.admin}">User</span>

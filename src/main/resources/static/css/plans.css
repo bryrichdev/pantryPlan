@@ -32,16 +32,17 @@
     display: flex;
     flex-direction: column;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    background: #FFFFFF;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
     padding: 0.9rem 1rem 0.75rem;
 }
 
-/* Today gets the herb edge rather than a fill, so it reads as current without
-   competing with the amber and red status cues used elsewhere. */
+/* Today gets the herb outline rather than a fill, so it reads as current
+   without competing with the honey and rust status cues used elsewhere. */
 .day--today {
     border-color: var(--herb);
-    box-shadow: inset 3px 0 0 var(--herb);
+    box-shadow: 0 0 0 1px var(--herb), var(--shadow);
 }
 
 .day__head { margin-bottom: 0.6rem; }
@@ -114,7 +115,7 @@
     display: flex;
     align-items: flex-start;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.4rem 1rem;
     grid-column: 2 / -1;
     grid-row: 3;
     margin-top: 0.2rem;
@@ -122,12 +123,14 @@
 
 .meal__cook, .meal__remove { margin: 0; }
 
-.meal__actions .linkbutton { margin: 0; font-size: 0.82rem; }
+.meal__actions .linkbutton { margin: 0; font-size: 0.82rem; color: var(--ink-soft); }
+.meal__actions .linkbutton:hover { color: var(--herb-deep); }
+.meal__actions .linkbutton--danger:hover { color: var(--rust); }
 
 .day__add {
     align-self: flex-start;
     background: none;
-    border: 1px dashed var(--rule);
+    border: 1.5px dashed var(--rule-strong);
     border-radius: var(--radius);
     padding: 0.35rem 0.7rem;
     font: inherit;
@@ -144,12 +147,12 @@
 .pill--good {
     background: var(--herb-wash);
     color: var(--herb-deep);
-    border: 1px solid #CBDCCE;
+    border: 1px solid var(--herb-line);
 }
 /* Append to src/main/resources/static/css/plans.css */
 
 .checkset {
-    border: 1px solid var(--rule);
+    border: 1px solid var(--rule-strong);
     border-radius: var(--radius);
     padding: 0.7rem 0.9rem 0.9rem;
     margin: 0 0 1.15rem;

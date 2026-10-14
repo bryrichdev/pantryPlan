@@ -15,7 +15,7 @@
 .pagehead__note {
     margin: 0;
     color: var(--ink-soft);
-    max-width: 44ch;
+    max-width: 62ch;
     font-size: 0.95rem;
 }
 
@@ -37,8 +37,6 @@
     gap: 1.5rem;
     flex-wrap: nowrap;
     margin: 0 0 1.25rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--rule);
 }
 
 .toolbar__actions {
@@ -59,9 +57,9 @@
 .searchbar input[type="search"] {
     flex: 0 1 22rem;
     min-width: 8rem;
-    padding: 0.5rem 0.65rem;
+    padding: 0.55rem 0.8rem;
     font: inherit;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--rule-strong);
     border-radius: var(--radius);
     background: #FFFFFF;
 }
@@ -79,34 +77,47 @@
     color: var(--ink-soft);
 }
 
-/* ---------- tables ---------- */
+/* ---------- tables ----------
+   A table is a warm white panel on the page, not loose lines on it: the panel
+   says "these belong together" before any heading does. Collapsed borders
+   cannot take a radius, so cells carry the rules instead. */
 
 .table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 0.94rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
 }
 
 .table thead th {
     text-align: left;
     font-size: 0.82rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--ink-soft);
-    padding: 0 0.6rem 0.5rem;
-    border-bottom: 2px solid var(--rule);
+    padding: 0.7rem 0.8rem 0.6rem;
+    background: #FBF7EF;
+    border-bottom: 1px solid var(--rule);
 }
 
 .table tbody td {
-    padding: 0.7rem 0.6rem;
+    padding: 0.75rem 0.8rem;
     border-bottom: 1px solid var(--rule);
     vertical-align: baseline;
 }
 
+.table tbody tr:last-child td { border-bottom: 0; }
+
 .table tbody td a {
     text-decoration: none;
+    font-weight: 500;
 }
 
-.table tbody tr:hover { background: var(--paper-sunk); }
+.table tbody tr:hover { background: #FBF6EC; }
 
 /* Rows that navigate or open an editor when clicked. The cursor is the only
    affordance needed; the hover background already exists. */
@@ -119,6 +130,21 @@
 
 .table__actions a { margin-left: 0.85rem; font-size: 0.9rem; }
 
+/* Row actions stay quiet until wanted. Red on every row of a list makes the
+   whole page feel dangerous; the colour arrives on hover and focus instead,
+   and every delete still asks before it acts. */
+.table__actions a,
+.table__actions .linkbutton {
+    color: var(--ink-soft);
+}
+
+.table__actions a:hover,
+.table__actions .linkbutton:hover { color: var(--herb-deep); }
+
+.table__actions .linkbutton--danger:hover,
+.table__actions .linkbutton--danger:focus-visible,
+.table__actions a.danger:hover { color: var(--rust); }
+
 .table caption { text-align: left; }
 
 .danger { color: var(--rust); }
@@ -128,10 +154,11 @@
 
 .badge {
     display: inline-block;
-    padding: 0.1rem 0.5rem;
+    padding: 0.12rem 0.6rem;
     font-size: 0.8rem;
+    font-weight: 500;
     background: var(--herb-wash);
-    border: 1px solid #CBDCCE;
+    border: 1px solid transparent;
     border-radius: 999px;
     color: var(--herb-deep);
 }
@@ -140,9 +167,9 @@
 
 .empty {
     padding: 2.5rem 1.5rem;
-    background: var(--paper-sunk);
-    border: 1px dashed var(--rule);
-    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1.5px dashed var(--rule-strong);
+    border-radius: var(--radius-lg);
     text-align: center;
     color: var(--ink-soft);
 }
@@ -158,6 +185,21 @@
 }
 
 .button--danger:hover { background: #7C2B1A; color: #FFFFFF; }
+
+/* In a page heading, delete sits beside everyday actions like Edit. It is
+   outlined there so it does not shout louder than them; the dialog it opens
+   still confirms with the solid red button. */
+.pagehead .button--danger {
+    background: var(--surface);
+    border-color: #E2B9AC;
+    color: var(--rust);
+}
+
+.pagehead .button--danger:hover {
+    background: var(--rust-wash);
+    border-color: var(--rust);
+    color: #7C2B1A;
+}
 
 /* ---------- accessibility ---------- */
 
@@ -213,14 +255,14 @@
     white-space: nowrap;
 }
 
-.pill--warn { background: #F7EBD8; color: #8A5610; border: 1px solid #E6CFA6; }
-.pill--bad  { background: #F7EAE6; color: #8A2F1C; border: 1px solid #E7C4B8; }
+.pill--warn { background: var(--honey-wash); color: var(--honey-ink); border: 1px solid #EBD3A8; }
+.pill--bad  { background: var(--rust-wash); color: #8A2F1C; border: 1px solid #EBC9BE; }
 
 .searchbar__select {
-    padding: 0.5rem 0.55rem;
+    padding: 0.55rem 0.7rem;
     font: inherit;
     font-size: 0.92rem;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--rule-strong);
     border-radius: var(--radius);
     background: #FFFFFF;
 }
@@ -265,7 +307,7 @@
     margin: 0 0 0.9rem;
     padding: 0.6rem 0.9rem;
     background: var(--herb-wash);
-    border: 1px solid #CBDCCE;
+    border: 1px solid var(--herb-line);
     border-radius: var(--radius);
 }
 
@@ -289,12 +331,22 @@
    buying, a green strike-through for what is already in the basket. */
 
 .notice--warn {
-    border-color: var(--amber);
-    background: #F7EBD8;
+    border-color: #EBD3A8;
+    border-left-color: var(--amber);
+    background: var(--honey-wash);
     max-width: 46rem;
 }
 
-.aisle { margin-top: 1.75rem; max-width: 46rem; }
+/* Each aisle is its own panel, like a section of a paper list. */
+.aisle {
+    margin-top: 1.25rem;
+    max-width: 46rem;
+    padding: 0.9rem 1.1rem 0.3rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
 
 .aisle__name {
     font-family: var(--serif);
@@ -303,6 +355,8 @@
     padding-bottom: 0.35rem;
     border-bottom: 1px solid var(--rule);
 }
+
+.aisle .shoplist__item:last-child { border-bottom: 0; }
 
 .shoplist { list-style: none; margin: 0; padding: 0; }
 
@@ -325,8 +379,8 @@
     margin-top: 0.1rem;
     padding: 0;
     border: 2px solid var(--herb);
-    border-radius: var(--radius);
-    background: var(--paper);
+    border-radius: 6px;
+    background: #FFFFFF;
     color: #FFFFFF;
     font-size: 0.95rem;
     line-height: 1;
@@ -342,7 +396,7 @@
 
 /* The darker amber from the warning pill, since the palette amber is too light
    to meet contrast guidelines as text. */
-.shoplist__amount { margin-left: 0.5rem; font-weight: 600; color: #8A5610; }
+.shoplist__amount { margin-left: 0.5rem; font-weight: 600; color: var(--honey-ink); }
 
 .shoplist__note {
     margin: 0.15rem 0 0;

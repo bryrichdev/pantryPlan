@@ -2,7 +2,11 @@
 
 /* The share checkboxes reuse .checkset from plans.css, one group per line
    like the meal plan's slot choices. */
-.sharegroups { max-width: 46rem; }
+.sharegroups {
+    background: var(--surface);
+    border-color: var(--rule);
+    border-radius: var(--radius-lg);
+}
 
 .sharedwith {
     color: var(--ink-soft);
@@ -24,7 +28,7 @@
     font-size: 0.9rem;
     color: var(--ink);
     background-color: #FFFFFF;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--rule-strong);
     border-radius: var(--radius);
 }
 
@@ -46,9 +50,10 @@
 
 .group-invite__panel {
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 1rem 1.25rem;
-    background: var(--paper);
+    background: var(--surface);
+    box-shadow: var(--shadow);
 }
 
 .group-invite__panel h3 { margin-top: 0; }
@@ -72,9 +77,9 @@
 }
 
 .group-copy {
-    border: 1px solid var(--herb);
+    border: 1px solid var(--herb-line);
     background: var(--herb-wash);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 1rem 1.25rem;
     max-width: 46rem;
 }

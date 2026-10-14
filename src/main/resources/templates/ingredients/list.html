@@ -79,14 +79,14 @@
             </td>
             <td th:text="${item.name}">Flour</td>
             <td><span class="badge" th:text="${@fmt.label(item.category)}">Pantry staple</span></td>
-            <td th:text="${item.stockUnit.abbreviation}">g</td>
+            <td class="table__minor" th:text="${item.stockUnit.abbreviation}">g</td>
             <td><span class="badge" th:text="${@fmt.label(item.defaultLocation)}">Pantry</span></td>
-            <td>
+            <td class="table__minor">
                 <span th:if="${item.defaultQuantity != null}"
                       th:text="${@fmt.amount(item.defaultQuantity, item.stockUnit)}">12 pc</span>
                 <span th:if="${item.defaultQuantity == null}" class="muted">not set</span>
             </td>
-            <td>
+            <td class="table__minor">
                 <span th:if="${item.gramsPerCup != null}"
                       th:text="|${@fmt.quantity(item.gramsPerCup)} g|">120 g</span>
                 <span th:if="${item.gramsPerCup == null}" class="muted">not set</span>
