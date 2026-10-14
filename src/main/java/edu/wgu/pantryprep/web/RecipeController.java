@@ -213,6 +213,10 @@ public class RecipeController {
 
         redirectAttributes.addFlashAttribute("message",
                 form.isNew() ? "Recipe created." : "Recipe updated.");
+        if (form.isNew()) {
+            /* A small burst of herbs on the next page; see motion.js. */
+            redirectAttributes.addFlashAttribute("celebrate", true);
+        }
         return "redirect:/recipes/" + saved.getId();
     }
 

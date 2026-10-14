@@ -25,7 +25,7 @@
                     <option th:each="plan : ${plans}" th:value="${plan.id}"
                             th:text="${plan.name}">This week</option>
                 </select>
-                <button type="submit" class="button button--primary">Build grocery list</button>
+                <button type="submit" class="button button--primary" data-busy="Building your list">Build grocery list</button>
             </div>
         </div>
     </form>

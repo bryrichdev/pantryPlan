@@ -3,6 +3,27 @@
 <body>
 
 <aside th:fragment="samplelist" class="showcase">
+    <!-- The pot simmering on the card's corner. Decoration only; motion.css
+         animates the steam, the lid, and the sprig, and stills them all for
+         anyone who prefers reduced motion. -->
+    <svg class="pot" viewBox="0 0 100 92" aria-hidden="true" focusable="false">
+        <path class="pot__steam" d="M38 34c-6-6 6-10 0-16s6-10 0-16"/>
+        <path class="pot__steam" d="M52 32c-6-6 6-10 0-16s6-10 0-16"/>
+        <path class="pot__steam" d="M66 34c-6-6 6-10 0-16s6-10 0-16"/>
+        <g class="pot__sprig">
+            <path d="M74 56 C76 46 78 40 82 32" fill="none" stroke="#4F7F5A" stroke-width="2" stroke-linecap="round"/>
+            <ellipse cx="79" cy="42" rx="4.2" ry="1.8" transform="rotate(-60 79 42)" fill="#7FA36B"/>
+            <ellipse cx="83" cy="37" rx="4.2" ry="1.8" transform="rotate(-20 83 37)" fill="#4F7F5A"/>
+            <ellipse cx="76.5" cy="48" rx="4.2" ry="1.8" transform="rotate(-25 76.5 48)" fill="#7FA36B"/>
+        </g>
+        <g class="pot__lid">
+            <rect x="22" y="44" width="56" height="7" rx="3.5" fill="#234A31"/>
+            <rect x="44" y="38" width="12" height="7" rx="3" fill="#C7861F"/>
+        </g>
+        <path d="M24 52h52v22a12 12 0 0 1-12 12H36a12 12 0 0 1-12-12z" fill="#2F5D3F"/>
+        <path d="M24 58h-6a4 4 0 0 0 0 8h6M76 58h6a4 4 0 0 1 0 8h-6" fill="none" stroke="#234A31" stroke-width="4" stroke-linecap="round"/>
+        <path d="M31 60v14a6 6 0 0 0 6 6" fill="none" stroke="#FBF7EF" stroke-opacity="0.35" stroke-width="3" stroke-linecap="round"/>
+    </svg>
     <p class="showcase__caption">Sunday roast, planned for six</p>
     <ul class="showcase__list">
         <li class="showcase__item showcase__item--have">

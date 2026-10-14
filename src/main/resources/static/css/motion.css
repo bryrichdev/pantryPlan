@@ -1,0 +1,478 @@
+/* PantryPrep — motion.
+
+   Small, quick, and always saying something: where you went, what changed,
+   what just happened. A tick pops, a cooked meal lets off a puff of steam, a
+   bought item gets crossed off by hand, a new recipe gets a little shower of
+   herbs. Nothing loops on a working page except a pot simmering on the sign-in
+   card.
+
+   Loaded after the page stylesheets and before mobile.css. Everything here
+   switches off for prefers-reduced-motion at the bottom of the file; motion.js
+   checks the same setting before it delays a form or throws confetti. */
+
+:root {
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+/* ---------------------------------------------------------------- pages */
+
+/* Page to page: a quick cross-fade. The header holds still, so only the page
+   underneath changes. Browsers without cross-document view transitions just
+   load the page. */
+@view-transition {
+    navigation: auto;
+}
+
+.topnav { view-transition-name: topnav; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.18s;
+}
+
+/* ------------------------------------------------------------- buttons */
+
+/* Buttons give a little under your finger. */
+.button,
+.linkbutton,
+.tick,
+.day__add,
+.feedback-fab {
+    transition-property: background-color, border-color, color, transform, box-shadow;
+    transition-duration: 0.15s;
+}
+
+.button:active:not(:disabled),
+.day__add:active,
+.feedback-fab:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+.topnav__links a,
+a.topnav__user {
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* A button that is working on something: its label is swapped by motion.js
+   and three dots bounce after it. */
+.button.is-busy {
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.button.is-busy::after {
+    content: "";
+    display: inline-block;
+    width: 1.1em;
+    height: 0.3em;
+    margin-left: 0.35em;
+    vertical-align: middle;
+    background:
+        radial-gradient(circle closest-side, currentColor 90%, transparent) 0 50% / 0.3em 0.3em no-repeat,
+        radial-gradient(circle closest-side, currentColor 90%, transparent) 50% 50% / 0.3em 0.3em no-repeat,
+        radial-gradient(circle closest-side, currentColor 90%, transparent) 100% 50% / 0.3em 0.3em no-repeat;
+    animation: dots 0.9s ease-in-out infinite;
+}
+
+@keyframes dots {
+    0%, 100% { background-position: 0 50%, 50% 50%, 100% 50%; }
+    25% { background-position: 0 0, 50% 50%, 100% 50%; }
+    50% { background-position: 0 50%, 50% 0, 100% 50%; }
+    75% { background-position: 0 50%, 50% 50%, 100% 0; }
+}
+
+/* ------------------------------------------------------------ the logo */
+
+/* Hovering the wordmark writes the little list on the logo again, line by
+   line, honey line last. */
+.wordmark__line {
+    transform-box: fill-box;
+    transform-origin: left center;
+}
+
+.wordmark:hover .wordmark__line,
+.wordmark:focus-visible .wordmark__line {
+    animation: write-line 0.45s var(--ease-out) both;
+}
+
+.wordmark:hover .wordmark__line:nth-of-type(4),
+.wordmark:focus-visible .wordmark__line:nth-of-type(4) { animation-delay: 0.1s; }
+
+.wordmark:hover .wordmark__line:nth-of-type(5),
+.wordmark:focus-visible .wordmark__line:nth-of-type(5) { animation-delay: 0.2s; }
+
+@keyframes write-line {
+    from { transform: scaleX(0); }
+}
+
+/* -------------------------------------------------------- ticking a box */
+
+input[type="checkbox"]:checked {
+    animation: tick-pop 0.22s ease-out;
+}
+
+@keyframes tick-pop {
+    50% { transform: scale(1.22); }
+}
+
+/* --------------------------------------------------------------- dialogs */
+
+.dialog[open] {
+    animation: dialog-in 0.22s var(--ease-out);
+}
+
+.dialog[open]::backdrop {
+    animation: fade-in 0.2s ease-out;
+}
+
+@keyframes dialog-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+
+/* --------------------------------------------------------------- notices */
+
+/* A message after saving slides in, and a good one draws its own check mark
+   (motion.js adds the mark). */
+.flash .notice,
+.split__form > .notice {
+    animation: notice-in 0.35s var(--ease-out) backwards;
+}
+
+@keyframes notice-in {
+    from { opacity: 0; transform: translateY(-6px); }
+}
+
+.notice__check {
+    display: inline-block;
+    width: 1.05em;
+    height: 1.05em;
+    margin-right: 0.45rem;
+    vertical-align: -0.15em;
+    color: var(--herb);
+}
+
+.notice__check path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    animation: draw 0.4s 0.25s var(--ease-out) forwards;
+}
+
+@keyframes draw {
+    to { stroke-dashoffset: 0; }
+}
+
+/* A wrong password: the form gives a small shake, once. */
+.split__form:has(.notice--bad) .form {
+    animation: shake 0.45s 0.15s ease-in-out;
+}
+
+@keyframes shake {
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+/* -------------------------------------------- celebrations (motion.js) */
+
+/* A handful of herb leaves and honey drops thrown up from a spot and falling
+   away. Each piece gets its own direction and spin from motion.js. */
+.burst {
+    position: fixed;
+    z-index: 60;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.burst__bit {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--w, 9px);
+    height: var(--h, 5px);
+    margin: calc(var(--h, 5px) / -2) 0 0 calc(var(--w, 9px) / -2);
+    border-radius: 50% 0;
+    background: var(--c, var(--herb));
+    opacity: 0;
+    animation: burst var(--t, 0.9s) var(--d, 0s) cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+
+.burst__bit--drop { border-radius: 50%; }
+
+@keyframes burst {
+    0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(0.6); }
+    55% { opacity: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(1); }
+    100% { opacity: 0; transform: translate(calc(var(--x) * 1.15), calc(var(--y) + 46px)) rotate(calc(var(--r) * 1.6)) scale(0.9); }
+}
+
+/* --------------------------------------------- lists arriving on a page */
+
+/* Rows, cards, and panels settle in with a short cascade. The stagger is
+   capped so a long list never keeps you waiting; motion.js numbers the rows. */
+.table tbody tr,
+.home-tile,
+.home .card,
+.day,
+.aisle,
+.howto__step,
+.empty {
+    animation: rise-in 0.36s var(--ease-out) backwards;
+    animation-delay: min(calc(var(--i, 0) * 30ms), 330ms);
+}
+
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(6px); }
+}
+
+/* ------------------------------------------------------ the dashboard */
+
+.home-progress__bar {
+    animation: grow 0.9s 0.25s var(--ease-out) backwards;
+    transform-origin: left center;
+}
+
+@keyframes grow {
+    from { transform: scaleX(0); }
+}
+
+/* Today's row in "This week" warms up a moment after the page lands. */
+.home-week__day.is-today {
+    animation: warm 1.6s 0.4s ease-out backwards;
+}
+
+@keyframes warm {
+    from { background-color: transparent; }
+}
+
+/* ------------------------------------------------------- the meal plan */
+
+.meal {
+    position: relative;
+}
+
+/* Mark cooked: the meal blushes honey and lets off a puff of steam before
+   the page records it (motion.js holds the form for a moment). */
+.meal.is-cooking {
+    animation: cooking 0.6s ease-out;
+}
+
+@keyframes cooking {
+    35% { background-color: var(--honey-wash); }
+}
+
+.steam {
+    position: absolute;
+    left: 1.5rem;
+    top: 0.6rem;
+    width: 2.2rem;
+    height: 2rem;
+    pointer-events: none;
+}
+
+.steam span {
+    position: absolute;
+    bottom: 0;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #CFC4B2;
+    opacity: 0;
+    animation: steam 0.75s ease-out forwards;
+}
+
+.steam span:nth-child(1) { left: 0.1rem; }
+.steam span:nth-child(2) { left: 0.8rem; animation-delay: 0.1s; width: 0.7rem; height: 0.7rem; }
+.steam span:nth-child(3) { left: 1.5rem; animation-delay: 0.2s; }
+
+@keyframes steam {
+    0% { opacity: 0; transform: translateY(0) scale(0.6); }
+    30% { opacity: 0.85; }
+    100% { opacity: 0; transform: translateY(-1.8rem) translateX(0.25rem) scale(1.5); }
+}
+
+/* Back on the page: the meal just cooked glows and its Cooked tag pops in. */
+.meal.is-just-cooked {
+    animation: just-cooked 2.2s 0.15s ease-out backwards;
+    border-radius: var(--radius);
+}
+
+.meal.is-just-cooked .pill {
+    display: inline-block;
+    animation: pop 0.45s 0.25s var(--ease-spring) backwards;
+}
+
+@keyframes just-cooked {
+    0%, 20% { background-color: var(--honey-wash); box-shadow: inset 3px 0 0 var(--amber); }
+    100% { background-color: transparent; box-shadow: inset 3px 0 0 transparent; }
+}
+
+@keyframes pop {
+    from { transform: scale(0.4); opacity: 0; }
+}
+
+/* Remove: the meal slides off its day and folds away before the page moves
+   on (motion.js). Shared by any row marked data-leave. */
+.is-leaving {
+    animation: leave 0.28s ease-in forwards;
+    pointer-events: none;
+}
+
+@keyframes leave {
+    to { opacity: 0; transform: translateX(24px); filter: blur(1px); }
+}
+
+/* -------------------------------------------------- the grocery list */
+
+/* Crossed off by hand: the line draws across the name instead of snapping on. */
+.shoplist__name,
+.shoplist__amount {
+    background-image: linear-gradient(var(--herb), var(--herb));
+    background-repeat: no-repeat;
+    background-position: 0 58%;
+    background-size: 0 1.5px;
+    transition: background-size 0.3s var(--ease-out), color 0.2s ease;
+}
+
+.shoplist__item--bought .shoplist__name,
+.shoplist__item--bought .shoplist__amount {
+    text-decoration: none;
+    background-size: 100% 1.5px;
+}
+
+.shoplist__item--bought .shoplist__amount { transition-delay: 0.12s; }
+
+.tick[aria-pressed="true"] {
+    animation: tick-pop 0.25s ease-out;
+}
+
+/* ---------------------------------------- the sample list (landing, sign in) */
+
+/* Someone checks the pantry for Sunday's roast: rows arrive, what is already
+   on the shelf gets crossed off one after another, and the amounts to buy
+   light up in honey. Then a pot simmers on the corner of the card. */
+.showcase { position: relative; }
+
+.showcase__item {
+    animation: rise-in 0.4s var(--ease-out) backwards;
+}
+
+.showcase__item:nth-child(1) { animation-delay: 0.3s; }
+.showcase__item:nth-child(2) { animation-delay: 0.42s; }
+.showcase__item:nth-child(3) { animation-delay: 0.54s; }
+.showcase__item:nth-child(4) { animation-delay: 0.66s; }
+.showcase__item:nth-child(5) { animation-delay: 0.78s; }
+.showcase__item:nth-child(6) { animation-delay: 0.9s; }
+
+.showcase__item--have .showcase__name {
+    text-decoration: none;
+    background-image: linear-gradient(var(--herb), var(--herb));
+    background-repeat: no-repeat;
+    background-position: 0 58%;
+    background-size: 100% 1.5px;
+    animation: cross-off 0.45s var(--ease-out) backwards;
+}
+
+.showcase__item:nth-child(1) .showcase__name { animation-delay: 1.3s; }
+.showcase__item:nth-child(2) .showcase__name { animation-delay: 1.6s; }
+.showcase__item:nth-child(5) .showcase__name { animation-delay: 1.9s; }
+
+@keyframes cross-off {
+    from { background-size: 0 1.5px; color: var(--ink); }
+}
+
+.showcase__item--need .showcase__note {
+    display: inline-block;
+    animation: pop 0.4s var(--ease-spring) backwards;
+}
+
+.showcase__item:nth-child(3) .showcase__note { animation-delay: 2.2s; }
+.showcase__item:nth-child(4) .showcase__note { animation-delay: 2.35s; }
+.showcase__item:nth-child(6) .showcase__note { animation-delay: 2.5s; }
+
+.showcase__summary {
+    animation: fade-in 0.6s 2.8s ease-out backwards;
+}
+
+/* The pot: sits on the card's top corner. Steam curls up on a slow loop and
+   every so often the lid gives a little hop. */
+.pot {
+    position: absolute;
+    top: -3.1rem;
+    right: 1.1rem;
+    width: 5.2rem;
+    height: auto;
+    overflow: visible;
+    animation: pot-in 0.6s 0.1s var(--ease-spring) backwards;
+}
+
+@keyframes pot-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.85); }
+}
+
+.pot__steam {
+    fill: none;
+    stroke: #CDBFA8;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-dasharray: 26 40;
+    stroke-dashoffset: 26;
+    opacity: 0;
+    animation: curl 3.6s ease-in-out infinite;
+}
+
+.pot__steam:nth-of-type(2) { animation-delay: 1.2s; }
+.pot__steam:nth-of-type(3) { animation-delay: 2.4s; }
+
+@keyframes curl {
+    0% { stroke-dashoffset: 26; opacity: 0; transform: translateY(4px); }
+    25% { opacity: 0.9; }
+    80% { opacity: 0; }
+    100% { stroke-dashoffset: -40; opacity: 0; transform: translateY(-6px); }
+}
+
+.pot__lid {
+    transform-box: fill-box;
+    transform-origin: 30% 100%;
+    animation: lid 5.5s 2s ease-in-out infinite;
+}
+
+@keyframes lid {
+    0%, 86%, 100% { transform: none; }
+    89% { transform: translateY(-3px) rotate(-6deg); }
+    92% { transform: none; }
+    95% { transform: translateY(-1.5px) rotate(3deg); }
+}
+
+.pot__sprig {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: sway 4s ease-in-out infinite;
+}
+
+@keyframes sway {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(5deg); }
+}
+
+/* ------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+    @view-transition {
+        navigation: none;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    /* Without the animation the drawn lines must still show their end state. */
+    .notice__check path { stroke-dashoffset: 0; }
+    .pot__steam { opacity: 0.6; stroke-dashoffset: 0; }
+}
