@@ -84,7 +84,7 @@
                 </td>
                 <td th:text="${recipe.user.id == myUserId} ? 'You' : ${recipe.user.displayName}">Sam</td>
                 <td th:text="${recipe.mealType ?: '—'}">Dinner</td>
-                <td th:text="${recipe.servings}">4</td>
+                <td class="table__minor" th:text="${recipe.servings}">4</td>
                 <td class="table__actions">
                     <span th:if="${recipe.user.id == myUserId}" class="muted">Yours</span>
                     <span th:if="${recipe.user.id != myUserId and copiedIds.contains(recipe.id)}"
@@ -124,7 +124,7 @@
                     <span th:text="${member.user.displayName}">Sam</span>
                     <span class="muted" th:if="${member.id == me.id}">(you)</span>
                 </td>
-                <td th:if="${canManage}" th:text="${member.user.email}">sam@example.com</td>
+                <td th:if="${canManage}" class="table__wide" th:text="${member.user.email}">sam@example.com</td>
                 <td><span class="badge" th:text="${member.role.label}">Member</span></td>
                 <td th:text="${@fmt.date(member.createdAt)}">Oct 1, 2026</td>
                 <td class="table__actions" th:if="${canManage}">

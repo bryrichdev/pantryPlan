@@ -22,14 +22,15 @@
             </p>
         </div>
         <div class="actions">
-            <button type="button" class="button button--primary"
+            <button type="button" class="button"
+                    th:classappend="${readyCount == 0} ? 'button--quiet' : 'button--primary'"
                     th:if="${!#lists.isEmpty(stockableItems)}"
                     data-dialog-open="stockup-dialog" data-stockup-button
                     th:disabled="${readyCount == 0}"
-                    th:text="|Put ${readyCount} bought ${readyCount == 1 ? 'item' : 'items'} away|">
+                    th:text="${readyCount == 0} ? 'Put bought items away' : |Put ${readyCount} bought ${readyCount == 1 ? 'item' : 'items'} away|">
                 Put 4 bought items away
             </button>
-            <a class="button button--primary" th:if="${groceryList.itemCount() > 0}"
+            <a class="button button--quiet" th:if="${groceryList.itemCount() > 0}"
                th:href="@{/grocery-lists/{id}/print(id=${groceryList.id})}">Print</a>
             <form th:if="${groceryList.mealPlan != null}" th:action="@{/grocery-lists/generate}"
                   method="post" class="inline-form">

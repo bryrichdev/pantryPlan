@@ -95,10 +95,10 @@
             <tr th:each="line : ${recipe.lines}">
                 <td th:text="${line.ingredient.name}">Basil</td>
                 <td th:text="${@fmt.amount(line.quantity, line.unit)}">1 cup</td>
-                <td>
+                <td class="table__minor">
                     <span class="badge" th:text="${@fmt.label(line.ingredient.category)}">Produce</span>
                 </td>
-                <td>
+                <td class="table__minor">
                     <span th:if="${line.ingredient.gramsPerCup != null}"
                           th:text="|${@fmt.quantity(line.ingredient.gramsPerCup)} g|">120 g</span>
                     <span th:if="${line.ingredient.gramsPerCup == null}" class="muted">not set</span>

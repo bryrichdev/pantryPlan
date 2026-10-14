@@ -467,6 +467,11 @@
                     if (headings[index] && !cell.hasAttribute("data-label")) {
                         cell.setAttribute("data-label", headings[index]);
                     }
+                    /* An empty cell would print a heading with nothing under
+                       it on a phone card, so it is marked to be hidden. */
+                    if (!cell.children.length && !cell.textContent.trim()) {
+                        cell.classList.add("is-blank");
+                    }
                 });
             });
         });
@@ -549,8 +554,14 @@
 
         var button = document.querySelector("[data-stockup-button]");
         if (button) {
-            button.textContent = "Put " + ready + " bought " + (ready === 1 ? "item" : "items") + " away";
+            /* Nothing ticked yet: no count to show, and the button steps back
+               so it does not look like the next thing to do. */
+            button.textContent = ready === 0
+                ? "Put bought items away"
+                : "Put " + ready + " bought " + (ready === 1 ? "item" : "items") + " away";
             button.disabled = ready === 0;
+            button.classList.toggle("button--primary", ready > 0);
+            button.classList.toggle("button--quiet", ready === 0);
         }
 
         var empty = document.querySelector("[data-stockup-empty]");

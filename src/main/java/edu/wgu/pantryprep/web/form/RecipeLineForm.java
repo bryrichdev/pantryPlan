@@ -25,10 +25,22 @@ public class RecipeLineForm {
     public static RecipeLineForm from(RecipeLine line) {
         RecipeLineForm form = new RecipeLineForm();
         form.setIngredientId(line.getIngredient().getId());
-        form.setQuantity(line.getQuantity());
+        form.setQuantity(plain(line.getQuantity()));
         form.setUnit(line.getUnit());
         form.setNote(line.getNote());
         return form;
+    }
+
+    /**
+     * The database keeps three decimal places, so 16 comes back as 16.000.
+     * The edit form shows what the cook typed: 16, 1.5, 0.25.
+     */
+    private static BigDecimal plain(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        BigDecimal stripped = value.stripTrailingZeros();
+        return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
     }
 
     /**

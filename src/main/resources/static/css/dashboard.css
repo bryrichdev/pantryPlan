@@ -19,9 +19,10 @@
 /* ---------- cards ---------- */
 
 .home .card {
-    background: #FFFFFF;
+    background: var(--surface);
     border: 1px solid var(--rule);
-    border-radius: 5px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
     padding: 1.15rem 1.25rem 1.25rem;
     margin-bottom: 1.25rem;
 }
@@ -50,8 +51,8 @@
     gap: 0.75rem 1rem;
     flex-wrap: wrap;
     padding: 0.9rem 1rem;
-    background: var(--paper-sunk);
-    border: 1px dashed var(--rule);
+    background: var(--paper);
+    border: 1.5px dashed var(--rule-strong);
     border-radius: var(--radius);
     color: var(--ink-soft);
 }
@@ -137,23 +138,28 @@
     margin-bottom: 1.25rem;
 }
 
+/* Tiles that need attention are tinted, not just edged, so the eye lands on
+   them first; a quiet tile stays plain white. */
 .home-tile {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
     padding: 0.9rem 1rem;
-    background: #FFFFFF;
+    background: var(--surface);
     border: 1px solid var(--rule);
-    border-left: 4px solid var(--rule);
-    border-radius: 5px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
     color: var(--ink);
     text-decoration: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.home-tile:hover { border-color: var(--herb); }
+.home-tile:hover { border-color: var(--herb-line); box-shadow: var(--shadow-lift); }
 
-.home-tile--bad { border-left-color: var(--rust); }
-.home-tile--warn { border-left-color: var(--amber); }
+.home-tile--bad { background: var(--rust-wash); border-color: #EBC9BE; }
+.home-tile--bad .home-tile__count { color: var(--rust); }
+.home-tile--warn { background: var(--honey-wash); border-color: #EBD3A8; }
+.home-tile--warn .home-tile__count { color: var(--honey-ink); }
 
 .home-tile__count {
     font-family: var(--serif);
@@ -198,6 +204,8 @@
     border-radius: var(--radius);
     border-top-color: transparent;
 }
+
+.home-week__day.is-today + .home-week__day { border-top-color: transparent; }
 
 .home-week__day.is-past { color: var(--ink-soft); }
 
@@ -273,9 +281,8 @@
 }
 
 .home-progress {
-    height: 0.55rem;
+    height: 0.6rem;
     background: var(--paper-sunk);
-    border: 1px solid var(--rule);
     border-radius: 999px;
     overflow: hidden;
 }
@@ -284,6 +291,7 @@
     display: block;
     height: 100%;
     background: var(--herb);
+    border-radius: 999px;
 }
 
 .home-shop__status {
@@ -325,5 +333,5 @@
     .home .card { padding: 1rem; }
     .home-week__day { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
     .home-head .actions { width: 100%; }
-    .home-head .actions .button { flex: 1 1 auto; text-align: center; }
+    .home-head .actions .button { flex: 1 1 0; width: auto; text-align: center; }
 }

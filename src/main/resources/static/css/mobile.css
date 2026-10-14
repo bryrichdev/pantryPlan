@@ -141,6 +141,9 @@
     }
 
     .actions .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
         min-height: 2.75rem;
         text-align: center;
@@ -240,6 +243,18 @@
 
     /* ----- tables become cards ----- */
 
+    /* On a phone the table panel dissolves and each row becomes its own
+       card. Values sit two to a row, each with its column name above it, so a
+       card is about half the height it would be with one value per line.
+       Cells with nothing in them are hidden (app.js marks them is-blank). */
+    .table {
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: visible;
+    }
+
     /* The header row is hidden, except for a select-all checkbox, which would
        otherwise have nowhere to live. */
     .table thead { display: block; }
@@ -253,6 +268,7 @@
         width: auto;
         padding: 0 0 0.75rem;
         border: 0;
+        background: transparent;
         font-size: 0.9rem;
         color: var(--ink);
     }
@@ -261,54 +277,57 @@
 
     .table tbody tr {
         position: relative;
-        display: block;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1rem;
         margin: 0 0 0.75rem;
-        padding: 0.75rem 0.9rem;
-        background: #FFFFFF;
+        padding: 0.8rem 0.95rem 0.55rem;
+        background: var(--surface);
         border: 1px solid var(--rule);
-        border-radius: var(--radius);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
     }
 
-    .table tbody tr:hover { background: #FFFFFF; }
+    .table tbody tr:hover { background: var(--surface); }
 
-    /* Each value sits on the right with its column's name on the left. The
-       names come from data-label, which app.js copies from the headings. */
     .table tbody td {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        align-items: baseline;
-        gap: 0.25rem 0.4rem;
+        display: block;
+        min-width: 0;
         padding: 0.3rem 0;
         border: 0;
-        text-align: right;
+        text-align: left;
         overflow-wrap: anywhere;
     }
 
-    /* margin-right: auto pushes the value to the right edge while a cell with
-       several parts, such as a row of tag badges, keeps them together. */
+    .table tbody td.is-blank { display: none; }
+
+    /* Columns a template marks as minor (servings, purchase dates, weights)
+       stay on the desktop table and the item's own page, but are left off the
+       phone card so a list stays scannable. */
+    .table tbody td.table__minor { display: none; }
+
+    /* Long single values, such as an email address, take the card's full
+       width instead of breaking mid-word in half of it. */
+    .table tbody td.table__wide { grid-column: 1 / -1; }
+
     .table tbody td[data-label]::before {
         content: attr(data-label);
-        flex: 0 0 auto;
-        max-width: 45%;
-        margin-right: auto;
-        padding-right: 0.75rem;
-        text-align: left;
-        font-size: 0.8rem;
+        display: block;
+        margin-bottom: 0.05rem;
+        font-size: 0.74rem;
         font-weight: 600;
         color: var(--ink-soft);
     }
 
-    /* The first real column is the card's title: larger, on its own line,
-       with no label. When a row starts with a checkbox, the title is the cell
-       after it. */
+    /* The first real column is the card's title: larger, across the full
+       width, with no label. When a row starts with a checkbox, the title is
+       the cell after it. */
     .table tbody td:first-child:not(.table__check),
     .table tbody td.table__check + td {
-        display: block;
-        margin-bottom: 0.3rem;
-        padding: 0 2.75rem 0.45rem 0;
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+        padding: 0 2.75rem 0.5rem 0;
         border-bottom: 1px solid var(--rule);
-        text-align: left;
         font-size: 1.02rem;
         font-weight: 600;
     }
@@ -337,17 +356,23 @@
 
     /* Row actions get their own strip along the bottom of the card. */
     .table tbody td.table__actions {
+        grid-column: 1 / -1;
+        display: flex;
         flex-wrap: wrap;
-        justify-content: flex-start;
+        align-items: center;
         gap: 0.25rem 1.5rem;
-        margin-top: 0.4rem;
-        padding-top: 0.5rem;
+        margin-top: 0.35rem;
+        padding-top: 0.35rem;
         border-top: 1px solid var(--rule);
         white-space: normal;
         text-align: left;
     }
 
     .table tbody td.table__actions::before { display: none; }
+
+    /* A row with no actions for this person, such as your own line in a
+       group's people list, drops the empty strip. */
+    .table tbody td.table__actions.is-blank { display: none; }
 
     .table__actions a,
     .table__actions .linkbutton,
@@ -362,6 +387,12 @@
         font-size: 0.95rem;
     }
 
+    /* ----- panels ----- */
+
+    .aisle { padding: 0.75rem 0.9rem 0.2rem; }
+
+    .factgrid { padding: 0.85rem 1rem; }
+
     /* ----- selection bar ----- */
 
     /* While something is ticked, the bar floats at the bottom of the screen,
@@ -374,7 +405,7 @@
         z-index: 20;
         margin: 0;
         gap: 0.5rem 1rem;
-        box-shadow: 0 6px 24px rgba(27, 42, 32, 0.25);
+        box-shadow: 0 8px 28px rgba(60, 40, 15, 0.25);
     }
 
     .bulkbar .button { min-height: 2.5rem; }

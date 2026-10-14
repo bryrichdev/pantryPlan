@@ -104,17 +104,17 @@
                 <span th:if="${recipe.nationality}" th:text="${recipe.nationality}">Italian</span>
                 <span th:unless="${recipe.nationality}" class="muted">not set</span>
             </td>
-            <td th:text="${recipe.servings}">4</td>
+            <td class="table__minor" th:text="${recipe.servings}">4</td>
             <td>
                 <span th:if="${recipe.totalMinutes() > 0}"
                       th:text="|${recipe.totalMinutes()} min|">35 min</span>
                 <span th:if="${recipe.totalMinutes() == 0}" class="muted">not set</span>
             </td>
-            <td>
+            <td class="table__minor">
                 <span class="badge" th:each="tag : ${recipe.tags}" th:text="${tag}">italian</span>
                 <span th:if="${#sets.isEmpty(recipe.tags)}" class="muted">none</span>
             </td>
-            <td th:text="${recipe.timesCooked}">0</td>
+            <td class="table__minor" th:text="${recipe.timesCooked}">0</td>
             <td class="table__actions">
                 <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Edit</a>
                 <button type="button" class="linkbutton linkbutton--danger"
