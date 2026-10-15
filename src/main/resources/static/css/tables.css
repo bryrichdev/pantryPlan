@@ -228,7 +228,7 @@
     .searchbar input[type="search"] { flex: 1 1 auto; }
 }
 
-@media (max-width: 40rem) {
+@media (max-width: 70rem) {
     .table thead { display: none; }
 
     .table tbody tr {
