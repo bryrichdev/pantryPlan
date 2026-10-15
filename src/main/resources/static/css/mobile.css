@@ -3,7 +3,7 @@
    Loaded after every other stylesheet, so these rules override the desktop
    ones without editing them. Two breakpoints:
 
-   56rem (about 900px)  the navigation folds behind a Menu button
+   66rem (about 1050px) the navigation folds behind a Menu button
    40rem (about 640px)  phone layout: tables become cards, rows stack,
                         buttons widen to thumb size
 
@@ -14,7 +14,7 @@
 /* Hidden on desktop, where every link fits across the header. */
 .topnav__toggle { display: none; }
 
-@media (max-width: 56rem) {
+@media (max-width: 66rem) {
     .topnav__inner {
         padding: 0.7rem 1rem;
         gap: 0.5rem 1rem;
@@ -118,6 +118,37 @@
     }
 
     .topnav__links a.is-active::after { border-color: var(--herb); }
+
+    /* In the phone menu the admin dropdown is one more row, which opens in
+       place to show its pages, indented beneath it. */
+    .navmenu__button {
+        display: flex;
+        justify-content: space-between;
+        min-height: 2.9rem;
+        padding: 0 0.85rem;
+        border-radius: var(--radius);
+        color: var(--ink);
+    }
+
+    .navmenu__button::after {
+        width: 0.45rem;
+        height: 0.45rem;
+        border-color: var(--rule-strong);
+    }
+
+    .navmenu__panel {
+        position: static;
+        min-width: 0;
+        padding: 0.1rem 0 0.25rem 1rem;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .topnav__links .navmenu__panel a {
+        min-height: 2.6rem;
+        padding: 0 0.85rem;
+    }
 
     .topnav__account {
         width: 100%;

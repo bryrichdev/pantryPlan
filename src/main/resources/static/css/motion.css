@@ -517,6 +517,12 @@ input[type="checkbox"]:checked {
     animation: rise-in 0.26s 0.2s var(--ease-out) backwards;
 }
 
+/* The admin dropdown eases down from its pill. */
+.navmenu[open] > .navmenu__panel {
+    animation: menu-drop 0.18s var(--ease-out);
+    transform-origin: top left;
+}
+
 @keyframes menu-drop {
     from { opacity: 0; transform: translateY(-6px) scaleY(0.97); }
 }

@@ -77,21 +77,34 @@
             <a th:href="@{/groups}"
                th:classappend="${#strings.startsWith(currentPath, '/groups')} ? 'is-active' : ''"
                th:attr="aria-current=${#strings.startsWith(currentPath, '/groups')} ? 'page' : null">Groups</a>
-            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}"
-               th:classappend="${#strings.startsWith(currentPath, '/admin/users')} ? 'is-active' : ''"
-               th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/users')} ? 'page' : null">Admin</a>
-            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/logs}"
-               th:classappend="${#strings.startsWith(currentPath, '/admin/logs')} ? 'is-active' : ''"
-               th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/logs')} ? 'page' : null">Logs</a>
-            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/feedback}"
-               th:classappend="${#strings.startsWith(currentPath, '/admin/feedback')} ? 'is-active' : ''"
-               th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/feedback')} ? 'page' : null">Feedback</a>
+            <!-- Admin pages share one dropdown, so an admin's bar holds the
+                 same number of items as everyone else's and never wraps. -->
+            <details class="navmenu" sec:authorize="hasRole('ADMIN')" data-navmenu
+                     th:classappend="${#strings.startsWith(currentPath, '/admin')} ? 'is-active' : ''">
+                <summary class="navmenu__button">Admin</summary>
+                <div class="navmenu__panel">
+                    <a th:href="@{/admin/users}"
+                       th:classappend="${#strings.startsWith(currentPath, '/admin/users')} ? 'is-active' : ''"
+                       th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/users')} ? 'page' : null">Users</a>
+                    <a th:href="@{/admin/logs}"
+                       th:classappend="${#strings.startsWith(currentPath, '/admin/logs')} ? 'is-active' : ''"
+                       th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/logs')} ? 'page' : null">Logs</a>
+                    <a th:href="@{/admin/feedback}"
+                       th:classappend="${#strings.startsWith(currentPath, '/admin/feedback')} ? 'is-active' : ''"
+                       th:attr="aria-current=${#strings.startsWith(currentPath, '/admin/feedback')} ? 'page' : null">Feedback</a>
+                </div>
+            </details>
         </nav>
 
         <div class="topnav__account">
+            <!-- The initial is always shown; the full name gives way to it when
+                 the bar is short of room, and stays in the tooltip. -->
             <a sec:authorize="isAuthenticated()" class="topnav__user" th:href="@{/account}"
                th:classappend="${#strings.startsWith(currentPath, '/account')} ? 'is-active' : ''"
-               th:text="${currentUserName}" title="Account settings">Cook</a>
+               th:title="|${currentUserName} · Account settings|" title="Account settings"><span
+                    class="topnav__avatar" aria-hidden="true"
+                    th:text="${#strings.isEmpty(currentUserName)} ? '?' : ${#strings.toUpperCase(#strings.substring(currentUserName, 0, 1))}">C</span><span
+                    class="topnav__name" th:text="${currentUserName}">Cook</span></a>
             <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="inline-form">
                 <button type="submit" class="button button--quiet">Sign out</button>
             </form>

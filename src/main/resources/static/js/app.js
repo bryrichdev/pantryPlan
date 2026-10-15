@@ -1003,3 +1003,34 @@
         }, 180);
     });
 }());
+
+/* ------------------------------------------------------------ admin dropdown
+
+   The admin pages sit in a <details> dropdown in the top bar. It opens and
+   closes on its own; this closes it when a click lands anywhere else or
+   Escape is pressed, so it behaves like any other menu. */
+(function () {
+    "use strict";
+
+    function openMenus() {
+        return document.querySelectorAll("details[data-navmenu][open]");
+    }
+
+    document.addEventListener("click", function (event) {
+        Array.prototype.forEach.call(openMenus(), function (menu) {
+            if (!menu.contains(event.target)) {
+                menu.open = false;
+            }
+        });
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") {
+            return;
+        }
+        Array.prototype.forEach.call(openMenus(), function (menu) {
+            menu.open = false;
+            menu.querySelector("summary").focus();
+        });
+    });
+}());
