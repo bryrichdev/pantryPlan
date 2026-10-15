@@ -13,22 +13,19 @@
                 is already in the pantry.
             </p>
         </div>
+        <form class="actions" th:action="@{/grocery-lists/generate}" method="post"
+              th:unless="${#lists.isEmpty(plans)}">
+            <label class="visually-hidden" for="plan-choice">Meal plan</label>
+            <select id="plan-choice" name="planId" class="searchbar__select" required>
+                <option th:each="plan : ${plans}" th:value="${plan.id}"
+                        th:text="${plan.name}">This week</option>
+            </select>
+            <button type="submit" class="button button--primary" data-busy="Building your list">Build grocery list</button>
+        </form>
     </div>
 
     <div th:replace="~{fragments/layout :: flash}"></div>
 
-    <form th:action="@{/grocery-lists/generate}" method="post" th:unless="${#lists.isEmpty(plans)}">
-        <div class="toolbar">
-            <div class="searchbar">
-                <label class="visually-hidden" for="plan-choice">Meal plan</label>
-                <select id="plan-choice" name="planId" class="searchbar__select" required>
-                    <option th:each="plan : ${plans}" th:value="${plan.id}"
-                            th:text="${plan.name}">This week</option>
-                </select>
-                <button type="submit" class="button button--primary" data-busy="Building your list">Build grocery list</button>
-            </div>
-        </div>
-    </form>
 
     <div class="empty" th:if="${#lists.isEmpty(groceryLists)}">
         <p th:if="${#lists.isEmpty(plans)}">

@@ -13,6 +13,9 @@
                 shared recipe into their own account and cook from their own pantry.
             </p>
         </div>
+        <div class="actions" th:if="${ownedGroups < maxOwnedGroups}">
+            <a class="button button--primary" href="#create-group">Create a group</a>
+        </div>
     </div>
 
     <div th:replace="~{fragments/layout :: flash}"></div>
@@ -88,7 +91,7 @@
         </table>
     </section>
 
-    <section class="section" th:if="${ownedGroups < maxOwnedGroups}">
+    <section class="section" id="create-group" th:if="${ownedGroups < maxOwnedGroups}">
         <h2 th:text="${ownedGroups == 0} ? 'Create your group' : 'Create another group'">Create your group</h2>
         <p class="footnote" th:text="${ownedGroups == 0}
                 ? |You can create up to ${maxOwnedGroups} groups, say one for family and one for friends, and join others you are invited to.|

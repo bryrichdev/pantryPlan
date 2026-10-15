@@ -66,6 +66,11 @@ a:hover { color: var(--herb); }
 /* ---------- header ---------- */
 
 .topnav {
+    /* Its own layer above the pinned page heading. The page fade gives the
+       bar a stacking context of its own, so without this the admin dropdown
+       opened underneath the heading. */
+    position: relative;
+    z-index: 30;
     border-bottom: 1px solid var(--rule);
     background: var(--surface);
 }
