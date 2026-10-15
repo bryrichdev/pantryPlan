@@ -19,8 +19,10 @@
     <link rel="stylesheet" th:href="@{/css/mobile.css}">
     <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon.png}">
     <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
-    <script th:src="@{/js/app.js}" defer></script>
-    <script th:src="@{/js/motion.js}" defer></script>
+    <!-- Render-blocking, so the first paint already has app.js's tidying (empty
+         card cells hidden, counters set) instead of showing it a beat late. -->
+    <script th:src="@{/js/app.js}" defer blocking="render"></script>
+    <script th:src="@{/js/motion.js}" defer blocking="render"></script>
 </head>
 
 <body>

@@ -45,7 +45,15 @@
     box-shadow: 0 0 0 1px var(--herb), var(--shadow);
 }
 
-.day__head { margin-bottom: 0.6rem; }
+.day__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--rule);
+}
 
 .day__name {
     font-family: var(--serif);
@@ -72,36 +80,70 @@
     flex: 1;
 }
 
+/* A meal: its slot on top, then the checkbox beside the recipe name, then
+   its actions. The checkbox sits on the name's line, not the middle of the
+   whole block, so a column of meals reads as a tidy checklist. */
 .meal {
+    position: relative;
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 0.15rem 0.5rem;
-    padding: 0.5rem 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 0.7rem;
+    margin: 0 -0.5rem;
+    padding: 0.65rem 0.5rem 0.7rem;
+    border-radius: var(--radius);
+    transition: background-color 0.2s ease;
+}
+
+/* The rule between meals is inset, so a tinted meal stays a clean tile. */
+.meal + .meal::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0.5rem;
+    right: 0.5rem;
     border-top: 1px solid var(--rule);
 }
 
-.meal:first-child { border-top: 0; }
+.meal--cooked::before,
+.meal--cooked + .meal::before,
+.meal:hover::before,
+.meal:hover + .meal::before { border-top-color: transparent; }
 
 .meal__slot {
-    grid-column: 2 / -1;
-    font-size: 0.72rem;
+    grid-column: 2;
+    grid-row: 1;
+    margin-bottom: 0.1rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--ink-soft);
 }
 
-.meal__body { min-width: 0; }
-
 .meal__check {
-    grid-row: 1 / span 3;
-    margin: 0.25rem 0 0;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    margin-top: 0.15rem;
+}
+
+.meal__body {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem 0.45rem;
 }
 
 .meal__recipe {
-    display: block;
-    font-size: 0.94rem;
+    flex-basis: 100%;
+    font-size: 0.96rem;
+    font-weight: 500;
+    line-height: 1.4;
     text-decoration: none;
+    text-underline-offset: 3px;
 }
 
 .meal__recipe:hover { text-decoration: underline; }
@@ -111,21 +153,68 @@
     color: var(--ink-soft);
 }
 
+.meal__body .pill { margin-left: 0; }
+
 .meal__actions {
-    display: flex;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 0.4rem 1rem;
-    grid-column: 2 / -1;
+    grid-column: 2;
     grid-row: 3;
-    margin-top: 0.2rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
+    margin-top: 0.5rem;
 }
 
 .meal__cook, .meal__remove { margin: 0; }
 
-.meal__actions .linkbutton { margin: 0; font-size: 0.82rem; color: var(--ink-soft); }
-.meal__actions .linkbutton:hover { color: var(--herb-deep); }
-.meal__actions .linkbutton--danger:hover { color: var(--rust); }
+.meal__actions .linkbutton {
+    margin: 0;
+    font-size: 0.8rem;
+    text-decoration: none;
+    text-underline-offset: 3px;
+}
+
+/* Mark cooked is the thing people come here to do, so it is a small herb
+   button rather than another underlined word. */
+.meal__cook .linkbutton {
+    padding: 0.28rem 0.7rem;
+    font-weight: 600;
+    color: var(--herb-deep);
+    background: var(--herb-wash);
+    border: 1px solid var(--herb-line);
+    border-radius: 999px;
+}
+
+.meal__cook .linkbutton:hover {
+    color: #FFFFFF;
+    background: var(--herb);
+    border-color: var(--herb);
+}
+
+.meal__remove .linkbutton { color: var(--ink-soft); }
+
+.meal__remove .linkbutton:hover {
+    color: var(--rust);
+    text-decoration: underline;
+}
+
+/* A cooked meal settles back: a faint herb wash, a softer name, and its
+   button becomes a quiet Undo. */
+.meal--cooked { background: rgba(226, 236, 223, 0.45); }
+
+.meal--cooked .meal__recipe { color: var(--ink-soft); }
+
+.meal--cooked .meal__cook .linkbutton {
+    color: var(--ink-soft);
+    background: transparent;
+    border-color: var(--rule-strong);
+}
+
+.meal--cooked .meal__cook .linkbutton:hover {
+    color: var(--herb-deep);
+    background: var(--surface);
+    border-color: var(--herb);
+}
 
 .day__add {
     align-self: flex-start;

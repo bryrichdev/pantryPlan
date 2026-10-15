@@ -57,6 +57,8 @@
         shelf, so the amount shown is everything the recipes call for.
     </p>
 
+    <!-- On a wide screen the aisles flow into two columns. -->
+    <div class="aisles">
     <section class="aisle" th:each="aisle : ${aisles}">
         <h2 class="aisle__name" th:text="${@fmt.label(aisle.category)}">Produce</h2>
         <ul class="shoplist">
@@ -111,6 +113,7 @@
             </li>
         </ul>
     </section>
+    </div>
 
     <p class="footnote aisle-footnote" th:if="${groceryList.itemCount() > 0 and groceryList.mealPlan != null}">
         Rebuilding subtracts your current pantry again and clears these ticks.

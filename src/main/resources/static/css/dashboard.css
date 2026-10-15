@@ -335,3 +335,11 @@
     .home-head .actions { width: 100%; }
     .home-head .actions .button { flex: 1 1 0; width: auto; text-align: center; }
 }
+
+/* The week is a list to scan, so its links stay plain until pointed at. */
+.home-week__meals a {
+    text-decoration: none;
+    text-underline-offset: 3px;
+}
+
+.home-week__meals a:hover { text-decoration: underline; }
