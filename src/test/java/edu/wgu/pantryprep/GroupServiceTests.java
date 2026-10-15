@@ -121,13 +121,36 @@ class GroupServiceTests {
     // --------------------------------------------------------------- creating
 
     @Test
-    void creatorBecomesOwnerAndCannotCreateASecondGroup() {
+    void creatorBecomesOwnerAndCanCreateUpToFiveGroups() {
         User owner = cook("grp-create@example.com");
         KitchenGroup group = groupService.create("Family", "  ", owner);
 
         assertEquals(GroupRole.OWNER, membership(group, owner).getRole());
         assertEquals(null, group.getDescription(), "a blank description is stored as nothing");
-        assertThrows(GroupRuleException.class, () -> groupService.create("Friends", null, owner));
+
+        for (String name : List.of("Friends", "Book club", "Neighbours", "Work")) {
+            KitchenGroup another = groupService.create(name, null, owner);
+            assertEquals(GroupRole.OWNER, membership(another, owner).getRole());
+        }
+        assertEquals(GroupService.MAX_OWNED_GROUPS, groupService.ownedGroupCount(owner));
+        assertThrows(GroupRuleException.class, () -> groupService.create("A sixth", null, owner),
+                "five is the most one account can create");
+
+        groupService.delete(group.getId(), owner);
+        groupService.create("Family again", null, owner);
+        assertEquals(GroupService.MAX_OWNED_GROUPS, groupService.ownedGroupCount(owner),
+                "deleting one makes room for another");
+    }
+
+    @Test
+    void theDatabaseRefusesASixthOwnedGroup() {
+        User owner = cook("grp-create-db@example.com");
+        for (int i = 1; i <= GroupService.MAX_OWNED_GROUPS; i++) {
+            groupService.create("Group " + i, null, owner);
+        }
+        assertThrows(DataIntegrityViolationException.class,
+                () -> groupRepository.saveAndFlush(new KitchenGroup(owner, "Sneaked in")),
+                "the trigger holds the limit even past the service");
     }
 
     @Test
@@ -322,14 +345,16 @@ class GroupServiceTests {
         User heir = cook("grp-xfer-h@example.com");
         User busy = cook("grp-xfer-b@example.com");
         KitchenGroup group = groupService.create("Family", null, owner);
-        groupService.create("Busy's group", null, busy);
+        for (int i = 1; i <= GroupService.MAX_OWNED_GROUPS; i++) {
+            groupService.create("Busy's group " + i, null, busy);
+        }
         join(group, owner, heir, GroupRole.MEMBER);
         join(group, owner, busy, GroupRole.MEMBER);
 
         assertThrows(GroupRuleException.class, () -> groupService.leave(group.getId(), owner));
         assertThrows(GroupRuleException.class,
                 () -> groupService.transferOwnership(group.getId(), membership(group, busy).getId(), owner),
-                "someone who owns a group cannot take a second");
+                "someone who owns five groups cannot take a sixth");
 
         groupService.transferOwnership(group.getId(), membership(group, heir).getId(), owner);
 

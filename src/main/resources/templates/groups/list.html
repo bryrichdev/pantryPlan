@@ -88,10 +88,12 @@
         </table>
     </section>
 
-    <section class="section" th:unless="${ownsGroup}">
-        <h2>Create your group</h2>
-        <p class="footnote">
-            Each account can create one group and join as many others as it is invited to.
+    <section class="section" th:if="${ownedGroups < maxOwnedGroups}">
+        <h2 th:text="${ownedGroups == 0} ? 'Create your group' : 'Create another group'">Create your group</h2>
+        <p class="footnote" th:text="${ownedGroups == 0}
+                ? |You can create up to ${maxOwnedGroups} groups, say one for family and one for friends, and join others you are invited to.|
+                : |You have created ${ownedGroups} of the ${maxOwnedGroups} groups an account can have.|">
+            You can create up to 5 groups and join others you are invited to.
         </p>
         <form th:action="@{/groups}" th:object="${groupForm}" method="post" class="form">
             <div class="field">
