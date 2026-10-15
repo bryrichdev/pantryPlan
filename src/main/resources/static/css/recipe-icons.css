@@ -1,0 +1,361 @@
+/* PantryPrep — recipe pictures.
+
+   Small drawings a recipe can wear so it is easy to spot in a list: what it
+   is, or what it is cooked in. They sit still in lists and on the meal plan,
+   and only move where there is room to enjoy it: the recipe's own page, the
+   picker, and a row or meal under the pointer. Each moving part names one of
+   the shared motions below; --d staggers parts within one picture. */
+
+.ricon {
+    display: inline-block;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: middle;
+    overflow: visible;
+}
+
+.ricon--lg { width: 4.75rem; height: 4.75rem; }
+.ricon--sm { width: 1.5rem; height: 1.5rem; }
+
+.ricon [class^="ri-"],
+.ricon [class*=" ri-"] {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+}
+
+/* Where pictures move: always on a recipe's own page (is-live), and under
+   the pointer — the picture itself, the row or meal holding it, or a tile in
+   the picker — plus the picker's chosen tile. */
+.ricon.is-live .ri-steam,
+.ricon-host:hover .ricon .ri-steam,
+.ricon:hover .ri-steam,
+.iconpick__option:hover .ri-steam,
+.iconpick__input:checked + .iconpick__option .ri-steam {
+    stroke-dasharray: 14 30;
+    animation: ri-curl 2.4s var(--d, 0s) ease-in-out infinite;
+}
+
+.ricon.is-live .ri-hop,     .ricon-host:hover .ri-hop, .ricon:hover .ri-hop,     .iconpick__option:hover .ri-hop,     .iconpick__input:checked + .iconpick__option .ri-hop     { animation: ri-hop 1.6s var(--d, 0s) ease-in-out infinite; }
+.ricon.is-live .ri-tilt,    .ricon-host:hover .ri-tilt, .ricon:hover .ri-tilt,    .iconpick__option:hover .ri-tilt,    .iconpick__input:checked + .iconpick__option .ri-tilt    { animation: ri-tilt 1.6s ease-in-out infinite; transform-origin: 85% 50%; }
+.ricon.is-live .ri-toss,    .ricon-host:hover .ri-toss, .ricon:hover .ri-toss,    .iconpick__option:hover .ri-toss,    .iconpick__input:checked + .iconpick__option .ri-toss    { animation: ri-toss 1.6s var(--d, 0s) ease-in-out infinite; }
+.ricon.is-live .ri-sizzle,  .ricon-host:hover .ri-sizzle, .ricon:hover .ri-sizzle,  .iconpick__option:hover .ri-sizzle,  .iconpick__input:checked + .iconpick__option .ri-sizzle  { animation: ri-blink 0.9s steps(2, jump-none) infinite; }
+.ricon.is-live .ri-shimmer, .ricon-host:hover .ri-shimmer, .ricon:hover .ri-shimmer, .iconpick__option:hover .ri-shimmer, .iconpick__input:checked + .iconpick__option .ri-shimmer { animation: ri-shimmer 1.8s ease-in-out infinite; }
+.ricon.is-live .ri-bubble,  .ricon-host:hover .ri-bubble, .ricon:hover .ri-bubble,  .iconpick__option:hover .ri-bubble,  .iconpick__input:checked + .iconpick__option .ri-bubble  { animation: ri-bubble 2s var(--d, 0s) ease-out infinite; transform-origin: 50% 50%; }
+.ricon.is-live .ri-blink,   .ricon-host:hover .ri-blink, .ricon:hover .ri-blink,   .iconpick__option:hover .ri-blink,   .iconpick__input:checked + .iconpick__option .ri-blink   { animation: ri-blink 1.4s ease-in-out infinite; }
+.ricon.is-live .ri-flame,   .ricon-host:hover .ri-flame, .ricon:hover .ri-flame,   .iconpick__option:hover .ri-flame,   .iconpick__input:checked + .iconpick__option .ri-flame   { animation: ri-flame 0.7s var(--d, 0s) ease-in-out infinite alternate; }
+.ricon.is-live .ri-sway,    .ricon-host:hover .ri-sway, .ricon:hover .ri-sway,    .iconpick__option:hover .ri-sway,    .iconpick__input:checked + .iconpick__option .ri-sway    { animation: ri-sway 2.2s var(--d, 0s) ease-in-out infinite; }
+.ricon.is-live .ri-twirl,   .ricon-host:hover .ri-twirl, .ricon:hover .ri-twirl,   .iconpick__option:hover .ri-twirl,   .iconpick__input:checked + .iconpick__option .ri-twirl   { animation: ri-twirl 2s ease-in-out infinite; }
+.ricon.is-live .ri-chop,    .ricon-host:hover .ri-chop, .ricon:hover .ri-chop,    .iconpick__option:hover .ri-chop,    .iconpick__input:checked + .iconpick__option .ri-chop    { animation: ri-chop 1.4s ease-in-out infinite; }
+.ricon.is-live .ri-wiggle,  .ricon-host:hover .ri-wiggle, .ricon:hover .ri-wiggle,  .iconpick__option:hover .ri-wiggle,  .iconpick__input:checked + .iconpick__option .ri-wiggle  { animation: ri-wiggle 1.8s ease-in-out infinite; transform-origin: 50% 80%; }
+.ricon.is-live .ri-bob,     .ricon-host:hover .ri-bob, .ricon:hover .ri-bob,     .iconpick__option:hover .ri-bob,     .iconpick__input:checked + .iconpick__option .ri-bob     { animation: ri-hop 2s ease-in-out infinite; }
+.ricon.is-live .ri-squish,  .ricon-host:hover .ri-squish, .ricon:hover .ri-squish,  .iconpick__option:hover .ri-squish,  .iconpick__input:checked + .iconpick__option .ri-squish  { animation: ri-squish 1.6s ease-in-out infinite; }
+.ricon.is-live .ri-drip,    .ricon-host:hover .ri-drip, .ricon:hover .ri-drip,    .iconpick__option:hover .ri-drip,    .iconpick__input:checked + .iconpick__option .ri-drip    { animation: ri-drip 2.4s ease-in-out infinite; transform-origin: 50% 0; }
+.ricon.is-live .ri-wobble,  .ricon-host:hover .ri-wobble, .ricon:hover .ri-wobble,  .iconpick__option:hover .ri-wobble,  .iconpick__input:checked + .iconpick__option .ri-wobble  { animation: ri-wobble 1.6s ease-in-out infinite; transform-origin: 50% 50%; }
+.ricon.is-live .ri-pop,     .ricon-host:hover .ri-pop, .ricon:hover .ri-pop,     .iconpick__option:hover .ri-pop,     .iconpick__input:checked + .iconpick__option .ri-pop     { animation: ri-pop 2.6s var(--d, 0s) cubic-bezier(0.3, 1.4, 0.5, 1) infinite; }
+.ricon.is-live .ri-stir,    .ricon-host:hover .ri-stir, .ricon:hover .ri-stir,    .iconpick__option:hover .ri-stir,    .iconpick__input:checked + .iconpick__option .ri-stir    { animation: ri-stir 2s ease-in-out infinite; }
+.ricon.is-live .ri-rise,    .ricon-host:hover .ri-rise, .ricon:hover .ri-rise,    .iconpick__option:hover .ri-rise,    .iconpick__input:checked + .iconpick__option .ri-rise    { animation: ri-rise 1.8s var(--d, 0s) ease-in infinite; }
+.ricon.is-live .ri-puff,    .ricon-host:hover .ri-puff, .ricon:hover .ri-puff,    .iconpick__option:hover .ri-puff,    .iconpick__input:checked + .iconpick__option .ri-puff    { animation: ri-puff 2.2s ease-in-out infinite; }
+.ricon.is-live .ri-crumb,   .ricon-host:hover .ri-crumb, .ricon:hover .ri-crumb,   .iconpick__option:hover .ri-crumb,   .iconpick__input:checked + .iconpick__option .ri-crumb   { animation: ri-crumb 1.8s var(--d, 0s) ease-in infinite; }
+
+@keyframes ri-curl {
+    0% { stroke-dashoffset: 14; opacity: 0; transform: translateY(3px); }
+    30% { opacity: 1; }
+    80% { opacity: 0; }
+    100% { stroke-dashoffset: -30; opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes ri-hop {
+    0%, 60%, 100% { transform: translateY(0); }
+    75% { transform: translateY(-2.5px); }
+}
+
+@keyframes ri-tilt {
+    0%, 100% { transform: rotate(0); }
+    30% { transform: rotate(-3deg); }
+    60% { transform: rotate(2deg); }
+}
+
+@keyframes ri-toss {
+    0%, 55%, 100% { transform: translateY(0); }
+    75% { transform: translateY(-7px) rotate(25deg); }
+}
+
+@keyframes ri-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+
+@keyframes ri-shimmer {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50% { transform: translateY(-2px); opacity: 1; }
+}
+
+@keyframes ri-bubble {
+    0% { transform: scale(0.3); opacity: 0; }
+    30% { opacity: 1; }
+    70% { transform: scale(1.1); opacity: 1; }
+    80%, 100% { transform: scale(1.4); opacity: 0; }
+}
+
+@keyframes ri-flame {
+    from { transform: scaleY(0.82) scaleX(1.05); }
+    to { transform: scaleY(1.1) scaleX(0.94); }
+}
+
+@keyframes ri-sway {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+@keyframes ri-twirl {
+    0%, 100% { transform: rotate(0); }
+    50% { transform: rotate(-14deg) translateY(1px); }
+}
+
+@keyframes ri-chop {
+    0%, 100% { transform: translate(0, 0); }
+    40% { transform: translate(-1px, 2.5px); }
+}
+
+@keyframes ri-wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-4deg); }
+    75% { transform: rotate(4deg); }
+}
+
+@keyframes ri-squish {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    40% { transform: translateY(1.5px) scaleY(0.9); }
+    60% { transform: translateY(-1px) scaleY(1.04); }
+}
+
+@keyframes ri-drip {
+    0%, 15% { transform: scaleY(0.4); }
+    70%, 100% { transform: scaleY(1.15); }
+}
+
+@keyframes ri-wobble {
+    0%, 100% { transform: scale(1); }
+    40% { transform: scale(1.1, 0.92); }
+    70% { transform: scale(0.95, 1.06); }
+}
+
+@keyframes ri-pop {
+    0%, 40%, 100% { transform: translateY(0); }
+    55% { transform: translateY(-6px); }
+    70% { transform: translateY(-4px); }
+}
+
+@keyframes ri-stir {
+    0%, 100% { transform: rotate(0); }
+    50% { transform: rotate(-12deg); }
+}
+
+@keyframes ri-rise {
+    0% { transform: translateY(0); opacity: 0; }
+    20% { opacity: 0.8; }
+    100% { transform: translateY(-16px); opacity: 0; }
+}
+
+@keyframes ri-puff {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05, 1.08); }
+}
+
+@keyframes ri-crumb {
+    0% { transform: translate(0, 0); opacity: 0; }
+    15% { opacity: 1; }
+    100% { transform: translate(4px, 22px); opacity: 0; }
+}
+
+/* ------------------------------------------------ beside a recipe's name */
+
+.recipe-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    vertical-align: middle;
+}
+
+.recipe-name .ricon--sm {
+    width: 2.2rem;
+    height: 2.2rem;
+    margin: -0.35rem 0;
+}
+
+.meal__recipe {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.meal__recipe .ricon--sm { width: 1.75rem; height: 1.75rem; margin: -0.3rem 0; }
+
+.pagehead__title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+}
+
+/* On its own page the picture sits on a little tile, like a recipe card. */
+.pagehead__title .ricon--lg {
+    box-sizing: border-box;
+    padding: 0.3rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+/* ------------------------------------------------------------ the picker */
+
+.iconpick {
+    margin: 0 0 1.15rem;
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+}
+
+.iconpick[open] { border-color: var(--herb-line); }
+
+.iconpick__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem 0.85rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.iconpick__summary::-webkit-details-marker { display: none; }
+
+.iconpick__current {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    flex: none;
+    background: var(--paper);
+    border-radius: var(--radius);
+}
+
+.iconpick__current .ricon { width: 2.5rem; height: 2.5rem; }
+
+.iconpick__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.iconpick__title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.iconpick__chosen { font-size: 0.93rem; }
+
+.iconpick__change {
+    flex: none;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--herb-deep);
+    background: var(--herb-wash);
+    border: 1px solid var(--herb-line);
+    border-radius: 999px;
+}
+
+.iconpick[open] .iconpick__change { visibility: hidden; }
+
+.iconpick__panel {
+    padding: 0.25rem 0.85rem 0.9rem;
+    border-top: 1px solid var(--rule);
+}
+
+.iconpick__heading {
+    margin: 0.85rem 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+.iconpick__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.4rem, 1fr));
+    gap: 0.45rem;
+}
+
+.iconpick__panel > .iconpick__grid:first-child { margin-top: 0.75rem; }
+
+.iconpick__option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.55rem 0.3rem 0.45rem;
+    border: 1.5px solid transparent;
+    border-radius: var(--radius);
+    background: var(--paper);
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.iconpick__option .ricon { width: 2.6rem; height: 2.6rem; }
+
+.iconpick__option:hover { border-color: var(--rule-strong); }
+
+.iconpick__input:checked + .iconpick__option {
+    background: var(--herb-wash);
+    border-color: var(--herb);
+}
+
+.iconpick__input:focus-visible + .iconpick__option {
+    outline: 2px solid var(--herb);
+    outline-offset: 2px;
+}
+
+.iconpick__name {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: var(--ink-soft);
+}
+
+.iconpick__input:checked + .iconpick__option .iconpick__name {
+    color: var(--herb-deep);
+    font-weight: 600;
+}
+
+/* "No picture": an empty dashed plate. */
+.iconpick__blank {
+    display: block;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 1.5px dashed var(--rule-strong);
+    border-radius: 50%;
+}
+
+.iconpick__current .iconpick__blank { width: 2rem; height: 2rem; }
+
+@media (max-width: 40rem) {
+    .ricon--lg { width: 3.6rem; height: 3.6rem; }
+
+    .pagehead__title { gap: 0.75rem; }
+
+    .iconpick__grid { grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); }
+
+    .iconpick__option .ricon { width: 2.3rem; height: 2.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ricon *,
+    .ricon *::before {
+        animation: none !important;
+    }
+}

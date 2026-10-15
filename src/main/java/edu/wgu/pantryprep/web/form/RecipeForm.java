@@ -2,6 +2,7 @@ package edu.wgu.pantryprep.web.form;
 
 import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
+import edu.wgu.pantryprep.domain.RecipeIcon;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -57,6 +58,13 @@ public class RecipeForm {
     @Size(max = 300, message = "Tags must be 300 characters or fewer")
     private String tagsCsv;
 
+    /**
+     * The chosen picture, or null for none. The picker sends the enum's name,
+     * or an empty string for "No picture", which binds as null. Anything else
+     * fails to bind and is reported on the field.
+     */
+    private RecipeIcon icon;
+
     private List<RecipeLineForm> lines = new ArrayList<>();
 
     /**
@@ -78,6 +86,7 @@ public class RecipeForm {
         form.setNationality(recipe.getNationality());
         form.setInstructions(recipe.getInstructions());
         form.setTagsCsv(String.join(", ", recipe.getTags()));
+        form.setIcon(recipe.getIcon());
         recipe.getLines().forEach(line -> form.getLines().add(RecipeLineForm.from(line)));
         recipe.getSharedWithGroups().stream().map(KitchenGroup::getId).forEach(form.getGroupIds()::add);
         form.ensureOneEmptyRow();
@@ -201,6 +210,14 @@ public class RecipeForm {
 
     public void setTagsCsv(String tagsCsv) {
         this.tagsCsv = tagsCsv;
+    }
+
+    public RecipeIcon getIcon() {
+        return icon;
+    }
+
+    public void setIcon(RecipeIcon icon) {
+        this.icon = icon;
     }
 
     public List<RecipeLineForm> getLines() {

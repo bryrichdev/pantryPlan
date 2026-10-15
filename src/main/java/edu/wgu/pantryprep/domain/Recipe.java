@@ -5,6 +5,8 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -64,6 +66,11 @@ public class Recipe extends BaseEntity {
      */
     @Column(name = "copied_from_hash", length = 64)
     private String copiedFromHash;
+
+    /** An optional picture shown beside the name. Looks only. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icon", length = 20)
+    private RecipeIcon icon;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recipe_tags", joinColumns = @JoinColumn(name = "recipe_id"))
@@ -230,6 +237,14 @@ public class Recipe extends BaseEntity {
 
     public void setCopiedFromHash(String copiedFromHash) {
         this.copiedFromHash = copiedFromHash;
+    }
+
+    public RecipeIcon getIcon() {
+        return icon;
+    }
+
+    public void setIcon(RecipeIcon icon) {
+        this.icon = icon;
     }
 
     public Set<KitchenGroup> getSharedWithGroups() {

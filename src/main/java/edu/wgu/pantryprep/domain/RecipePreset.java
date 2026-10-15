@@ -5,6 +5,8 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
@@ -36,6 +38,9 @@ public class RecipePreset extends BaseEntity {
     private int cookMinutes;
     @Column(name = "instructions", columnDefinition = "text")
     private String instructions;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icon", length = 20)
+    private RecipeIcon icon;
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recipe_preset_tags", joinColumns = @JoinColumn(name = "recipe_preset_id"))
     @Column(name = "tag", nullable = false, length = 40)
@@ -52,6 +57,7 @@ public class RecipePreset extends BaseEntity {
     public int getPrepMinutes() { return prepMinutes; }
     public int getCookMinutes() { return cookMinutes; }
     public String getInstructions() { return instructions; }
+    public RecipeIcon getIcon() { return icon; }
     public Set<String> getTags() { return tags; }
     public List<RecipePresetLine> getLines() { return Collections.unmodifiableList(lines); }
 }

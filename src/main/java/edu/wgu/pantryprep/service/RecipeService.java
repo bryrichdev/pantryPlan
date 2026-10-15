@@ -158,6 +158,7 @@ public class RecipeService {
         recipe.setPrepMinutes(form.getPrepMinutes() == null ? 0 : form.getPrepMinutes());
         recipe.setCookMinutes(form.getCookMinutes() == null ? 0 : form.getCookMinutes());
         recipe.setTags(form.parsedTags());
+        recipe.setIcon(form.getIcon());
     }
 
     /**
@@ -221,6 +222,7 @@ public class RecipeService {
             recipe.setCookMinutes(preset.getCookMinutes());
             recipe.setInstructions(preset.getInstructions());
             recipe.setTags(preset.getTags());
+            recipe.setIcon(preset.getIcon());
             for (RecipePresetLine presetLine : preset.getLines()) {
                 IngredientPreset presetIngredient = presetLine.getIngredientPreset();
                 String key = presetIngredient.getName().toLowerCase();

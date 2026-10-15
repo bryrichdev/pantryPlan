@@ -17,6 +17,51 @@
             <p class="field__error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</p>
         </div>
 
+        <!-- Picture ----------------------------------------------------- -->
+        <!-- A closed disclosure shows the current choice; opening it shows
+             every picture as a radio tile. Works without script; app.js only
+             refreshes the summary and closes the panel after a choice. -->
+        <details class="iconpick" data-iconpick th:open="${#fields.hasErrors('icon')}">
+            <summary class="iconpick__summary">
+                <span class="iconpick__current" data-iconpick-current>
+                    <svg th:replace="~{fragments/recipe-icons :: icon(*{icon}, 'is-live')}"></svg>
+                    <span class="iconpick__blank" th:if="*{icon == null}"></span>
+                </span>
+                <span class="iconpick__text">
+                    <span class="iconpick__title">Picture</span>
+                    <span class="iconpick__chosen" data-iconpick-label
+                          th:text="*{icon} ? *{icon.label} : 'None. Optional, it helps spot the recipe in lists.'">Soup pot</span>
+                </span>
+                <span class="iconpick__change">Choose</span>
+            </summary>
+
+            <div class="iconpick__panel">
+                <div class="iconpick__grid">
+                    <input type="radio" class="iconpick__input visually-hidden" name="icon" value=""
+                           id="icon-none" th:checked="*{icon == null}">
+                    <label class="iconpick__option" for="icon-none">
+                        <span class="iconpick__blank"></span>
+                        <span class="iconpick__name">No picture</span>
+                    </label>
+                </div>
+                <th:block th:each="group : ${iconGroups}">
+                    <p class="iconpick__heading" th:text="${group.key.label}">Cooked in</p>
+                    <div class="iconpick__grid">
+                        <th:block th:each="choice : ${group.value}">
+                            <input type="radio" class="iconpick__input visually-hidden" name="icon"
+                                   th:value="${choice.name()}" th:id="|icon-${choice.name()}|"
+                                   th:checked="${choice == form.icon}">
+                            <label class="iconpick__option" th:for="|icon-${choice.name()}|">
+                                <svg th:replace="~{fragments/recipe-icons :: icon(${choice}, null)}"></svg>
+                                <span class="iconpick__name" th:text="${choice.label}">Soup pot</span>
+                            </label>
+                        </th:block>
+                    </div>
+                </th:block>
+            </div>
+        </details>
+        <p class="field__error" th:if="${#fields.hasErrors('icon')}">Choose one of the pictures, or no picture.</p>
+
         <div class="fieldrow">
             <div class="field">
                 <label for="servings">Serves</label>

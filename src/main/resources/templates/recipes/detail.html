@@ -10,10 +10,13 @@
     <div th:replace="~{fragments/layout :: flash}"></div>
 
     <div class="pagehead">
-        <div>
+        <div class="pagehead__title">
+            <svg th:replace="~{fragments/recipe-icons :: icon(${recipe.icon}, 'ricon--lg is-live')}"></svg>
+            <div>
             <h1 th:text="${recipe.name}">Pesto pasta</h1>
             <p class="pagehead__note" th:if="${recipe.description}"
                th:text="${recipe.description}">A quick weeknight dinner.</p>
+            </div>
         </div>
         <div class="actions">
             <a class="button button--quiet" th:href="@{/recipes/{id}/edit(id=${recipe.id})}">Edit recipe</a>

@@ -72,15 +72,14 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="recipe : ${recipes}" class="table__row--link"
+            <tr th:each="recipe : ${recipes}" class="table__row--link ricon-host"
                 th:attr="data-row-href=@{/groups/{g}/recipes/{r}(g=${group.id}, r=${recipe.id})}">
                 <td class="table__check">
                     <input type="checkbox" name="ids" th:value="${recipe.id}" data-select-row
                            th:attr="aria-label=|Select ${recipe.name}|">
                 </td>
                 <td>
-                    <a th:href="@{/groups/{g}/recipes/{r}(g=${group.id}, r=${recipe.id})}"
-                       th:text="${recipe.name}">Chili</a>
+                    <a class="recipe-name" th:href="@{/groups/{g}/recipes/{r}(g=${group.id}, r=${recipe.id})}"><svg th:replace="~{fragments/recipe-icons :: icon(${recipe.icon}, 'ricon--sm')}"></svg><span th:text="${recipe.name}">Chili</span></a>
                 </td>
                 <td th:text="${recipe.user.id == myUserId} ? 'You' : ${recipe.user.displayName}">Sam</td>
                 <td th:text="${recipe.mealType ?: '—'}">Dinner</td>

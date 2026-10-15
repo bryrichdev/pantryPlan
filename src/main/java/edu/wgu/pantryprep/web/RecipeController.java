@@ -5,6 +5,7 @@ import edu.wgu.pantryprep.domain.IngredientCategory;
 import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.RecipeClassification;
+import edu.wgu.pantryprep.domain.RecipeIcon;
 import edu.wgu.pantryprep.domain.StorageLocation;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
@@ -77,6 +78,11 @@ public class RecipeController {
     @ModelAttribute("cuisines")
     public List<String> cuisines() {
         return RecipeClassification.CUISINES;
+    }
+
+    @ModelAttribute("iconGroups")
+    public Map<RecipeIcon.Kind, List<RecipeIcon>> iconGroups() {
+        return RecipeIcon.byKind();
     }
 
     @ModelAttribute("locations")
