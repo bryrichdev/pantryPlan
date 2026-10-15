@@ -66,15 +66,14 @@
             <p class="day__empty" th:if="${day.empty}">Nothing planned</p>
 
             <ul class="meals" th:unless="${day.empty}">
-                <li class="meal" th:each="entry : ${day.entries}"
+                <li class="meal ricon-host" th:each="entry : ${day.entries}"
                     th:classappend="${entry.cooked} ? 'meal--cooked'">
                     <input type="checkbox" class="meal__check" name="ids" th:value="${entry.id}"
                            form="entry-bulk-form" data-select-row
                            th:attr="aria-label=|Select ${entry.recipe.name}|">
                     <div class="meal__slot" th:text="${@fmt.label(entry.mealSlot)}">Dinner</div>
                     <div class="meal__body">
-                        <a class="meal__recipe" th:href="@{/recipes/{id}(id=${entry.recipe.id})}"
-                           th:text="${entry.recipe.name}">Pesto pasta</a>
+                        <a class="meal__recipe" th:href="@{/recipes/{id}(id=${entry.recipe.id})}"><svg th:replace="~{fragments/recipe-icons :: icon(${entry.recipe.icon}, 'ricon--sm')}"></svg><span th:text="${entry.recipe.name}">Pesto pasta</span></a>
                         <span class="meal__servings"
                               th:text="|for ${entry.servings}|">for 4</span>
                         <span class="pill pill--good" th:if="${entry.cooked}">Cooked</span>

@@ -11,6 +11,7 @@ import edu.wgu.pantryprep.domain.MealPlan;
 import edu.wgu.pantryprep.domain.MealSlot;
 import edu.wgu.pantryprep.domain.PlanEntry;
 import edu.wgu.pantryprep.domain.Recipe;
+import edu.wgu.pantryprep.domain.RecipeIcon;
 import edu.wgu.pantryprep.domain.RecipeLine;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
@@ -105,6 +106,40 @@ class RecipeServiceTests {
         assertEquals("Mexican", tacos.getNationality());
         assertFalse(tacos.getLines().isEmpty(), "preset ingredients are copied with the recipe");
         assertEquals(0, recipeService.importPresets(user), "a second import skips duplicates");
+    }
+
+    @Test
+    void savesChangesAndClearsAPicture() {
+        User user = cook("recipe-picture@example.com");
+        RecipeForm form = formFor("Weeknight Chili", 4);
+        form.setIcon(RecipeIcon.POT);
+        Recipe chili = recipeService.create(form, user);
+        assertEquals(RecipeIcon.POT, recipeService.requireOwned(chili.getId(), user).getIcon());
+
+        RecipeForm edit = RecipeForm.from(recipeService.requireOwned(chili.getId(), user));
+        assertEquals(RecipeIcon.POT, edit.getIcon(), "the edit form starts from the saved picture");
+        edit.setIcon(RecipeIcon.SLOW_COOKER);
+        recipeService.update(chili.getId(), edit, user);
+        assertEquals(RecipeIcon.SLOW_COOKER, recipeService.requireOwned(chili.getId(), user).getIcon());
+
+        edit.setIcon(null);
+        recipeService.update(chili.getId(), edit, user);
+        assertEquals(null, recipeService.requireOwned(chili.getId(), user).getIcon(), "no picture is allowed");
+    }
+
+    @Test
+    void starterRecipesArriveWithPictures() {
+        User user = cook("recipe-preset-pictures@example.com");
+        recipeService.importPresets(user);
+
+        for (Recipe recipe : recipeService.findAll(user)) {
+            assertTrue(recipe.getIcon() != null, recipe.getName() + " has a picture");
+        }
+        Recipe pancakes = recipeService.findAll(user).stream()
+                .filter(recipe -> recipe.getName().equals("Classic Pancakes"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(RecipeIcon.PANCAKES, pancakes.getIcon());
     }
 
     @Test

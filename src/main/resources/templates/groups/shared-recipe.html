@@ -13,7 +13,9 @@
     <div th:replace="~{fragments/layout :: flash}"></div>
 
     <div class="pagehead">
-        <div>
+        <div class="pagehead__title">
+            <svg th:replace="~{fragments/recipe-icons :: icon(${recipe.icon}, 'ricon--lg is-live')}"></svg>
+            <div>
             <h1 th:text="${recipe.name}">Chili</h1>
             <p class="pagehead__note">
                 Shared by <strong th:text="${plan.ownRecipe()} ? 'you' : ${recipe.user.displayName}">Sam</strong>
@@ -22,6 +24,7 @@
             <p class="pagehead__note" th:if="${recipe.description}" th:text="${recipe.description}">
                 A weeknight favourite.
             </p>
+            </div>
         </div>
         <div class="actions">
             <a th:if="${plan.ownRecipe()}" class="button button--quiet"

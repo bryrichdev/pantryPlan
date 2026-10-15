@@ -245,6 +245,7 @@ public class SharedRecipeService {
         copy.setDescription(source.getDescription());
         copy.setMealType(source.getMealType());
         copy.setNationality(source.getNationality());
+        copy.setIcon(source.getIcon());
         copy.setPrepMinutes(source.getPrepMinutes());
         copy.setCookMinutes(source.getCookMinutes());
         copy.setInstructions(source.getInstructions());

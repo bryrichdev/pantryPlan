@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import edu.wgu.pantryprep.domain.Ingredient;
 import edu.wgu.pantryprep.domain.IngredientCategory;
 import edu.wgu.pantryprep.domain.Recipe;
+import edu.wgu.pantryprep.domain.RecipeIcon;
 import edu.wgu.pantryprep.domain.RecipeLine;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.service.RecipeFingerprint;
@@ -38,6 +39,14 @@ class RecipeFingerprintTests {
         String original = RecipeFingerprint.of(chili("Chili", "2", "dinner", "spicy"));
         assertEquals(original, RecipeFingerprint.of(chili("  chili ", "2.000", "spicy", "dinner")),
                 "case, spacing, trailing zeros, and tag order do not make a new recipe");
+    }
+
+    @Test
+    void ignoresThePicture() {
+        Recipe withPicture = chili("Chili", "2");
+        withPicture.setIcon(RecipeIcon.POT);
+        assertEquals(RecipeFingerprint.of(chili("Chili", "2")), RecipeFingerprint.of(withPicture),
+                "a picture is looks only, so it does not make a new recipe");
     }
 
     @Test

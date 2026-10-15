@@ -952,3 +952,54 @@
         openDialog(dialog);
     });
 }());
+
+/* ------------------------------------------------------ recipe picture picker
+
+   The picker is a closed <details> showing the current choice. Choosing a
+   tile copies its drawing and name into the summary and folds the panel
+   away, so the rest of the form comes straight back into view. Without this
+   script the radios still submit; only the summary would lag behind. */
+(function () {
+    "use strict";
+
+    document.addEventListener("change", function (event) {
+        var input = event.target;
+        if (!input.matches || !input.matches(".iconpick__input")) {
+            return;
+        }
+        var picker = input.closest("[data-iconpick]");
+        var option = input.nextElementSibling;
+        if (!picker || !option) {
+            return;
+        }
+        var current = picker.querySelector("[data-iconpick-current]");
+        var label = picker.querySelector("[data-iconpick-label]");
+        var drawing = option.querySelector(".ricon, .iconpick__blank");
+        if (current && drawing) {
+            var copy = drawing.cloneNode(true);
+            if (copy.classList.contains("ricon")) {
+                copy.classList.add("is-live");
+            }
+            current.replaceChildren(copy);
+        }
+        if (label) {
+            label.textContent = input.value
+                ? option.querySelector(".iconpick__name").textContent
+                : "None. Optional, it helps spot the recipe in lists.";
+        }
+    });
+
+    /* Fold the panel only after a tap or click. Arrow keys move through the
+       radios one change at a time, and closing on each would trap keyboard
+       users; a pointer click has a detail count, a keyboard one does not. */
+    document.addEventListener("click", function (event) {
+        var option = event.target.closest && event.target.closest(".iconpick__option");
+        var picker = option && option.closest("[data-iconpick]");
+        if (!picker || event.detail === 0) {
+            return;
+        }
+        window.setTimeout(function () {
+            picker.open = false;
+        }, 180);
+    });
+}());

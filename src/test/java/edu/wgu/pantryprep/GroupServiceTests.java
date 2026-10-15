@@ -12,6 +12,7 @@ import edu.wgu.pantryprep.domain.Ingredient;
 import edu.wgu.pantryprep.domain.IngredientCategory;
 import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
+import edu.wgu.pantryprep.domain.RecipeIcon;
 import edu.wgu.pantryprep.domain.RecipeLine;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
@@ -415,6 +416,22 @@ class GroupServiceTests {
                 .anyMatch(line -> line.getIngredient().getId().equals(cousinsButter.getId())));
         assertEquals(2, ingredientRepository.findAllByUserOrderByNameAsc(cousin).size(),
                 "butter was reused, cumin was added, nothing was duplicated");
+    }
+
+    @Test
+    void aCopyKeepsThePicture() {
+        User owner = cook("grp-copy-pic@example.com");
+        User cousin = cook("grp-copy-pic-c@example.com");
+        KitchenGroup group = groupService.create("Family", null, owner);
+        join(group, owner, cousin, GroupRole.VIEWER);
+
+        RecipeForm form = recipeForm("Chili");
+        form.setIcon(RecipeIcon.POT);
+        form.setGroupIds(Set.of(group.getId()));
+        Recipe chili = recipeService.create(form, owner);
+
+        Recipe copy = sharedRecipeService.copyToAccount(group.getId(), chili.getId(), null, cousin);
+        assertEquals(RecipeIcon.POT, recipeService.requireOwned(copy.getId(), cousin).getIcon());
     }
 
     @Test
