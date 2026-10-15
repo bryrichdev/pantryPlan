@@ -11,8 +11,8 @@ import jakarta.persistence.Table;
  * A circle of cooks who share recipes: friends, immediate family, and so on.
  *
  * <p>Named KitchenGroup rather than Group because GROUP is a reserved word in
- * both SQL and JPQL. Each user owns at most one, which the database enforces
- * with a unique owner_id.
+ * both SQL and JPQL. Each user owns at most five, which the database enforces
+ * with a trigger on owner_id.
  */
 @Entity
 @Table(name = "kitchen_groups")

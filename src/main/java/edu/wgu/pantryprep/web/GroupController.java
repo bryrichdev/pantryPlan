@@ -86,7 +86,8 @@ public class GroupController {
         model.addAttribute("memberships", memberships);
         model.addAttribute("memberCounts", memberCounts);
         model.addAttribute("invitations", inviteService.invitationsFor(user));
-        model.addAttribute("ownsGroup", groupService.ownsAGroup(user));
+        model.addAttribute("ownedGroups", groupService.ownedGroupCount(user));
+        model.addAttribute("maxOwnedGroups", GroupService.MAX_OWNED_GROUPS);
         return "groups/list";
     }
 

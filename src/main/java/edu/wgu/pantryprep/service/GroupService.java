@@ -34,6 +34,9 @@ public class GroupService {
     /** How many groups one account can be in, its own included. */
     public static final int MAX_GROUPS_PER_USER = 20;
 
+    /** How many groups one account can own. The database holds the same limit. */
+    public static final int MAX_OWNED_GROUPS = 5;
+
     private static final Comparator<GroupMember> BY_ROLE_THEN_NAME =
             Comparator.comparingInt((GroupMember m) -> -m.getRole().getRank())
                     .thenComparing(m -> m.getUser().getDisplayName(), String.CASE_INSENSITIVE_ORDER);
@@ -68,6 +71,11 @@ public class GroupService {
         return groupRepository.existsByOwner(user);
     }
 
+    @Transactional(readOnly = true)
+    public long ownedGroupCount(User user) {
+        return groupRepository.countByOwner(user);
+    }
+
     /**
      * @throws NoSuchElementException when the user is not in the group, or
      *         there is no such group; the two are not told apart
@@ -94,13 +102,15 @@ public class GroupService {
     // ------------------------------------------------------- the group itself
 
     /**
-     * @throws GroupRuleException when the user already owns a group or is in
-     *         as many groups as allowed
+     * @throws GroupRuleException when the user already owns as many groups as
+     *         allowed, or is in as many groups as allowed
      */
     @Transactional
     public KitchenGroup create(String name, String description, User owner) {
-        if (groupRepository.existsByOwner(owner)) {
-            throw new GroupRuleException("You already have a group. Each account can create one.");
+        if (groupRepository.countByOwner(owner) >= MAX_OWNED_GROUPS) {
+            throw new GroupRuleException("You already have " + MAX_OWNED_GROUPS
+                    + " groups, the most one account can create. Delete one, or hand one to"
+                    + " another member, to make room.");
         }
         requireRoomForAnotherGroup(owner);
         KitchenGroup group = new KitchenGroup(owner, name.trim());
@@ -132,11 +142,12 @@ public class GroupService {
     /**
      * Hands the group to another member. The old owner stays on as an admin.
      *
-     * <p>Two partial unique indexes allow one OWNER row per group and per
-     * user, so the old owner is stepped down and flushed before the new one
-     * steps up; doing both in one flush could trip the index in between.
+     * <p>A partial unique index allows one OWNER row per group, so the old
+     * owner is stepped down and flushed before the new one steps up; doing
+     * both in one flush could trip the index in between.
      *
-     * @throws GroupRuleException when the new owner already owns a group
+     * @throws GroupRuleException when the new owner already owns as many
+     *         groups as allowed
      */
     @Transactional
     public void transferOwnership(Long groupId, Long newOwnerMemberId, User actor) {
@@ -146,9 +157,9 @@ public class GroupService {
         if (next.getId().equals(mine.getId())) {
             throw new GroupRuleException("You already own this group.");
         }
-        if (groupRepository.existsByOwner(next.getUser())) {
+        if (groupRepository.countByOwner(next.getUser()) >= MAX_OWNED_GROUPS) {
             throw new GroupRuleException(next.getUser().getDisplayName()
-                    + " already owns a group, and an account can own only one.");
+                    + " already owns " + MAX_OWNED_GROUPS + " groups, the most an account can own.");
         }
 
         mine.setRole(GroupRole.ADMIN);
