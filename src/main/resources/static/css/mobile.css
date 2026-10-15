@@ -68,35 +68,62 @@
         display: none;
     }
 
-    /* Open: the links drop below as a full-width list with large tap rows. */
+    /* Closed and signed in, the account row would still leave its padding
+       behind under the header, so it goes entirely. */
+    .topnav:not([data-nav-open]) .topnav__account:has(.inline-form) {
+        display: none;
+    }
+
+    /* Open: the links drop below as a panel of large tap rows. */
     .topnav__links {
         width: 100%;
         flex-direction: column;
-        gap: 0;
-        border-top: 1px solid var(--rule);
+        gap: 0.15rem;
+        margin-top: 0.25rem;
+        padding: 0.4rem;
+        background: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-lg);
         font-size: 1rem;
     }
 
     .topnav__links a {
-        padding: 0.8rem 0.25rem;
-        border-bottom: 1px solid var(--rule);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 2.9rem;
+        padding: 0 0.85rem;
+        border-radius: var(--radius);
+        color: var(--ink);
     }
 
-    .topnav__links a:hover { border-bottom-color: var(--rule); }
+    /* A small chevron says each row goes somewhere. */
+    .topnav__links a::after {
+        content: "";
+        width: 0.45rem;
+        height: 0.45rem;
+        border-top: 1.5px solid var(--rule-strong);
+        border-right: 1.5px solid var(--rule-strong);
+        transform: rotate(45deg);
+    }
 
-    /* The underline cue does not work in a stacked list, so the current page
-       gets the herb edge used for today's card on the plan page. */
+    .topnav__links a:hover,
+    .topnav__links a:active {
+        background: var(--surface);
+    }
+
     .topnav__links a.is-active {
-        border-bottom-color: var(--rule);
-        box-shadow: inset 3px 0 0 var(--herb);
-        padding-left: 0.85rem;
+        background: var(--herb-wash);
+        color: var(--herb-deep);
     }
+
+    .topnav__links a.is-active::after { border-color: var(--herb); }
 
     .topnav__account {
         width: 100%;
         justify-content: space-between;
         margin-left: 0;
-        padding: 0.35rem 0 0.2rem;
+        padding: 0.15rem 0 0.1rem;
     }
 
     /* Signed out, the account area holds only Sign in, which belongs on the
@@ -180,6 +207,13 @@
 
     .fieldrow .field { flex: 1 1 auto; }
 
+    /* Short number fields, such as serves, prep and cook, stay on one row. */
+    .fieldrow:not(:has(select, textarea)) {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+        gap: 0 0.75rem;
+    }
+
     /* ----- toolbars, search, and filters ----- */
 
     .toolbar {
@@ -213,16 +247,29 @@
         min-height: 2.75rem;
     }
 
+    /* With no place picker beside it, the search box and its button share
+       one row. */
+    .searchbar:not(:has(select)) { flex-wrap: nowrap; }
+
+    .searchbar:not(:has(select)) input[type="search"] { flex: 1 1 auto; min-width: 0; }
+
+    .searchbar:not(:has(select)) .button { flex: none; width: auto; }
+
     .searchbar__select {
         flex: 1 1 auto;
         min-height: 2.75rem;
     }
 
+    /* Two short filters sit side by side rather than stacking. */
     .filters {
-        flex-direction: column;
-        align-items: stretch;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: end;
         gap: 0.75rem;
     }
+
+    .filters > :only-child,
+    .filters__buttons { grid-column: 1 / -1; }
 
     .filters__field input,
     .filters__field select,
@@ -349,10 +396,7 @@
 
     .table tbody td.table__check::before { display: none; }
 
-    .table__check input {
-        width: 1.4rem;
-        height: 1.4rem;
-    }
+    .table__check input { font-size: 1.35rem; }
 
     /* Row actions get their own strip along the bottom of the card. */
     .table tbody td.table__actions {
@@ -385,6 +429,14 @@
         display: inline-block;
         padding: 0.45rem 0;
         font-size: 0.95rem;
+    }
+
+    /* On a card the everyday action reads as a link; deleting stays grey
+       until touched. */
+    .table__actions a:not(.danger),
+    .table__actions .linkbutton:not(.linkbutton--danger) {
+        color: var(--herb-deep);
+        font-weight: 500;
     }
 
     /* ----- panels ----- */
@@ -437,9 +489,14 @@
 
     /* ----- recipes ----- */
 
+    /* Recipe facts line up in three even columns. */
     .factgrid {
-        gap: 0.75rem 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.85rem 1rem;
     }
+
+    .factgrid dd { font-size: 1.05rem; }
 
     .lines { padding: 0.9rem 0.85rem 1rem; }
 
@@ -452,13 +509,16 @@
         min-height: 2.75rem;
     }
 
-    .meal__actions .linkbutton { padding: 0.35rem 0; font-size: 0.9rem; }
+    .meal__actions .linkbutton { font-size: 0.88rem; }
 
-    .meal__check input,
-    .meal-select-all input {
-        width: 1.3rem;
-        height: 1.3rem;
-    }
+    .meal__cook .linkbutton { padding: 0.45rem 0.95rem; }
+
+    .meal__remove .linkbutton { padding: 0.45rem 0.25rem; }
+
+    .meal__check { margin-top: 0.05rem; }
+
+    .meal__check,
+    .meal-select-all input { font-size: 1.3rem; }
 
     /* ----- grocery lists ----- */
 

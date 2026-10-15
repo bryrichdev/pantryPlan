@@ -51,6 +51,10 @@ body {
     min-height: 100vh;
 }
 
+/* Short pages and long ones keep the same width, so the page does not jump
+   sideways when a scrollbar comes and goes. */
+html { scrollbar-gutter: stable; }
+
 a { color: var(--herb-deep); }
 a:hover { color: var(--herb); }
 
@@ -152,6 +156,17 @@ a:hover { color: var(--herb); }
     grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
     gap: 4rem;
     align-items: start;
+}
+
+/* Sign in and sign up: the form and its sample card sit together in the
+   middle rather than at opposite edges of a wide window. */
+@media (min-width: 56.01rem) {
+    .split:has(> .split__form) {
+        grid-template-columns: minmax(0, 24rem) minmax(0, 22rem);
+        justify-content: center;
+        gap: 5rem;
+        padding-top: 1rem;
+    }
 }
 
 h1 {
@@ -626,4 +641,67 @@ a.topnav__user.is-active {
     margin-left: 0.5rem;
     font-size: 0.9rem;
     color: var(--ink-soft);
+}
+
+/* ---------- checkboxes ----------
+   One drawn box everywhere instead of each browser's own, so a meal, a table
+   row and a group choice all tick the same way. The tick is a clipped square
+   that scales in; the header box of a list shows a bar when only some rows
+   are chosen. */
+
+input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: none;
+    display: inline-grid;
+    place-content: center;
+    box-sizing: border-box;
+    width: 1em;
+    height: 1em;
+    margin: 0;
+    font-size: 1.15rem;
+    vertical-align: -0.2em;
+    background: var(--surface);
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="checkbox"]::before {
+    content: "";
+    width: 0.62em;
+    height: 0.62em;
+    background: #FFFFFF;
+    clip-path: polygon(14% 44%, 0 62%, 42% 100%, 100% 20%, 82% 4%, 40% 66%);
+    transform: scale(0);
+    transition: transform 0.15s ease;
+}
+
+input[type="checkbox"]:hover { border-color: var(--herb); }
+
+input[type="checkbox"]:checked,
+input[type="checkbox"]:indeterminate {
+    background: var(--herb);
+    border-color: var(--herb);
+}
+
+input[type="checkbox"]:checked::before { transform: scale(1); }
+
+input[type="checkbox"]:indeterminate::before {
+    height: 0.14em;
+    width: 0.55em;
+    clip-path: none;
+    border-radius: 1px;
+    transform: scale(1);
+}
+
+input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--herb);
+    outline-offset: 2px;
+}
+
+input[type="checkbox"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }

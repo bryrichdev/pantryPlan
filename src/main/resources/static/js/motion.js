@@ -78,12 +78,8 @@
 
     function numberRows() {
         var groups = [
-            ".table tbody tr",
-            ".home-tile",
-            ".home .card",
-            ".week .day",
-            ".aisle",
-            ".howto__step"
+            ".howto__step",
+            ".topnav__links a"
         ];
         groups.forEach(function (selector) {
             var items = document.querySelectorAll(selector);
@@ -196,7 +192,7 @@
             steam.className = "steam";
             steam.setAttribute("aria-hidden", "true");
             steam.innerHTML = "<span></span><span></span><span></span>";
-            meal.appendChild(steam);
+            form.appendChild(steam);
             holdThenSubmit(form, 560);
             return;
         }
@@ -216,6 +212,8 @@
         var busy = event.submitter && event.submitter.matches("[data-busy]") ? event.submitter
             : form.querySelector("button[data-busy]");
         if (busy) {
+            /* Hold the button's size so the new label cannot nudge its neighbours. */
+            busy.style.minWidth = busy.getBoundingClientRect().width + "px";
             busy.textContent = busy.getAttribute("data-busy");
             busy.classList.add("is-busy");
         }
@@ -227,18 +225,29 @@
      * The tick itself is handled in app.js; this only watches for the moment
      * nothing is left to buy, and celebrates once.
      */
-    document.addEventListener("click", function (event) {
-        var tick = event.target.closest(".tick");
-        if (!tick || calm) {
+    function watchShoppingList() {
+        var items = document.querySelectorAll(".shoplist__item");
+        if (!items.length || calm || typeof window.MutationObserver !== "function") {
             return;
         }
-        window.setTimeout(function () {
-            var items = document.querySelectorAll(".shoplist__item");
-            var left = document.querySelectorAll(".shoplist__item:not(.shoplist__item--bought)");
-            if (items.length && left.length === 0) {
-                var heading = document.querySelector(".pagehead h1") || tick;
-                burstFrom(heading, 20);
+        function leftToBuy() {
+            return document.querySelectorAll(".shoplist__item:not(.shoplist__item--bought)").length;
+        }
+        var wasLeft = leftToBuy();
+        /* The class changes only once the save has gone through, however long that takes. */
+        new MutationObserver(function () {
+            var now = leftToBuy();
+            if (now === 0 && wasLeft > 0) {
+                burstFrom(document.querySelector(".pagehead h1") || items[0], 20);
             }
-        }, 350);
-    });
+            wasLeft = now;
+        }).observe(document.querySelector(".shoplist") || document.body,
+            { subtree: true, attributes: true, attributeFilter: ["class"] });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", watchShoppingList);
+    } else {
+        watchShoppingList();
+    }
 })();

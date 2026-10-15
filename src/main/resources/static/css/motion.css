@@ -209,19 +209,15 @@ input[type="checkbox"]:checked {
     100% { opacity: 0; transform: translate(calc(var(--x) * 1.15), calc(var(--y) + 46px)) rotate(calc(var(--r) * 1.6)) scale(0.9); }
 }
 
-/* --------------------------------------------- lists arriving on a page */
+/* ----------------------------------------------- things arriving */
 
-/* Rows, cards, and panels settle in with a short cascade. The stagger is
-   capped so a long list never keeps you waiting; motion.js numbers the rows. */
-.table tbody tr,
-.home-tile,
-.home .card,
-.day,
-.aisle,
+/* The page itself already cross-fades, so lists and cards arrive with it
+   rather than each rising on their own; a second movement on every row made
+   long pages shimmer. Only small, one-off pieces ease in. */
 .howto__step,
 .empty {
     animation: rise-in 0.36s var(--ease-out) backwards;
-    animation-delay: min(calc(var(--i, 0) * 30ms), 330ms);
+    animation-delay: min(calc(var(--i, 0) * 40ms), 240ms);
 }
 
 @keyframes rise-in {
@@ -264,34 +260,40 @@ input[type="checkbox"]:checked {
     35% { background-color: var(--honey-wash); }
 }
 
+.meal__cook {
+    position: relative;
+}
+
+/* Three puffs rise off the Mark cooked button itself. */
 .steam {
     position: absolute;
-    left: 1.5rem;
-    top: 0.6rem;
-    width: 2.2rem;
-    height: 2rem;
+    left: 50%;
+    bottom: 75%;
+    width: 2.6rem;
+    height: 2.2rem;
+    margin-left: -1.3rem;
     pointer-events: none;
 }
 
 .steam span {
     position: absolute;
     bottom: 0;
-    width: 0.55rem;
-    height: 0.55rem;
+    width: 0.7rem;
+    height: 0.7rem;
     border-radius: 50%;
-    background: #CFC4B2;
+    background: #C9BBA3;
     opacity: 0;
-    animation: steam 0.75s ease-out forwards;
+    animation: steam 0.6s ease-out forwards;
 }
 
-.steam span:nth-child(1) { left: 0.1rem; }
-.steam span:nth-child(2) { left: 0.8rem; animation-delay: 0.1s; width: 0.7rem; height: 0.7rem; }
-.steam span:nth-child(3) { left: 1.5rem; animation-delay: 0.2s; }
+.steam span:nth-child(1) { left: 0.2rem; }
+.steam span:nth-child(2) { left: 0.95rem; animation-delay: 0.08s; width: 0.85rem; height: 0.85rem; }
+.steam span:nth-child(3) { left: 1.8rem; animation-delay: 0.16s; }
 
 @keyframes steam {
-    0% { opacity: 0; transform: translateY(0) scale(0.6); }
-    30% { opacity: 0.85; }
-    100% { opacity: 0; transform: translateY(-1.8rem) translateX(0.25rem) scale(1.5); }
+    0% { opacity: 0; transform: translateY(0.3rem) scale(0.5); }
+    35% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateY(-1.6rem) translateX(0.2rem) scale(1.6); }
 }
 
 /* Back on the page: the meal just cooked glows and its Cooked tag pops in. */
@@ -415,8 +417,8 @@ input[type="checkbox"]:checked {
 
 .pot__steam {
     fill: none;
-    stroke: #CDBFA8;
-    stroke-width: 2.4;
+    stroke: #B8A688;
+    stroke-width: 2.8;
     stroke-linecap: round;
     stroke-dasharray: 26 40;
     stroke-dashoffset: 26;
@@ -456,6 +458,96 @@ input[type="checkbox"]:checked {
 @keyframes sway {
     0%, 100% { transform: rotate(-4deg); }
     50% { transform: rotate(5deg); }
+}
+
+/* ------------------------------------------------ things that answer back */
+
+/* With a mouse, things you can press answer with a deeper shadow. Nothing
+   moves, because something that slides away from the pointer loses its hover,
+   drops back under it, and flickers. */
+@media (hover: hover) {
+    .button:not(:disabled):hover {
+        box-shadow: 0 3px 8px rgba(60, 40, 15, 0.12);
+    }
+
+    .button--primary:not(:disabled):hover {
+        box-shadow: 0 4px 12px rgba(35, 74, 49, 0.28);
+    }
+
+    .day { transition: box-shadow 0.2s ease; }
+
+    .day:hover { box-shadow: var(--shadow-lift); }
+
+    .day--today:hover { box-shadow: 0 0 0 1px var(--herb), var(--shadow-lift); }
+
+    .meal:not(.meal--cooked):hover { background: rgba(246, 241, 231, 0.7); }
+
+    .table tbody tr { transition: background-color 0.15s ease; }
+
+    .day__add:hover { background: var(--herb-wash); }
+}
+
+/* On a phone, a tapped card tints rather than shrinks: a finger that lands on
+   a card to scroll counts as a press, and shrinking cards made scrolling
+   shudder. */
+@media (max-width: 40rem) {
+    .table tbody tr.table__row--link,
+    .home-tile {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .table tbody tr.table__row--link:active,
+    .home-tile:active {
+        background: var(--paper);
+    }
+}
+
+/* The phone menu drops open, its rows following one after another. */
+.topnav[data-nav-open] .topnav__links {
+    animation: menu-drop 0.22s var(--ease-out);
+    transform-origin: top center;
+}
+
+.topnav[data-nav-open] .topnav__links a {
+    animation: rise-in 0.26s var(--ease-out) backwards;
+    animation-delay: calc(40ms + var(--i, 0) * 22ms);
+}
+
+.topnav[data-nav-open] .topnav__account {
+    animation: rise-in 0.26s 0.2s var(--ease-out) backwards;
+}
+
+@keyframes menu-drop {
+    from { opacity: 0; transform: translateY(-6px) scaleY(0.97); }
+}
+
+/* Its three bars fold into a cross while it is open. */
+.topnav__toggle-icon,
+.topnav__toggle-icon::after {
+    transition: transform 0.2s var(--ease-out), border-color 0.15s ease;
+}
+
+.topnav__toggle[aria-expanded="true"] .topnav__toggle-icon {
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+.topnav__toggle[aria-expanded="true"] .topnav__toggle-icon::before,
+.topnav__toggle[aria-expanded="true"] .topnav__toggle-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    border-top: 2px solid currentColor;
+}
+
+.topnav__toggle[aria-expanded="true"] .topnav__toggle-icon::before {
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.topnav__toggle[aria-expanded="true"] .topnav__toggle-icon::after {
+    transform: translateY(-50%) rotate(-45deg);
 }
 
 /* ------------------------------------------------------- reduced motion */
