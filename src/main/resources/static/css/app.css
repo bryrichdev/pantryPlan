@@ -103,7 +103,8 @@ a:hover { color: var(--herb); }
 .topnav__links {
     display: flex;
     gap: 0.25rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    white-space: nowrap;
     font-size: 0.94rem;
 }
 
@@ -219,7 +220,7 @@ a:hover { color: var(--herb); }
 
 /* Between the phone menu and a wide window, the pills tighten so the whole
    bar stays on one line. */
-@media (min-width: 66.01rem) and (max-width: 80rem) {
+@media (min-width: 70.01rem) and (max-width: 85rem) {
     .topnav__inner { gap: 1rem; }
 
     .topnav__links { gap: 0.1rem; }
@@ -252,7 +253,7 @@ a:hover { color: var(--herb); }
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    max-width: 14rem;
+    max-width: 12rem;
     white-space: nowrap;
     font-size: 0.9rem;
     color: var(--ink-soft);
