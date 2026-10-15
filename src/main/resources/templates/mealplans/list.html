@@ -13,8 +13,10 @@
                 grocery list from what the week needs.
             </p>
         </div>
-        <button type="button" class="button button--primary"
-                data-dialog-open="plan-dialog" data-mode="create">New plan</button>
+        <div class="actions">
+            <button type="button" class="button button--primary"
+                    data-dialog-open="plan-dialog" data-mode="create">New plan</button>
+        </div>
     </div>
 
     <div th:replace="~{fragments/layout :: flash}"></div>

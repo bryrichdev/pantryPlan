@@ -614,8 +614,22 @@
     border-bottom: 1px solid var(--rule);
 }
 
-/* Anchored rows land below the heading rather than behind it. */
-.shoplist__item, .table tbody tr { scroll-margin-top: 9rem; }
+/* Anchored rows and sections land below the heading rather than behind it. */
+.shoplist__item, .table tbody tr, .section[id] { scroll-margin-top: 9rem; }
+
+/* A page's main actions sit in the heading, beside the title. */
+.pagehead .actions {
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pagehead .actions .inline-form { margin: 0; }
+
+/* Grocery lists: the plan to build from sits beside its button. */
+.pagehead .actions .searchbar__select {
+    min-width: 12rem;
+    min-height: 2.5rem;
+}
 
 @media (max-width: 40rem) {
     /* A phone screen is short, so the heading is tightened everywhere it can
@@ -646,5 +660,39 @@
         line-height: 1.2;
     }
 
-    .shoplist__item, .table tbody tr { scroll-margin-top: 12rem; }
+    .shoplist__item, .table tbody tr, .section[id] { scroll-margin-top: 12rem; }
+
+    /* A heading with one or two actions is short enough to keep pinned, so
+       New recipe, Add item and the like stay in reach down a long list. */
+    .pagehead:not(:has(> .actions > :nth-child(3))) {
+        position: sticky;
+        padding-top: 0.7rem;
+        padding-bottom: 0.75rem;
+    }
+
+    /* With a single action, title and button share a row. */
+    .pagehead:has(> .actions > :only-child) {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .pagehead:has(> .actions > :only-child) > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pagehead:has(> .actions > :only-child) > .actions {
+        width: auto;
+        flex: none;
+    }
+
+    .pagehead:has(> .actions > :only-child) > .actions > .button {
+        width: auto;
+        flex: none;
+        padding: 0.45rem 0.9rem;
+    }
+
+    /* The plan picker for a grocery list takes the full row above its button. */
+    .pagehead .actions > select { flex: 1 1 100%; min-width: 0; }
 }

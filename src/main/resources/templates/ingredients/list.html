@@ -13,6 +13,16 @@
                 for anything you measure both ways, like flour or sugar.
             </p>
         </div>
+        <div class="actions">
+            <form th:action="@{/ingredients/import-presets}" method="post" class="inline-form"
+                  th:if="${presetsAvailable > 0}">
+                <button type="submit" class="button button--quiet"
+                        th:text="|Add ${presetsAvailable} starter ingredients|">Add starter ingredients</button>
+            </form>
+            <button type="button" class="button button--primary"
+                    data-dialog-open="ingredient-dialog"
+                    data-mode="create">Add ingredient</button>
+        </div>
     </div>
 
     <div th:replace="~{fragments/layout :: flash}"></div>
@@ -24,16 +34,6 @@
             <button type="submit" class="button button--quiet">Search</button>
             <a th:if="${searching}" th:href="@{/ingredients}" class="searchbar__clear">Clear</a>
         </form>
-        <div class="toolbar__actions">
-            <form th:action="@{/ingredients/import-presets}" method="post" class="inline-form"
-                  th:if="${presetsAvailable > 0}">
-                <button type="submit" class="button button--quiet"
-                        th:text="|Add ${presetsAvailable} starter ingredients|">Add starter ingredients</button>
-            </form>
-            <button type="button" class="button button--primary"
-                    data-dialog-open="ingredient-dialog"
-                    data-mode="create">Add ingredient</button>
-        </div>
     </div>
 
     <p class="resultcount" th:if="${searching}">

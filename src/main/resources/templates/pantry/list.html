@@ -13,6 +13,10 @@
                 so the closer it is to reality the less you over-buy.
             </p>
         </div>
+        <div class="actions">
+            <button type="button" class="button button--primary"
+                    data-dialog-open="pantry-dialog" data-mode="create">Add item</button>
+        </div>
     </div>
 
     <div th:replace="~{fragments/layout :: flash}"></div>
@@ -33,8 +37,6 @@
                 <button type="submit" class="button button--quiet">Search</button>
                 <a th:if="${searching}" th:href="@{/pantry}" class="searchbar__clear">Clear</a>
             </div>
-            <button type="button" class="button button--primary"
-                    data-dialog-open="pantry-dialog" data-mode="create">Add item</button>
         </div>
     </form>
 

@@ -13,6 +13,14 @@
                 given it.
             </p>
         </div>
+        <!-- In the heading, which stays pinned, so they are in reach anywhere
+             down a long list. -->
+        <div class="actions">
+            <button type="submit" form="import-recipe-presets" class="button button--quiet"
+                    th:if="${presetsAvailable > 0}"
+                    th:text="|Add ${presetsAvailable} starter recipes|">Add starter recipes</button>
+            <a class="button button--primary" th:href="@{/recipes/new}">New recipe</a>
+        </div>
     </div>
 
     <div th:replace="~{fragments/layout :: flash}"></div>
@@ -29,12 +37,6 @@
                 <input type="search" id="q" name="q" th:value="${query}" placeholder="Search by name">
                 <button type="submit" class="button button--quiet">Search</button>
                 <a th:if="${searching}" th:href="@{/recipes}" class="searchbar__clear">Clear</a>
-            </div>
-            <div class="toolbar__actions">
-                <button type="submit" form="import-recipe-presets" class="button button--quiet"
-                        th:if="${presetsAvailable > 0}"
-                            th:text="|Add ${presetsAvailable} starter recipes|">Add starter recipes</button>
-                <a class="button button--primary" th:href="@{/recipes/new}">New recipe</a>
             </div>
         </div>
 
