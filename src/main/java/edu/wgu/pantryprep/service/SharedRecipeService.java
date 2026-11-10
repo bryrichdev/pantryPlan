@@ -6,6 +6,7 @@ import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.RecipeLine;
 import edu.wgu.pantryprep.domain.User;
+import edu.wgu.pantryprep.photos.RecipePhotoService;
 import edu.wgu.pantryprep.repository.IngredientRepository;
 import edu.wgu.pantryprep.repository.RecipeRepository;
 import java.util.ArrayList;
@@ -37,16 +38,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SharedRecipeService {
 
+    private final RecipePhotoService photoService;
+
     private final GroupService groupService;
     private final RecipeRepository recipeRepository;
     private final IngredientRepository ingredientRepository;
 
     public SharedRecipeService(GroupService groupService,
                                RecipeRepository recipeRepository,
-                               IngredientRepository ingredientRepository) {
+                               IngredientRepository ingredientRepository,
+                               RecipePhotoService photoService) {
         this.groupService = groupService;
         this.recipeRepository = recipeRepository;
         this.ingredientRepository = ingredientRepository;
+        this.photoService = photoService;
     }
 
     /**
@@ -156,6 +161,35 @@ public class SharedRecipeService {
     }
 
     /**
+     * Saves a recipe opened from a public link into this account, the same
+     * way a group recipe is copied: ingredients matched by name or added,
+     * photos copied, and the name kept unless it's taken, when it becomes
+     * "Chili (Sam)".
+     *
+     * @throws GroupRuleException when it's the cook's own recipe, already
+     *         saved, or both names are taken
+     */
+    @Transactional
+    public Recipe copyFromShareLink(Recipe source, User user) {
+        if (source.getUser().getId().equals(user.getId())) {
+            throw new GroupRuleException("This is already your recipe.");
+        }
+        String fingerprint = RecipeFingerprint.of(source);
+        if (recipeRepository.findCopiedHashes(user).contains(fingerprint)) {
+            throw new GroupRuleException("You've already saved this recipe to your recipes.");
+        }
+        String name = source.getName();
+        if (recipeRepository.existsByUserAndNameIgnoreCase(user, name)) {
+            name = ownerSuffixed(source);
+            if (recipeRepository.existsByUserAndNameIgnoreCase(user, name)) {
+                throw new GroupRuleException("You already have recipes called " + source.getName() + " and "
+                        + name + ". Rename one of them, then save this again.");
+            }
+        }
+        return copyRecipe(source, fingerprint, name, user, ingredientsByName(user));
+    }
+
+    /**
      * What a bulk action did: how many recipes it handled, any copies that
      * had to take a different name, and anything it left alone, with why.
      */
@@ -246,6 +280,7 @@ public class SharedRecipeService {
         copy.setMealType(source.getMealType());
         copy.setNationality(source.getNationality());
         copy.setIcon(source.getIcon());
+        copy.setSourceUrl(source.getSourceUrl());
         copy.setPrepMinutes(source.getPrepMinutes());
         copy.setCookMinutes(source.getCookMinutes());
         copy.setInstructions(source.getInstructions());
@@ -259,7 +294,9 @@ public class SharedRecipeService {
             copiedLine.setNote(line.getNote());
             copy.addLine(copiedLine);
         }
-        return recipeRepository.save(copy);
+        Recipe saved = recipeRepository.save(copy);
+        photoService.copyAll(source, saved);
+        return saved;
     }
 
     private Map<String, Ingredient> ingredientsByName(User user) {

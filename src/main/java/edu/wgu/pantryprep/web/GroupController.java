@@ -6,6 +6,7 @@ import edu.wgu.pantryprep.domain.GroupRole;
 import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.User;
+import edu.wgu.pantryprep.photos.RecipePhotoService;
 import edu.wgu.pantryprep.security.AppUserDetails;
 import edu.wgu.pantryprep.service.GroupInviteService;
 import edu.wgu.pantryprep.service.GroupRuleException;
@@ -52,14 +53,18 @@ public class GroupController {
     private final SharedRecipeService sharedRecipeService;
     private final UserService userService;
 
+    private final RecipePhotoService photoService;
+
     public GroupController(GroupService groupService,
                            GroupInviteService inviteService,
                            SharedRecipeService sharedRecipeService,
-                           UserService userService) {
+                           UserService userService,
+                           RecipePhotoService photoService) {
         this.groupService = groupService;
         this.inviteService = inviteService;
         this.sharedRecipeService = sharedRecipeService;
         this.userService = userService;
+        this.photoService = photoService;
     }
 
     private User currentUser(AppUserDetails principal) {
@@ -375,6 +380,7 @@ public class GroupController {
         model.addAttribute("group", me.getGroup());
         model.addAttribute("recipe", recipe);
         model.addAttribute("plan", sharedRecipeService.planCopy(recipe, user));
+        model.addAttribute("photos", photoService.photosOf(recipe));
         model.addAttribute("canUnshare", sharedRecipeService.canUnshare(me, recipe, user));
         return "groups/shared-recipe";
     }

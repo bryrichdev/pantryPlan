@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  A recipe's photos. photoBase is where the images are served from, ending in
+  a slash: the recipe's own address for its owner and group members, or the
+  share address on a public page. editable shows the upload, cover and remove
+  controls, for the owner only.
+-->
+<section class="section photos" id="photos"
+         th:fragment="gallery(photos, photoBase, editable, recipeId, recipeName, maxPhotos)"
+         th:if="${editable or !#lists.isEmpty(photos)}">
+    <div class="photos__head">
+        <h2>Photos</h2>
+        <span class="photos__count" th:if="${editable and !#lists.isEmpty(photos)}"
+              th:text="|${#lists.size(photos)} of ${maxPhotos}|">3 of 12</span>
+    </div>
+
+    <ul class="photogrid" th:unless="${#lists.isEmpty(photos)}"
+        th:classappend="${#lists.size(photos) == 1} ? 'photogrid--single'">
+        <li class="photogrid__item" th:each="photo, iter : ${photos}"
+            th:classappend="${iter.first} ? 'photogrid__item--cover'">
+            <a class="photogrid__link" th:href="|${photoBase}${photo.id}|" data-photo-open
+               th:attr="data-width=${photo.width}, data-height=${photo.height}">
+                <img th:src="${iter.first} ? |${photoBase}${photo.id}| : |${photoBase}${photo.id}?size=thumb|"
+                     th:width="${photo.width}" th:height="${photo.height}"
+                     th:alt="|${recipeName}, photo ${iter.count} of ${iter.size}|"
+                     th:attr="loading=${iter.first} ? 'eager' : 'lazy'"
+                     decoding="async" alt="">
+            </a>
+            <span class="photogrid__badge" th:if="${iter.first and iter.size > 1}">Cover</span>
+            <div class="photogrid__tools" th:if="${editable}">
+                <form th:unless="${iter.first}" method="post"
+                      th:action="@{/recipes/{r}/photos/{p}/cover(r=${recipeId}, p=${photo.id})}">
+                    <button type="submit" class="photogrid__tool" title="Make this the cover">
+                        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 2.8l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                        <span class="visually-hidden" th:text="|Make photo ${iter.count} the cover|">Make cover</span>
+                    </button>
+                </form>
+                <button type="button" class="photogrid__tool photogrid__tool--danger" title="Remove this photo"
+                        data-dialog-open="delete-dialog"
+                        th:attr="data-name=|photo ${iter.count}|, data-entity='photo',
+                                 data-delete-url=@{/recipes/{r}/photos/{p}/delete(r=${recipeId}, p=${photo.id})}">
+                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 6h12M8 6V4h4v2M6 6l.8 10h6.4L14 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="visually-hidden" th:text="|Remove photo ${iter.count}|">Remove</span>
+                </button>
+            </div>
+        </li>
+    </ul>
+
+    <form class="photoupload" th:if="${editable and #lists.size(photos) < maxPhotos}" method="post"
+          th:action="@{/recipes/{r}/photos(r=${recipeId})}" enctype="multipart/form-data" data-photo-upload
+          th:classappend="${#lists.isEmpty(photos)} ? 'photoupload--empty'">
+        <label class="photoupload__pick">
+            <input type="file" name="photos" multiple accept="image/jpeg,image/png,image/gif" data-photo-input>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.4-2h5l1.4 2h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            <span class="photoupload__label" data-photo-label
+                  th:text="${#lists.isEmpty(photos)} ? 'Add a photo of the dish' : 'Add photos'">Add photos</span>
+            <span class="photoupload__hint" th:text="|JPEG or PNG, up to 20 MB each · ${maxPhotos - #lists.size(photos)} more fit|">JPEG or PNG</span>
+        </label>
+        <button type="submit" class="button button--primary photoupload__submit" data-busy="Uploading…"
+                data-photo-submit>Upload</button>
+    </form>
+</section>
+
+<!-- Full-size view, opened from any photo in a gallery. Only used with script; without it the links open the image. -->
+<dialog id="photo-viewer" class="photoviewer" aria-label="Photo" th:fragment="viewer">
+    <div class="photoviewer__frame">
+        <img class="photoviewer__img" alt="" data-viewer-img>
+    </div>
+    <button type="button" class="photoviewer__close" data-dialog-close aria-label="Close">&times;</button>
+    <button type="button" class="photoviewer__nav photoviewer__nav--prev" data-viewer-step="-1" aria-label="Previous photo">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M12.5 4l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button type="button" class="photoviewer__nav photoviewer__nav--next" data-viewer-step="1" aria-label="Next photo">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7.5 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <p class="photoviewer__count" data-viewer-count aria-live="polite"></p>
+</dialog>
+
+</body>
+</html>

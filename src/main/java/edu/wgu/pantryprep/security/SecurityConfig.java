@@ -61,6 +61,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/", "/register", "/login", "/error").permitAll()
+                        /* A recipe's public link, and its photos. Saving it
+                           (/r/{token}/save) still needs an account. */
+                        .requestMatchers(HttpMethod.GET, "/r/*", "/r/*/photos/*").permitAll()
                         /* Order matters: the exit rule must come before the
                            general admin rule. While viewing as someone else the
                            session holds that account's role, not ROLE_ADMIN. */

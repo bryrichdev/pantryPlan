@@ -159,6 +159,7 @@ public class RecipeService {
         recipe.setCookMinutes(form.getCookMinutes() == null ? 0 : form.getCookMinutes());
         recipe.setTags(form.parsedTags());
         recipe.setIcon(form.getIcon());
+        recipe.setSourceUrl(form.normalizedSourceUrl());
     }
 
     /**

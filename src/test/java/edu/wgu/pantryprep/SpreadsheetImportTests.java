@@ -80,7 +80,7 @@ class SpreadsheetImportTests {
     private byte[] pancakes() {
         return ImportTestWorkbooks.of(RECIPE_WORKBOOK)
                 .row(RECIPES, "Buttermilk pancakes", "4", "10", "15", "breakfast", "American", "Pancakes",
-                        "weekend, sweet", "Fluffy and quick", "Whisk.\nRest.\nFry.")
+                        "weekend, sweet", "Fluffy and quick", "Whisk.\nRest.\nFry.", "smittenkitchen.com/pancakes")
                 .row(RECIPES, "Plain toast", "1", "", "", "", "", "", "", "", "")
                 .row(RECIPE_INGREDIENTS, "Buttermilk pancakes", "all-purpose FLOUR", "1 1/2", "cups", "sifted", "")
                 .row(RECIPE_INGREDIENTS, "Buttermilk pancakes", "Buttermilk", "2", "cup", "", "Dairy")
@@ -117,6 +117,7 @@ class SpreadsheetImportTests {
         assertEquals(RecipeIcon.PANCAKES, pancakes.getIcon());
         assertTrue(pancakes.getTags().contains("weekend"));
         assertEquals(3, pancakes.getLines().size());
+        assertEquals("https://smittenkitchen.com/pancakes", pancakes.getSourceUrl());
 
         RecipeLine flourLine = pancakes.getLines().stream()
                 .filter(line -> line.getIngredient().getId().equals(flour.getId())).findFirst().orElseThrow();
@@ -141,7 +142,7 @@ class SpreadsheetImportTests {
         byte[] file = ImportTestWorkbooks.of(RECIPE_WORKBOOK)
                 .row(RECIPES, "chili", "6", "", "", "", "", "", "", "", "")
                 .row(RECIPES, "Soup", "200", "", "", "Brunch", "", "", "", "", "")
-                .row(RECIPES, "Salad", "2", "", "", "", "", "", "", "", "")
+                .row(RECIPES, "Salad", "2", "", "", "", "", "", "", "", "", "not a link")
                 .row(RECIPES, "salad", "2", "", "", "", "", "", "", "", "")
                 .row(RECIPE_INGREDIENTS, "Stew", "Beef", "1", "lb", "", "")
                 .row(RECIPE_INGREDIENTS, "Salad", "Lettuce", "1", "handful", "", "")
@@ -156,6 +157,7 @@ class SpreadsheetImportTests {
         assertTrue(where.contains("Recipes 3 Serves"), "out of range: " + where);
         assertTrue(where.contains("Recipes 3 Meal type"), "not on the list: " + where);
         assertTrue(where.contains("Recipes 5 Name"), "twice in one file: " + where);
+        assertTrue(where.contains("Recipes 4 Source link"), "not a web address: " + where);
         assertTrue(where.contains("Recipe Ingredients 2 Recipe"), "no such recipe: " + where);
         assertTrue(where.contains("Recipe Ingredients 3 Unit"), "unknown unit: " + where);
         assertTrue(where.contains("Recipe Ingredients 4 Amount"), "missing amount: " + where);

@@ -9,6 +9,7 @@ import edu.wgu.pantryprep.domain.RecipeIcon;
 import edu.wgu.pantryprep.domain.StorageLocation;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
+import edu.wgu.pantryprep.photos.RecipePhotoService;
 import edu.wgu.pantryprep.security.AppUserDetails;
 import edu.wgu.pantryprep.service.GroupService;
 import edu.wgu.pantryprep.service.IngredientService;
@@ -49,15 +50,18 @@ public class RecipeController {
     private final IngredientService ingredientService;
     private final UserService userService;
     private final GroupService groupService;
+    private final RecipePhotoService photoService;
 
     public RecipeController(RecipeService recipeService,
                             IngredientService ingredientService,
                             UserService userService,
-                            GroupService groupService) {
+                            GroupService groupService,
+                            RecipePhotoService photoService) {
         this.recipeService = recipeService;
         this.ingredientService = ingredientService;
         this.userService = userService;
         this.groupService = groupService;
+        this.photoService = photoService;
     }
 
     @ModelAttribute("units")
@@ -142,6 +146,11 @@ public class RecipeController {
         Recipe recipe = recipeService.requireOwned(id, currentUser(principal));
         model.addAttribute("recipe", recipe);
         model.addAttribute("blockedReason", recipeService.describeReferences(recipe));
+        model.addAttribute("photos", photoService.photosOf(recipe));
+        model.addAttribute("maxPhotos", RecipePhotoService.MAX_PHOTOS);
+        if (recipe.getShareToken() != null) {
+            model.addAttribute("shareUrl", RecipeShareController.publicUrl(recipe.getShareToken()));
+        }
         model.addAttribute("returnTo", "/recipes/" + id);
         if (!model.containsAttribute("ingredientForm")) {
             model.addAttribute("ingredientForm", new IngredientForm());

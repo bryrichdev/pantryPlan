@@ -179,3 +179,174 @@
     .lineitem__cell--wide { grid-column: 1 / -1; }
     .lineitem__cell--action { grid-column: 1 / -1; text-align: left; }
 }
+
+/* ---------- where a recipe came from ---------- */
+
+.sourcelink {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    min-width: 0;
+}
+
+.sourcelink svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: none;
+    color: var(--herb);
+}
+
+.sourcelink a {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- the owner's share link ---------- */
+
+.sharelink {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    margin: 0 0 0.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    scroll-margin-top: 6rem;
+}
+
+.sharelink__text { flex: 1 1 18rem; min-width: 0; }
+
+.sharelink h2 {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    margin: 0 0 0.2rem;
+}
+
+.sharelink__text p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+}
+
+.sharelink__start { margin: 0; }
+
+.sharelink__live {
+    flex: 1 1 24rem;
+    min-width: 0;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.sharelink__copy {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sharelink__copy input {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+}
+
+.sharelink__more {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.sharelink__more a { font-weight: 600; }
+
+/* ---------- a recipe's public page ---------- */
+
+.publicrecipe__flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+    padding: 0.25rem 0.75rem 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: var(--herb-wash);
+    color: var(--herb-deep);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.publicrecipe__flag svg { width: 1rem; height: 1rem; }
+
+.publicrecipe__lines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 40rem;
+    border-top: 1px solid var(--rule);
+}
+
+.publicrecipe__lines li {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.6rem 0.25rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.publicrecipe__amount {
+    font-weight: 600;
+    color: var(--herb-deep);
+}
+
+.publicrecipe__note { color: var(--ink-soft); }
+
+.publicrecipe__pitch {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    background: var(--herb-wash);
+    max-width: 40rem;
+}
+
+.publicrecipe__pitch h2 {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    margin: 0 0 0.35rem;
+}
+
+.publicrecipe__pitch p { margin: 0 0 1rem; }
+
+.publicrecipe__pitchactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0 !important;
+}
+
+.publicrecipe--gone .empty { margin-top: 2rem; }
+
+.publicrecipe--gone h1 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem;
+}
+
+@media (max-width: 40rem) {
+    .sharelink { padding: 0.9rem 1rem; }
+
+    .sharelink__copy { flex-wrap: wrap; }
+
+    .sharelink__copy input { flex: 1 1 100%; }
+
+    .sharelink__copy .button { flex: 1 1 100%; }
+
+    .publicrecipe__lines li { grid-template-columns: 5.5rem minmax(0, 1fr); }
+}

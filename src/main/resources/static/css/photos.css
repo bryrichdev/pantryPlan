@@ -1,0 +1,316 @@
+/* PantryPrep — recipe photos: the gallery, the upload box and the full-size viewer. */
+
+.photos__head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.photos__head h2 { margin: 0; }
+
+.photos__count {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+}
+
+/* ---------- gallery ---------- */
+
+.photogrid {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.photogrid__item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--paper-sunk);
+    box-shadow: var(--shadow);
+}
+
+/* The cover is shown large: two columns and two rows. */
+.photogrid__item--cover {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+/* One photo alone sits wide rather than square. */
+.photogrid--single { grid-template-columns: minmax(0, 1fr); max-width: 40rem; }
+.photogrid--single .photogrid__item--cover { grid-column: auto; grid-row: auto; aspect-ratio: 4 / 3; }
+
+.photogrid__link {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.photogrid__link img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+}
+
+.photogrid__link:hover img,
+.photogrid__link:focus-visible img { transform: scale(1.03); }
+
+.photogrid__link:focus-visible {
+    outline: 3px solid var(--herb);
+    outline-offset: -3px;
+}
+
+.photogrid__badge {
+    position: absolute;
+    left: 0.55rem;
+    top: 0.55rem;
+    padding: 0.12rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 252, 245, 0.92);
+    color: var(--herb-deep);
+    font-size: 0.75rem;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.photogrid__tools {
+    position: absolute;
+    right: 0.45rem;
+    top: 0.45rem;
+    display: flex;
+    gap: 0.3rem;
+    opacity: 0;
+    transform: translateY(-3px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.photogrid__item:hover .photogrid__tools,
+.photogrid__item:focus-within .photogrid__tools {
+    opacity: 1;
+    transform: none;
+}
+
+/* Touch screens have no hover, so the tools stay visible there. */
+@media (hover: none) {
+    .photogrid__tools { opacity: 1; transform: none; }
+}
+
+.photogrid__tools form { margin: 0; }
+
+.photogrid__tool {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 252, 245, 0.94);
+    color: var(--herb-deep);
+    box-shadow: 0 1px 4px rgba(43, 39, 34, 0.25);
+    cursor: pointer;
+}
+
+.photogrid__tool svg { width: 1.05rem; height: 1.05rem; }
+
+.photogrid__tool:hover { background: #fff; color: var(--herb); }
+
+.photogrid__tool--danger { color: var(--rust); }
+
+.photogrid__tool--danger:hover { color: var(--rust); }
+
+/* ---------- upload ---------- */
+
+.photoupload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.photoupload__pick {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    column-gap: 0.6rem;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    border: 1.5px dashed var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--paper);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.photoupload__pick:hover,
+.photoupload__pick:focus-within,
+.photoupload__pick.is-chosen {
+    border-color: var(--herb);
+    background: var(--herb-wash);
+}
+
+.photoupload__pick input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.photoupload__pick svg {
+    grid-row: span 2;
+    width: 1.6rem;
+    height: 1.6rem;
+    color: var(--herb);
+}
+
+.photoupload__label {
+    font-weight: 600;
+    color: var(--herb-deep);
+}
+
+.photoupload__hint {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+}
+
+/* With no photos yet, the box is the whole section: wide and inviting. */
+.photoupload--empty .photoupload__pick {
+    display: grid;
+    width: 100%;
+    max-width: 40rem;
+    justify-content: center;
+    padding: 1.4rem 1rem;
+}
+
+/* With script, choosing files uploads them straight away. */
+.photoupload.is-enhanced .photoupload__submit { display: none; }
+
+.photoupload.is-uploading .photoupload__pick {
+    border-style: solid;
+    border-color: var(--herb);
+    background: var(--herb-wash);
+    pointer-events: none;
+}
+
+.photoupload.is-uploading .photoupload__pick svg { animation: photo-pulse 1s ease-in-out infinite alternate; }
+
+@keyframes photo-pulse {
+    from { opacity: 0.45; }
+    to { opacity: 1; }
+}
+
+/* ---------- full-size viewer ---------- */
+
+.photoviewer {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    background: rgba(24, 21, 18, 0.94);
+    color: #fff;
+}
+
+.photoviewer::backdrop { background: rgba(24, 21, 18, 0.6); }
+
+.photoviewer__frame {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photoviewer__img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 9rem);
+    max-height: calc(100dvh - 7rem);
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+
+.photoviewer__close,
+.photoviewer__nav {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.photoviewer__close:hover,
+.photoviewer__nav:hover { background: rgba(255, 255, 255, 0.24); }
+
+.photoviewer__close:focus-visible,
+.photoviewer__nav:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+.photoviewer__close { top: 1rem; right: 1rem; }
+
+.photoviewer__nav { top: 50%; transform: translateY(-50%); }
+
+.photoviewer__nav svg { width: 1.3rem; height: 1.3rem; }
+
+.photoviewer__nav--prev { left: 1rem; }
+
+.photoviewer__nav--next { right: 1rem; }
+
+.photoviewer__nav[hidden] { display: none; }
+
+.photoviewer__count {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 40rem) {
+    .photogrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
+
+    /* On a phone the cover runs the full width above the rest. */
+    .photogrid__item--cover { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 4 / 3; }
+
+    .photoviewer__img {
+        max-width: calc(100vw - 1rem);
+        max-height: calc(100dvh - 9rem);
+    }
+
+    .photoviewer__nav { top: auto; bottom: 0.6rem; transform: none; }
+
+    .photoviewer__count { bottom: 1.4rem; }
+
+    .photoupload__pick { width: 100%; box-sizing: border-box; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .photogrid__link img,
+    .photogrid__tools,
+    .photoupload__pick { transition: none; }
+
+    .photoupload.is-uploading .photoupload__pick svg { animation: none; }
+}

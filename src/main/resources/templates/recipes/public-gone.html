@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Link not available')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page publicrecipe publicrecipe--gone">
+    <div class="empty">
+        <h1>This link doesn't work anymore</h1>
+        <p>The recipe it pointed to is no longer shared, or the link was replaced with a new one.
+            Ask whoever sent it for a fresh link.</p>
+        <p><a class="button button--quiet" th:href="@{/}">Go to PantryPrep</a></p>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

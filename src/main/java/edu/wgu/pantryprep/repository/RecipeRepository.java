@@ -14,6 +14,8 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     Optional<Recipe> findByIdAndUser(Long id, User user);
 
+    Optional<Recipe> findByShareToken(String shareToken);
+
     long countByUser(User user);
 
     List<Recipe> findAllByUserOrderByNameAsc(User user);

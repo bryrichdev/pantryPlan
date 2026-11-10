@@ -17,6 +17,7 @@ import static edu.wgu.pantryprep.importing.ImportWorkbooks.RECIPES;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.RECIPE_INGREDIENTS;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.RECIPE_WORKBOOK;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.SERVINGS;
+import static edu.wgu.pantryprep.importing.ImportWorkbooks.SOURCE;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.TAGS;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.UNIT;
 
@@ -24,6 +25,7 @@ import edu.wgu.pantryprep.domain.Ingredient;
 import edu.wgu.pantryprep.domain.IngredientCategory;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.RecipeIcon;
+import edu.wgu.pantryprep.domain.SourceLinks;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
 import edu.wgu.pantryprep.importing.ImportReport.SheetCount;
@@ -153,6 +155,12 @@ public class RecipeImportService {
                         + "\". Rename this one, or leave it out of the file.");
                 continue;
             }
+            String source = row.text(SOURCE);
+            if (!SourceLinks.isAcceptable(source)) {
+                plan.problems.at(row, SOURCE, "\"" + source + "\" isn't a web address. Use one such as "
+                        + "https://example.com/recipe, or leave it blank.");
+                continue;
+            }
             plan.recipes.put(key, toRecipe(row, name));
         }
 
@@ -205,6 +213,7 @@ public class RecipeImportService {
         form.setTagsCsv(row.text(TAGS));
         form.setDescription(row.text(DESCRIPTION));
         form.setInstructions(row.text(INSTRUCTIONS));
+        form.setSourceUrl(row.text(SOURCE));
         return recipe;
     }
 }

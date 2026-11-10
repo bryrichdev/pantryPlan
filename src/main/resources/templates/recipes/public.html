@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(${recipe.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page publicrecipe">
+    <p class="publicrecipe__flag">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        A recipe shared from PantryPrep
+    </p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="pagehead">
+        <div class="pagehead__title">
+            <svg th:replace="~{fragments/recipe-icons :: icon(${recipe.icon}, 'ricon--lg is-live')}"></svg>
+            <div>
+            <h1 th:text="${recipe.name}">Chili</h1>
+            <p class="pagehead__note" th:if="${recipe.description}" th:text="${recipe.description}">
+                A weeknight favourite.</p>
+            </div>
+        </div>
+        <div class="actions">
+            <a th:if="${ownRecipe}" class="button button--quiet"
+               th:href="@{/recipes/{id}(id=${recipe.id})}">Open in your recipes</a>
+            <form th:if="${!ownRecipe}" sec:authorize="isAuthenticated()"
+                  th:action="@{/r/{t}/save(t=${token})}" method="post" class="inline-form">
+                <button type="submit" class="button button--primary" data-busy="Saving…">Save to my recipes</button>
+            </form>
+            <a sec:authorize="!isAuthenticated()" class="button button--primary"
+               th:href="@{/r/{t}/save(t=${token})}">Sign in to save</a>
+        </div>
+    </div>
+
+    <dl class="factgrid">
+        <div class="factgrid__item" th:if="${recipe.mealType}">
+            <dt>Meal type</dt>
+            <dd th:text="${recipe.mealType}">Dinner</dd>
+        </div>
+        <div class="factgrid__item" th:if="${recipe.nationality}">
+            <dt>Cuisine</dt>
+            <dd th:text="${recipe.nationality}">Mexican</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Serves</dt>
+            <dd th:text="${recipe.servings}">4</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Prep</dt>
+            <dd th:text="|${recipe.prepMinutes} min|">10 min</dd>
+        </div>
+        <div class="factgrid__item">
+            <dt>Cook</dt>
+            <dd th:text="|${recipe.cookMinutes} min|">25 min</dd>
+        </div>
+    </dl>
+
+    <p class="sourcelink" th:if="${recipe.sourceUrl}">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        From <a th:href="${recipe.sourceUrl}" target="_blank" rel="noopener noreferrer nofollow"
+                th:text="${@fmt.host(recipe.sourceUrl)}">seriouseats.com</a>
+    </p>
+
+    <p class="taglist" th:unless="${#sets.isEmpty(recipe.tags)}">
+        <span class="badge" th:each="tag : ${recipe.tags}" th:text="${tag}">weeknight</span>
+    </p>
+
+    <section th:replace="~{fragments/recipe-photos :: gallery(${photos}, |/r/${token}/photos/|, false,
+                                                               ${recipe.id}, ${recipe.name}, 0)}"></section>
+
+    <section class="section">
+        <h2>Ingredients</h2>
+        <div class="empty empty--tight" th:if="${#lists.isEmpty(recipe.lines)}">
+            <p>No ingredients listed.</p>
+        </div>
+        <ul class="publicrecipe__lines" th:unless="${#lists.isEmpty(recipe.lines)}">
+            <li th:each="line : ${recipe.lines}">
+                <span class="publicrecipe__amount" th:text="${@fmt.amount(line.quantity, line.unit)}">1 cup</span>
+                <span th:text="${line.ingredient.name}">Basil</span><span class="publicrecipe__note"
+                      th:if="${line.note}" th:text="|, ${line.note}|">, chopped</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="section" th:if="${recipe.instructions}">
+        <h2>Instructions</h2>
+        <p class="prose" th:text="${recipe.instructions}">Step one.</p>
+    </section>
+
+    <aside class="publicrecipe__pitch" sec:authorize="!isAuthenticated()">
+        <h2>Cook it with PantryPrep</h2>
+        <p>Save recipes like this one, plan the week's meals, and get a grocery list of only what your
+            pantry is missing.</p>
+        <p class="publicrecipe__pitchactions">
+            <a class="button button--primary" th:href="@{/register}">Create a free account</a>
+            <a class="button button--quiet" th:href="@{/r/{t}/save(t=${token})}">Sign in</a>
+        </p>
+    </aside>
+</main>
+
+<dialog th:replace="~{fragments/recipe-photos :: viewer}"></dialog>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>

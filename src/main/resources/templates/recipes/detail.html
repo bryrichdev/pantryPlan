@@ -60,6 +60,12 @@
         </div>
     </dl>
 
+    <p class="sourcelink" th:if="${recipe.sourceUrl}">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        From <a th:href="${recipe.sourceUrl}" target="_blank" rel="noopener noreferrer nofollow"
+                th:text="${@fmt.host(recipe.sourceUrl)}">seriouseats.com</a>
+    </p>
+
     <p class="taglist" th:unless="${#sets.isEmpty(recipe.tags)}">
         <span class="badge" th:each="tag : ${recipe.tags}" th:text="${tag}">italian</span>
     </p>
@@ -71,6 +77,43 @@
                 th:unless="${iter.last}">, </th:block>
         </th:block>
     </p>
+
+    <section class="sharelink" id="share" aria-labelledby="share-title">
+        <div class="sharelink__text">
+            <h2 id="share-title">Share link</h2>
+            <p th:if="${shareUrl == null}">Make a link anyone can open to view this recipe, with no account
+                needed. They can't change it.</p>
+            <p th:if="${shareUrl != null}">Anyone with this link can view the recipe, photos included.
+                Signed-in cooks can save a copy to their own recipes.</p>
+        </div>
+        <form th:if="${shareUrl == null}" th:action="@{/recipes/{id}/share(id=${recipe.id})}" method="post"
+              class="sharelink__start">
+            <button type="submit" class="button button--quiet">Create link</button>
+        </form>
+        <div th:if="${shareUrl != null}" class="sharelink__live">
+            <div class="sharelink__copy">
+                <label class="visually-hidden" for="share-url">Share link</label>
+                <input type="text" id="share-url" th:value="${shareUrl}" readonly>
+                <button type="button" class="button button--primary" data-copy="share-url">Copy</button>
+            </div>
+            <p class="sharelink__more">
+                <a th:href="${shareUrl}" target="_blank" rel="noopener">Preview</a>
+                <button type="button" class="linkbutton" data-dialog-open="confirm-dialog"
+                        data-confirm-title="Make a new link?"
+                        data-confirm-message="The current link will stop working. Anyone you sent it to will need the new one."
+                        data-confirm-label="Make a new link"
+                        th:attr="data-confirm-url=@{/recipes/{id}/share/replace(id=${recipe.id})}">New link</button>
+                <button type="button" class="linkbutton linkbutton--danger" data-dialog-open="confirm-dialog"
+                        data-confirm-title="Stop sharing?"
+                        data-confirm-message="The link will stop working for everyone. You can make a new one later."
+                        data-confirm-label="Stop sharing"
+                        th:attr="data-confirm-url=@{/recipes/{id}/share/stop(id=${recipe.id})}">Stop sharing</button>
+            </p>
+        </div>
+    </section>
+
+    <section th:replace="~{fragments/recipe-photos :: gallery(${photos}, |/recipes/${recipe.id}/photos/|, true,
+                                                               ${recipe.id}, ${recipe.name}, ${maxPhotos})}"></section>
 
     <section class="section">
         <h2>Ingredients</h2>
@@ -132,6 +175,24 @@
 </main>
 
 <div th:replace="~{fragments/ingredient-dialog :: dialog}"></div>
+
+<dialog th:replace="~{fragments/recipe-photos :: viewer}"></dialog>
+
+<dialog id="confirm-dialog" class="dialog dialog--narrow" aria-labelledby="confirm-dialog-title">
+    <form method="post" class="dialog__form" data-confirm-form th:action="@{/recipes}">
+        <div class="dialog__head">
+            <h2 id="confirm-dialog-title" data-confirm-title>Are you sure?</h2>
+            <button type="button" class="dialog__close" data-dialog-close aria-label="Close">&times;</button>
+        </div>
+        <div class="dialog__body">
+            <p data-confirm-message>Are you sure?</p>
+        </div>
+        <div class="dialog__foot">
+            <button type="submit" class="button button--danger" data-confirm-submit>Confirm</button>
+            <button type="button" class="button button--quiet" data-dialog-close>Cancel</button>
+        </div>
+    </form>
+</dialog>
 
 <dialog id="delete-dialog" class="dialog dialog--narrow" aria-labelledby="delete-dialog-title">
     <form method="post" class="dialog__form" data-delete-form th:action="@{/recipes}">

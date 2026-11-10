@@ -42,6 +42,7 @@ public class AuditLogService {
             "recipes", "Recipes",
             "recipe_lines", "Recipe lines",
             "recipe_tags", "Recipe tags",
+            "recipe_photos", "Recipe photos",
             "pantry_items", "Pantry items",
             "meal_plans", "Meal plans",
             "plan_entries", "Planned meals",

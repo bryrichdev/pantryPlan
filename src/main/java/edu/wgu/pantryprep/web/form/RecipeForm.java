@@ -1,5 +1,8 @@
 package edu.wgu.pantryprep.web.form;
 
+import edu.wgu.pantryprep.domain.SourceLinks;
+import jakarta.validation.constraints.AssertTrue;
+
 import edu.wgu.pantryprep.domain.KitchenGroup;
 import edu.wgu.pantryprep.domain.Recipe;
 import edu.wgu.pantryprep.domain.RecipeIcon;
@@ -58,6 +61,9 @@ public class RecipeForm {
     @Size(max = 300, message = "Tags must be 300 characters or fewer")
     private String tagsCsv;
 
+    /** Where the recipe came from. Checked and tidied by {@link SourceLinks}. */
+    private String sourceUrl;
+
     /**
      * The chosen picture, or null for none. The picker sends the enum's name,
      * or an empty string for "No picture", which binds as null. Anything else
@@ -87,6 +93,7 @@ public class RecipeForm {
         form.setInstructions(recipe.getInstructions());
         form.setTagsCsv(String.join(", ", recipe.getTags()));
         form.setIcon(recipe.getIcon());
+        form.setSourceUrl(recipe.getSourceUrl());
         recipe.getLines().forEach(line -> form.getLines().add(RecipeLineForm.from(line)));
         recipe.getSharedWithGroups().stream().map(KitchenGroup::getId).forEach(form.getGroupIds()::add);
         form.ensureOneEmptyRow();
@@ -234,5 +241,23 @@ public class RecipeForm {
 
     public void setGroupIds(Set<Long> groupIds) {
         this.groupIds = groupIds == null ? new LinkedHashSet<>() : new LinkedHashSet<>(groupIds);
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
+    }
+
+    /** The source link as it will be saved, or null when there is none. */
+    public String normalizedSourceUrl() {
+        return SourceLinks.normalize(sourceUrl).orElse(null);
+    }
+
+    @AssertTrue(message = "Enter a web address, such as https://example.com/recipe")
+    public boolean isSourceUrlValid() {
+        return SourceLinks.isAcceptable(sourceUrl);
     }
 }

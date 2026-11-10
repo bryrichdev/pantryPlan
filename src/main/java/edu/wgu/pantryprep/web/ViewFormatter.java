@@ -62,4 +62,9 @@ public class ViewFormatter {
         String words = value.name().toLowerCase().replace('_', ' ');
         return Character.toUpperCase(words.charAt(0)) + words.substring(1);
     }
+
+    /** A source link's site, for its label: "seriouseats.com". */
+    public String host(String url) {
+        return edu.wgu.pantryprep.domain.SourceLinks.host(url);
+    }
 }

@@ -67,6 +67,20 @@ public class Recipe extends BaseEntity {
     @Column(name = "copied_from_hash", length = 64)
     private String copiedFromHash;
 
+    /**
+     * The token in this recipe's public link, or null when it isn't shared
+     * publicly. See {@link edu.wgu.pantryprep.service.RecipeShareLinkService}.
+     */
+    @Column(name = "share_token", length = 43)
+    private String shareToken;
+
+    @Column(name = "shared_at")
+    private Instant sharedAt;
+
+    /** Where the recipe came from, as an http or https address. Optional. */
+    @Column(name = "source_url", length = 500)
+    private String sourceUrl;
+
     /** An optional picture shown beside the name. Looks only. */
     @Enumerated(EnumType.STRING)
     @Column(name = "icon", length = 20)
@@ -253,5 +267,27 @@ public class Recipe extends BaseEntity {
 
     public boolean isSharedWith(KitchenGroup group) {
         return sharedWithGroups.contains(group);
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
+    }
+
+    public String getShareToken() {
+        return shareToken;
+    }
+
+    public Instant getSharedAt() {
+        return sharedAt;
+    }
+
+    /** Starts sharing under this token, or stops when it is null. */
+    public void setShareToken(String shareToken, Instant sharedAt) {
+        this.shareToken = shareToken;
+        this.sharedAt = shareToken == null ? null : sharedAt;
     }
 }

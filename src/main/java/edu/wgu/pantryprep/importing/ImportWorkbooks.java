@@ -32,6 +32,7 @@ public final class ImportWorkbooks {
     public static final String TAGS = "tags";
     public static final String DESCRIPTION = "description";
     public static final String INSTRUCTIONS = "instructions";
+    public static final String SOURCE = "sourceUrl";
     public static final String RECIPE = "recipe";
     public static final String INGREDIENT = "ingredient";
     public static final String AMOUNT = "amount";
@@ -99,7 +100,9 @@ public final class ImportWorkbooks {
                             17, "A little drawing to spot it by in lists"),
                     optional(TAGS, "Tags", ValueType.text(300), 22, "Separate with commas, such as weeknight, freezer"),
                     optional(DESCRIPTION, "Description", ValueType.text(2000), 34, "One or two lines about the dish"),
-                    optional(INSTRUCTIONS, "Instructions", ValueType.text(20000), 50, "The method, in as many lines as you like")));
+                    optional(INSTRUCTIONS, "Instructions", ValueType.text(20000), 50, "The method, in as many lines as you like"),
+                    optional(SOURCE, "Source link", ValueType.text(500), 30,
+                            "Where the recipe came from, such as https://example.com/recipe")));
 
     public static final Sheet RECIPE_INGREDIENTS = new Sheet("Recipe Ingredients",
             "One row per ingredient in a recipe: a recipe with six ingredients has six rows here.",

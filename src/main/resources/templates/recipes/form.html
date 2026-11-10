@@ -114,6 +114,15 @@
         </div>
 
         <div class="field">
+            <label for="sourceUrl">Source link</label>
+            <input type="text" id="sourceUrl" th:field="*{sourceUrl}" maxlength="500"
+                   inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://">
+            <p class="field__hint">Where the recipe came from, such as a blog post or video. Optional.</p>
+            <p class="field__error" th:if="${#fields.hasErrors('sourceUrlValid')}"
+               th:errors="*{sourceUrlValid}">Source link error</p>
+        </div>
+
+        <div class="field">
             <label for="tagsCsv">Tags</label>
             <input type="text" id="tagsCsv" th:field="*{tagsCsv}" maxlength="300"
                    placeholder="weeknight, italian, freezer">

@@ -1092,3 +1092,111 @@
         }
     }, true);
 }());
+
+/*
+ * Recipe photos. Choosing files uploads them straight away (the Upload button
+ * is there for anyone without script), and a photo in a gallery opens full
+ * size in a viewer that steps through the rest with arrows, keys or a swipe.
+ * Without script each photo is a plain link to the image.
+ */
+(function () {
+    "use strict";
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-photo-upload]"), function (form) {
+        form.classList.add("is-enhanced");
+    });
+
+    document.addEventListener("change", function (event) {
+        var input = event.target;
+        if (!input.matches || !input.matches("[data-photo-input]") || !input.files || !input.files.length) {
+            return;
+        }
+        var form = input.form;
+        var label = form.querySelector("[data-photo-label]");
+        var count = input.files.length;
+        if (label) {
+            label.textContent = count === 1 ? "Uploading 1 photo…" : "Uploading " + count + " photos…";
+        }
+        form.classList.add("is-uploading");
+        if (typeof form.requestSubmit === "function") {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    });
+
+    var viewer = null;
+    var image = null;
+    var counter = null;
+    var links = [];
+    var index = 0;
+
+    function show(at) {
+        index = (at + links.length) % links.length;
+        var link = links[index];
+        var thumb = link.querySelector("img");
+        image.src = link.href;
+        image.alt = thumb ? thumb.alt : "";
+        counter.textContent = links.length > 1 ? (index + 1) + " of " + links.length : "";
+        Array.prototype.forEach.call(viewer.querySelectorAll("[data-viewer-step]"), function (button) {
+            button.hidden = links.length < 2;
+        });
+    }
+
+    document.addEventListener("click", function (event) {
+        var link = event.target.closest && event.target.closest("[data-photo-open]");
+        viewer = viewer || document.getElementById("photo-viewer");
+        if (link && viewer && typeof viewer.showModal === "function") {
+            event.preventDefault();
+            image = viewer.querySelector("[data-viewer-img]");
+            counter = viewer.querySelector("[data-viewer-count]");
+            var grid = link.closest(".photogrid") || document;
+            links = Array.prototype.slice.call(grid.querySelectorAll("[data-photo-open]"));
+            show(links.indexOf(link));
+            viewer.showModal();
+            return;
+        }
+        if (!viewer || !viewer.open) {
+            return;
+        }
+        var step = event.target.closest && event.target.closest("[data-viewer-step]");
+        if (step) {
+            show(index + parseInt(step.getAttribute("data-viewer-step"), 10));
+        } else if (event.target === viewer || event.target.classList.contains("photoviewer__frame")) {
+            viewer.close();
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (!viewer || !viewer.open || links.length < 2) {
+            return;
+        }
+        if (event.key === "ArrowRight") {
+            show(index + 1);
+        } else if (event.key === "ArrowLeft") {
+            show(index - 1);
+        }
+    });
+
+    /* A sideways swipe steps through the photos on a phone. */
+    var startX = null;
+    document.addEventListener("pointerdown", function (event) {
+        startX = viewer && viewer.open && event.pointerType !== "mouse" ? event.clientX : null;
+    });
+    document.addEventListener("pointerup", function (event) {
+        if (startX === null || !viewer || !viewer.open || links.length < 2) {
+            return;
+        }
+        var moved = event.clientX - startX;
+        startX = null;
+        if (Math.abs(moved) > 50) {
+            show(index + (moved < 0 ? 1 : -1));
+        }
+    });
+
+    document.addEventListener("close", function (event) {
+        if (event.target === viewer && image) {
+            image.removeAttribute("src");
+        }
+    }, true);
+}());
