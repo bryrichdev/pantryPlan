@@ -8,7 +8,8 @@
     <p class="crumb"><a th:href="@{/recipes}">Recipes</a></p>
     <h1 th:text="${form.new} ? 'New recipe' : 'Edit recipe'">New recipe</h1>
 
-    <form th:action="@{/recipes}" th:object="${form}" method="post" class="form form--wide">
+    <form th:action="@{/recipes}" th:object="${form}" method="post" class="form form--wide"
+          enctype="multipart/form-data">
         <input type="hidden" th:field="*{id}">
 
         <div class="field">
@@ -120,6 +121,34 @@
             <p class="field__hint">Where the recipe came from, such as a blog post or video. Optional.</p>
             <p class="field__error" th:if="${#fields.hasErrors('sourceUrlValid')}"
                th:errors="*{sourceUrlValid}">Source link error</p>
+        </div>
+
+        <div class="field formphotos">
+            <label for="photos">Photos</label>
+            <th:block th:if="${photoRoom > 0}">
+                <div class="photoupload__pick formphotos__pick">
+                    <input type="file" id="photos" name="photos" multiple
+                           accept="image/jpeg,image/png,image/gif" data-form-photos
+                           th:attr="data-room=${photoRoom}, data-has=${photoCount}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.4-2h5l1.4 2h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                    <span class="photoupload__label" data-form-photos-label
+                          th:text="${photoCount == 0} ? 'Choose photos of the dish' : 'Add more photos'">Choose photos</span>
+                    <span class="photoupload__hint"
+                          th:text="|JPEG or PNG, up to 20 MB each · up to ${photoRoom} ${photoRoom == 1 ? 'photo' : 'photos'}|">JPEG or PNG</span>
+                </div>
+                <ul class="formphotos__preview" data-form-photos-preview hidden></ul>
+                <p class="field__error" data-form-photos-error hidden></p>
+            </th:block>
+            <p class="field__hint" th:if="${photoCount > 0}">
+                This recipe has <span th:text="${photoCount == 1} ? '1 photo' : |${photoCount} photos|">3 photos</span>.
+                Choose the cover or remove photos on the
+                <a th:href="@{/recipes/{id}(id=${form.id})} + '#photos'">recipe page</a>.
+            </p>
+            <p class="field__hint" th:if="${photoCount == 0}">The first photo becomes the cover. Optional.</p>
+            <p class="notice notice--bad formphotos__dropped" th:if="${photosDropped}">
+                Your photos weren't uploaded because something on the form needs fixing. Choose them again
+                before you save.
+            </p>
         </div>
 
         <div class="field">

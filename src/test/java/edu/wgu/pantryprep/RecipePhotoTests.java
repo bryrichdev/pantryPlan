@@ -102,6 +102,48 @@ class RecipePhotoTests {
     }
 
     @Test
+    void photosCanBeChosenWhenTheRecipeIsFirstSaved() throws Exception {
+        User cook = cook();
+        mockMvc.perform(get("/recipes/new").with(user(new AppUserDetails(cook))))
+                .andExpect(content().string(containsString("enctype=\"multipart/form-data\"")))
+                .andExpect(content().string(containsString("data-form-photos")))
+                .andExpect(content().string(containsString("up to 12 photos")));
+
+        mockMvc.perform(multipart("/recipes")
+                        .file(new MockMultipartFile("photos", "one.jpg", "image/jpeg", TestPhotos.jpeg(900, 600)))
+                        .file(new MockMultipartFile("photos", "two.png", "image/png", TestPhotos.png(400, 400)))
+                        .param("name", "Chili").param("servings", "4")
+                        .with(user(new AppUserDetails(cook))).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("message", "Recipe created with 2 photos."));
+        Recipe chili = recipeService.findAll(cook).getFirst();
+        assertEquals(2, photoService.photosOf(chili).size());
+
+        mockMvc.perform(get("/recipes/{id}/edit", chili.getId()).with(user(new AppUserDetails(cook))))
+                .andExpect(content().string(containsString("This recipe has <span>2 photos</span>")))
+                .andExpect(content().string(containsString("up to 10 photos")));
+
+        mockMvc.perform(multipart("/recipes")
+                        .file(new MockMultipartFile("photos", "three.jpg", "image/jpeg", TestPhotos.jpeg(300, 200)))
+                        .param("id", chili.getId().toString()).param("name", "Chili").param("servings", "4")
+                        .with(user(new AppUserDetails(cook))).with(csrf()))
+                .andExpect(flash().attribute("message", "Recipe updated with 1 photo."));
+        assertEquals(3, photoService.photosOf(chili).size(), "added after the ones it had");
+    }
+
+    @Test
+    void aFormWithMistakesSaysItsPhotosNeedChoosingAgain() throws Exception {
+        User cook = cook();
+        mockMvc.perform(multipart("/recipes")
+                        .file(new MockMultipartFile("photos", "one.jpg", "image/jpeg", TestPhotos.jpeg(300, 200)))
+                        .param("name", "").param("servings", "4")
+                        .with(user(new AppUserDetails(cook))).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Your photos weren't uploaded")));
+        assertTrue(recipeService.findAll(cook).isEmpty());
+    }
+
+    @Test
     void anEmptyRecipeInvitesAPhotoAndABadFileIsExplained() throws Exception {
         User cook = cook();
         Recipe chili = recipe(cook, "Chili", Set.of());

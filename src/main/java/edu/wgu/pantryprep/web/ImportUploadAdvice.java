@@ -1,6 +1,5 @@
 package edu.wgu.pantryprep.web;
 
-import edu.wgu.pantryprep.web.ImportController.Kind;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,8 +10,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * An upload over the server's own limit fails before any controller runs, so
- * it is caught here and sent back to the page it came from (a recipe's photos
- * or an import page) with a plain message rather than an error page.
+ * it is caught here and sent back to the page it came from (a recipe's photos,
+ * the recipe form, or the import page) with a plain message rather than an
+ * error page.
  */
 @ControllerAdvice
 public class ImportUploadAdvice {
@@ -21,14 +21,19 @@ public class ImportUploadAdvice {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public String tooLarge(HttpServletRequest request, RedirectAttributes redirect) {
-        Matcher photos = PHOTOS.matcher(request.getRequestURI().substring(request.getContextPath().length()));
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        Matcher photos = PHOTOS.matcher(path);
         if (photos.matches()) {
             redirect.addFlashAttribute("error", "Those photos are too large to upload together. Each photo can be "
                     + "up to 20 MB; try adding a few at a time.");
             return "redirect:/recipes/" + photos.group(1) + "#photos";
         }
-        Kind kind = Kind.of(request);
+        if (path.equals("/recipes")) {
+            redirect.addFlashAttribute("error", "Those photos are too large to upload together. Save the recipe "
+                    + "with a few photos, then add the rest on its page.");
+            return "redirect:/recipes/new";
+        }
         redirect.addFlashAttribute("error", ImportController.tooLargeMessage());
-        return "redirect:/" + kind.getPath() + "/import";
+        return "redirect:/import";
     }
 }

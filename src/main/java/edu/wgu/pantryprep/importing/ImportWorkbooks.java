@@ -15,9 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The two spreadsheets a cook can download, fill in and import: one for
- * recipes with their ingredients, one for what is in the pantry. Limits match
- * the forms, so a row that imports is one the form would have accepted.
+ * The spreadsheet a cook can download, fill in and import: recipes with their
+ * ingredients, what is in the pantry, and ingredients themselves, each on its
+ * own sheet. Limits match the forms, so a row that imports is one the form
+ * would have accepted.
  */
 public final class ImportWorkbooks {
 
@@ -42,6 +43,8 @@ public final class ImportWorkbooks {
     public static final String LOCATION = "location";
     public static final String PURCHASED = "purchasedOn";
     public static final String EXPIRES = "expiresOn";
+    public static final String USUAL_AMOUNT = "defaultQuantity";
+    public static final String GRAMS_PER_CUP = "gramsPerCup";
 
     private ImportWorkbooks() {
     }
@@ -116,23 +119,6 @@ public final class ImportWorkbooks {
                     optional(NOTE, "Note", ValueType.text(255), 24, "Such as diced, or to taste"),
                     category()));
 
-    public static final WorkbookSpec RECIPE_WORKBOOK = new WorkbookSpec(
-            "PantryPrep recipes",
-            "pantryprep-recipes.xlsx",
-            List.of(
-                    "Put one recipe per row on the Recipes sheet, then list its ingredients on the Recipe "
-                            + "Ingredients sheet, one per row, each naming the recipe it belongs to.",
-                    "Keep row 1 on each sheet as it is: PantryPrep finds every column by its header. Column order "
-                            + "doesn't matter.",
-                    "Green headers marked * are required on every row you fill in.",
-                    "Ingredients are matched to the ones you already have by name, ignoring case. Any that don't "
-                            + "match are added to your ingredients for you.",
-                    "Where a column has a dropdown, pick from it. Amounts can be 2, 1.5, 1/2 or 1 1/2.",
-                    "To import: in PantryPrep, open Recipes, choose Import spreadsheet, upload this file and check "
-                            + "the preview. Nothing is saved until you click Import, and then everything is saved "
-                            + "together or not at all."),
-            List.of(RECIPES, RECIPE_INGREDIENTS));
-
     // --------------------------------------------------------------- pantry
 
     public static final Sheet PANTRY = new Sheet("Pantry",
@@ -149,19 +135,46 @@ public final class ImportWorkbooks {
                     optional(EXPIRES, "Expires", ValueType.DATE, 12, "Leave blank if it keeps"),
                     category()));
 
-    public static final WorkbookSpec PANTRY_WORKBOOK = new WorkbookSpec(
-            "PantryPrep pantry",
-            "pantryprep-pantry.xlsx",
+    // ---------------------------------------------------------- ingredients
+
+    public static final Sheet INGREDIENTS = new Sheet("Ingredients",
+            "Optional. One row per ingredient you want set up with its details. Any ingredient the other "
+                    + "sheets use that isn't here or on your list is still added for you.",
             List.of(
-                    "Put one pantry item per row on the Pantry sheet.",
-                    "Keep row 1 as it is: PantryPrep finds every column by its header. Column order doesn't matter.",
-                    "Green headers marked * are required on every row you fill in.",
-                    "Ingredients are matched to the ones you already have by name, ignoring case. Any that don't "
-                            + "match are added to your ingredients for you, kept in the unit you give.",
-                    "Where a column has a dropdown, pick from it. Dates can be typed as 2026-01-31 or 1/31/2026.",
-                    "Importing adds to your pantry. It doesn't replace what's already there.",
-                    "To import: in PantryPrep, open Pantry, choose Import spreadsheet, upload this file and check "
-                            + "the preview. Nothing is saved until you click Import, and then everything is saved "
-                            + "together or not at all."),
-            List.of(PANTRY));
+                    required(NAME, "Name", ValueType.text(120), 26,
+                            "One you already have is left as it is"),
+                    optional(CATEGORY, "Category", CATEGORY_TYPE, 15, "Other if left blank"),
+                    required(UNIT, "Kept in", UNIT_TYPE, 9,
+                            "The unit your pantry counts it in, such as g for flour or pc for eggs"),
+                    optional(LOCATION, "Usually stored", ValueType.choice(StorageLocation.class), 14,
+                            "Picked from the category if left blank"),
+                    optional(USUAL_AMOUNT, "Usual amount", ValueType.amount(false), 12,
+                            "How much you usually buy, in the Kept in unit"),
+                    optional(GRAMS_PER_CUP, "Grams per cup", ValueType.amount(false), 13,
+                            "Lets recipes in cups use stock kept in grams, such as 120 for flour")));
+
+    // ------------------------------------------------------------- workbook
+
+    /** The one spreadsheet: fill in any of its sheets and leave the rest empty. */
+    public static final WorkbookSpec WORKBOOK = new WorkbookSpec(
+            "PantryPrep import",
+            "pantryprep-import-template.xlsx",
+            List.of(
+                    "Fill in whichever sheets you need and leave the others empty. Recipes, pantry items and "
+                            + "ingredients can all come in from one file.",
+                    "Recipes: one recipe per row on the Recipes sheet. List each recipe's ingredients on the "
+                            + "Recipe Ingredients sheet, one per row, naming the recipe they belong to.",
+                    "Pantry: one row per thing on your shelves. Importing adds to your pantry; it doesn't "
+                            + "replace what's there.",
+                    "Ingredients: optional. Use it to set up ingredients with their unit, storage place and "
+                            + "weight per cup. Ingredients the other sheets use are matched to yours by name, "
+                            + "ignoring case, and any that don't match are added for you.",
+                    "Keep row 1 on each sheet as it is: PantryPrep finds every column by its header. Column "
+                            + "order doesn't matter. Green headers marked * are required on every row you fill in.",
+                    "Where a column has a dropdown, pick from it. Amounts can be 2, 1.5, 1/2 or 1 1/2. Dates "
+                            + "can be typed as 2026-01-31 or 1/31/2026.",
+                    "To import: in PantryPrep, choose Import spreadsheet on the Recipes, Pantry or Ingredients "
+                            + "page, upload this file and check the preview. Nothing is saved until you click "
+                            + "Import, and then everything is saved together or not at all."),
+            List.of(RECIPES, RECIPE_INGREDIENTS, PANTRY, INGREDIENTS));
 }

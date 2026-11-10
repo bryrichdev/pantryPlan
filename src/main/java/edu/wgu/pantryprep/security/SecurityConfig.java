@@ -99,7 +99,9 @@ public class SecurityConfig {
                            site as a Referer. */
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.SAME_ORIGIN))
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default-src 'self'; img-src 'self' data:; "
+                                /* blob: lets the recipe form preview photos the
+                                   cook has chosen, straight from their device. */
+                                "default-src 'self'; img-src 'self' data: blob:; "
                                         + "object-src 'none'; frame-ancestors 'none'; "
                                         + "base-uri 'self'; form-action 'self'")))
                 /* SwitchUserFilter sits after the authorization filter in the

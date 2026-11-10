@@ -3,12 +3,9 @@ package edu.wgu.pantryprep.web;
 import edu.wgu.pantryprep.domain.User;
 import edu.wgu.pantryprep.importing.ImportReport;
 import edu.wgu.pantryprep.importing.ImportWorkbooks;
-import edu.wgu.pantryprep.importing.PantryImportService;
-import edu.wgu.pantryprep.importing.RecipeImportService;
-import edu.wgu.pantryprep.importing.WorkbookSpec;
+import edu.wgu.pantryprep.importing.SpreadsheetImportService;
 import edu.wgu.pantryprep.security.AppUserDetails;
 import edu.wgu.pantryprep.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.Serializable;
@@ -29,11 +26,12 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Spreadsheet import for recipes and for the pantry. The cook downloads a
- * template, fills it in, and uploads it for a preview; the file is then held
- * in their session until they import it or cancel. Importing re-reads the
- * held file and saves everything together, so what is saved is exactly what
- * the checks passed, even if something changed since the preview.
+ * Spreadsheet import. The cook downloads one template with sheets for
+ * recipes, pantry items and ingredients, fills in whichever they need, and
+ * uploads it for a preview; the file is then held in their session until they
+ * import it or cancel. Importing re-reads the held file and saves everything
+ * together, so what is saved is exactly what the checks passed, even if
+ * something changed since the preview.
  */
 @Controller
 public class ImportController {
@@ -46,72 +44,25 @@ public class ImportController {
             MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    /** Which of the two imports a page is for. */
-    public enum Kind {
-        RECIPES("recipes", "recipes", "Import recipes", ImportWorkbooks.RECIPE_WORKBOOK),
-        PANTRY("pantry", "pantry items", "Import pantry items", ImportWorkbooks.PANTRY_WORKBOOK);
-
-        private final String path;
-        private final String noun;
-        private final String title;
-        private final WorkbookSpec workbook;
-
-        Kind(String path, String noun, String title, WorkbookSpec workbook) {
-            this.path = path;
-            this.noun = noun;
-            this.title = title;
-            this.workbook = workbook;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public String getNoun() {
-            return noun;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public WorkbookSpec getWorkbook() {
-            return workbook;
-        }
-
-        public String getTemplateName() {
-            return "pantryprep-" + path + "-template.xlsx";
-        }
-
-        /** From the address: everything under /pantry is the pantry import. */
-        static Kind of(HttpServletRequest request) {
-            return request.getRequestURI().startsWith(request.getContextPath() + "/pantry/") ? PANTRY : RECIPES;
-        }
-    }
-
     /** An uploaded file waiting for the cook to import it or cancel. */
-    record PendingImport(String token, Kind kind, String fileName, byte[] bytes, Long userId,
-                         ImportReport preview) implements Serializable {
+    record PendingImport(String token, String fileName, byte[] bytes, Long userId, ImportReport preview)
+            implements Serializable {
     }
 
-    private final RecipeImportService recipeImports;
-    private final PantryImportService pantryImports;
+    private final SpreadsheetImportService imports;
     private final UserService userService;
 
-    public ImportController(RecipeImportService recipeImports, PantryImportService pantryImports,
-                            UserService userService) {
-        this.recipeImports = recipeImports;
-        this.pantryImports = pantryImports;
+    public ImportController(SpreadsheetImportService imports, UserService userService) {
+        this.imports = imports;
         this.userService = userService;
     }
 
-    @GetMapping({"/recipes/import", "/pantry/import"})
-    public String page(HttpServletRequest request, @AuthenticationPrincipal AppUserDetails principal,
-                       HttpSession session, Model model) {
-        Kind kind = Kind.of(request);
-        model.addAttribute("kind", kind);
+    @GetMapping("/import")
+    public String page(@AuthenticationPrincipal AppUserDetails principal, HttpSession session, Model model) {
+        model.addAttribute("workbook", ImportWorkbooks.WORKBOOK);
+        model.addAttribute("templateName", ImportWorkbooks.WORKBOOK.fileName());
         model.addAttribute("maxMegabytes", MAX_FILE_BYTES / (1024 * 1024));
-        PendingImport pending = pending(session, kind, principal);
+        PendingImport pending = pending(session, principal);
         if (pending != null) {
             model.addAttribute("pending", pending);
             model.addAttribute("report", pending.preview());
@@ -119,85 +70,93 @@ public class ImportController {
         return "imports/import";
     }
 
-    @GetMapping({"/recipes/import/template", "/pantry/import/template"})
-    public ResponseEntity<byte[]> template(HttpServletRequest request) {
-        Kind kind = Kind.of(request);
-        byte[] bytes = kind == Kind.PANTRY ? pantryImports.template() : recipeImports.template();
+    /** The two pages this replaced, kept so old bookmarks still land somewhere useful. */
+    @GetMapping({"/recipes/import", "/pantry/import"})
+    public String oldPages() {
+        return "redirect:/import";
+    }
+
+    @GetMapping("/import/template")
+    public ResponseEntity<byte[]> template() {
         return ResponseEntity.ok()
                 .contentType(XLSX)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        ContentDisposition.attachment().filename(kind.getTemplateName()).build().toString())
+                        ContentDisposition.attachment().filename(ImportWorkbooks.WORKBOOK.fileName()).build()
+                                .toString())
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .body(bytes);
+                .body(imports.template());
     }
 
-    @PostMapping({"/recipes/import/preview", "/pantry/import/preview"})
-    public String preview(HttpServletRequest request,
-                          @RequestParam(name = "file", required = false) MultipartFile file,
+    @PostMapping("/import/preview")
+    public String preview(@RequestParam(name = "file", required = false) MultipartFile file,
                           @AuthenticationPrincipal AppUserDetails principal,
                           HttpSession session, RedirectAttributes redirect) throws IOException {
-        Kind kind = Kind.of(request);
         session.removeAttribute(PENDING);
         String refusal = refusal(file);
         if (refusal != null) {
             redirect.addFlashAttribute("error", refusal);
-            return "redirect:/" + kind.getPath() + "/import";
+            return "redirect:/import";
         }
         byte[] bytes = file.getBytes();
-        User user = currentUser(principal);
-        ImportReport report = kind == Kind.PANTRY ? pantryImports.preview(bytes, user)
-                : recipeImports.preview(bytes, user);
+        ImportReport report = imports.preview(bytes, currentUser(principal));
         if (report.hasProblems()) {
             redirect.addFlashAttribute("report", report);
             redirect.addFlashAttribute("fileName", displayName(file));
         } else {
-            session.setAttribute(PENDING, new PendingImport(newToken(), kind, displayName(file), bytes,
+            session.setAttribute(PENDING, new PendingImport(newToken(), displayName(file), bytes,
                     principal.getId(), report));
         }
-        return "redirect:/" + kind.getPath() + "/import";
+        return "redirect:/import";
     }
 
-    @PostMapping({"/recipes/import/confirm", "/pantry/import/confirm"})
-    public String confirm(HttpServletRequest request, @RequestParam("token") String token,
-                          @AuthenticationPrincipal AppUserDetails principal,
+    @PostMapping("/import/confirm")
+    public String confirm(@RequestParam("token") String token, @AuthenticationPrincipal AppUserDetails principal,
                           HttpSession session, RedirectAttributes redirect) {
-        Kind kind = Kind.of(request);
-        PendingImport pending = pending(session, kind, principal);
+        PendingImport pending = pending(session, principal);
         if (pending == null || !pending.token().equals(token)) {
             redirect.addFlashAttribute("error", "That upload has expired. Upload the spreadsheet again to "
                     + "import it.");
-            return "redirect:/" + kind.getPath() + "/import";
+            return "redirect:/import";
         }
-        User user = currentUser(principal);
-        ImportReport report = kind == Kind.PANTRY ? pantryImports.importFile(pending.bytes(), user)
-                : recipeImports.importFile(pending.bytes(), user);
+        ImportReport report = imports.importFile(pending.bytes(), currentUser(principal));
         session.removeAttribute(PENDING);
         if (!report.saved()) {
             redirect.addFlashAttribute("report", report);
             redirect.addFlashAttribute("fileName", pending.fileName());
-            return "redirect:/" + kind.getPath() + "/import";
+            return "redirect:/import";
         }
-        redirect.addFlashAttribute("message", summary(kind, report));
+        redirect.addFlashAttribute("message", "Imported " + report.summary() + ".");
         redirect.addFlashAttribute("celebrate", true);
-        return "redirect:/" + kind.getPath();
+        return "redirect:" + landing(report);
     }
 
-    @PostMapping({"/recipes/import/cancel", "/pantry/import/cancel"})
-    public String cancel(HttpServletRequest request, HttpSession session) {
+    @PostMapping("/import/cancel")
+    public String cancel(HttpSession session) {
         session.removeAttribute(PENDING);
-        return "redirect:/" + Kind.of(request).getPath() + "/import";
+        return "redirect:/import";
     }
 
     // ------------------------------------------------------------- helpers
+
+    /** Where to show the result: the first list the import added to. */
+    static String landing(ImportReport report) {
+        if (!report.recipes().isEmpty()) {
+            return "/recipes";
+        }
+        if (report.pantryItems() > 0) {
+            return "/pantry";
+        }
+        return "/ingredients";
+    }
 
     private User currentUser(AppUserDetails principal) {
         return userService.requireById(principal.getId());
     }
 
-    /** The waiting upload for this page and this account, or null. */
-    private static PendingImport pending(HttpSession session, Kind kind, AppUserDetails principal) {
+    /** The waiting upload for this account, or null. */
+    private static PendingImport pending(HttpSession session, AppUserDetails principal) {
         if (session.getAttribute(PENDING) instanceof PendingImport pending
-                && pending.kind() == kind && pending.userId().equals(principal.getId())) {
+                && pending.userId().equals(principal.getId())) {
             return pending;
         }
         return null;
@@ -239,17 +198,5 @@ public class ImportController {
         byte[] bytes = new byte[18];
         RANDOM.nextBytes(bytes);
         return HexFormat.of().formatHex(bytes);
-    }
-
-    static String summary(Kind kind, ImportReport report) {
-        int count = kind == Kind.PANTRY ? report.counts().getFirst().rows() : report.created().size();
-        String what = kind == Kind.PANTRY ? (count == 1 ? "pantry item" : "pantry items")
-                : (count == 1 ? "recipe" : "recipes");
-        StringBuilder text = new StringBuilder("Imported ").append(count).append(' ').append(what);
-        int fresh = report.newIngredients().size();
-        if (fresh > 0) {
-            text.append(" and added ").append(fresh).append(fresh == 1 ? " new ingredient" : " new ingredients");
-        }
-        return text.append('.').toString();
     }
 }

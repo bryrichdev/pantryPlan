@@ -10,10 +10,11 @@ import edu.wgu.pantryprep.domain.StorageLocation;
 import edu.wgu.pantryprep.domain.Unit;
 import edu.wgu.pantryprep.domain.User;
 import edu.wgu.pantryprep.photos.RecipePhotoService;
+import edu.wgu.pantryprep.photos.RecipePhotoService.Upload;
 import edu.wgu.pantryprep.security.AppUserDetails;
+import edu.wgu.pantryprep.service.BulkDeleteResult;
 import edu.wgu.pantryprep.service.GroupService;
 import edu.wgu.pantryprep.service.IngredientService;
-import edu.wgu.pantryprep.service.BulkDeleteResult;
 import edu.wgu.pantryprep.service.RecipeInUseException;
 import edu.wgu.pantryprep.service.RecipeService;
 import edu.wgu.pantryprep.service.UserService;
@@ -21,7 +22,9 @@ import edu.wgu.pantryprep.web.form.IngredientForm;
 import edu.wgu.pantryprep.web.form.RecipeForm;
 import edu.wgu.pantryprep.web.form.RecipeLineForm;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +40,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -166,6 +170,7 @@ public class RecipeController {
         model.addAttribute("form", form);
         model.addAttribute("ingredientOptions", ingredientService.findAll(user));
         model.addAttribute("shareableGroups", groupService.shareableGroups(user));
+        addPhotoRoom(model, null, user);
         return "recipes/form";
     }
 
@@ -178,6 +183,7 @@ public class RecipeController {
         model.addAttribute("form", RecipeForm.from(recipe));
         model.addAttribute("ingredientOptions", ingredientService.findAll(user));
         model.addAttribute("shareableGroups", groupService.shareableGroups(user));
+        addPhotoRoom(model, recipe, user);
         return "recipes/form";
     }
 
@@ -185,9 +191,18 @@ public class RecipeController {
     public String save(@AuthenticationPrincipal AppUserDetails principal,
                        @Valid @ModelAttribute("form") RecipeForm form,
                        BindingResult result,
+                       @RequestParam(name = "photos", required = false) List<MultipartFile> photos,
                        Model model,
-                       RedirectAttributes redirectAttributes) {
+                       RedirectAttributes redirectAttributes) throws IOException {
         User user = currentUser(principal);
+        List<Upload> uploads = new ArrayList<>();
+        if (photos != null) {
+            for (MultipartFile file : photos) {
+                if (!file.isEmpty()) {
+                    uploads.add(new Upload(file.getOriginalFilename(), file.getBytes()));
+                }
+            }
+        }
 
         form.removeBlankLines();
         validateLines(form, result, user);
@@ -219,6 +234,9 @@ public class RecipeController {
             form.ensureOneEmptyRow();
             model.addAttribute("ingredientOptions", ingredientService.findAll(user));
             model.addAttribute("shareableGroups", shareableGroups);
+            addPhotoRoom(model, form.isNew() ? null : recipeService.requireOwned(form.getId(), user), user);
+            /* A browser never refills a file field, so say so rather than lose the photos silently. */
+            model.addAttribute("photosDropped", !uploads.isEmpty());
             return "recipes/form";
         }
 
@@ -226,8 +244,18 @@ public class RecipeController {
                 ? recipeService.create(form, user)
                 : recipeService.update(form.getId(), form, user);
 
-        redirectAttributes.addFlashAttribute("message",
-                form.isNew() ? "Recipe created." : "Recipe updated.");
+        String message = form.isNew() ? "Recipe created." : "Recipe updated.";
+        if (!uploads.isEmpty()) {
+            RecipePhotoService.AddResult added = photoService.add(saved.getId(), uploads, user);
+            if (added.added() > 0) {
+                message = message.substring(0, message.length() - 1) + (added.added() == 1
+                        ? " with 1 photo." : " with " + added.added() + " photos.");
+            }
+            if (!added.problems().isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", String.join(" ", added.problems()));
+            }
+        }
+        redirectAttributes.addFlashAttribute("message", message);
         if (form.isNew()) {
             /* A small burst of herbs on the next page; see motion.js. */
             redirectAttributes.addFlashAttribute("celebrate", true);
@@ -328,5 +356,13 @@ public class RecipeController {
                     "Could not delete " + ex.getRecipeName() + " because " + ex.getMessage() + ".");
         }
         return "redirect:/recipes";
+    }
+
+    /** How many more photos the form can take: all of them for a new recipe. */
+    private void addPhotoRoom(Model model, Recipe recipe, User user) {
+        int have = recipe == null ? 0 : photoService.photosOf(recipe).size();
+        model.addAttribute("photoCount", have);
+        model.addAttribute("photoRoom", RecipePhotoService.MAX_PHOTOS - have);
+        model.addAttribute("maxPhotos", RecipePhotoService.MAX_PHOTOS);
     }
 }

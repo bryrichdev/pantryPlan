@@ -34,6 +34,9 @@
             <button type="submit" class="button button--quiet">Search</button>
             <a th:if="${searching}" th:href="@{/ingredients}" class="searchbar__clear">Clear</a>
         </form>
+        <div class="toolbar__actions">
+            <a class="button button--quiet" th:href="@{/import}">Import spreadsheet</a>
+        </div>
     </div>
 
     <p class="resultcount" th:if="${searching}">

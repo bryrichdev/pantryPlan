@@ -14,15 +14,21 @@
     color: var(--ink-soft);
 }
 
-/* ---------- gallery ---------- */
+/* ---------- gallery ----------
+ * The cover runs across the top and the rest follow as an even strip of
+ * square tiles, so any number of photos lays out without gaps. The gallery
+ * stops at a comfortable width rather than filling a wide screen.
+ */
+
+.photos { max-width: 48rem; }
 
 .photogrid {
     list-style: none;
     margin: 0 0 1rem;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.6rem;
+    grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+    gap: 0.5rem;
 }
 
 .photogrid__item {
@@ -34,15 +40,11 @@
     box-shadow: var(--shadow);
 }
 
-/* The cover is shown large: two columns and two rows. */
 .photogrid__item--cover {
-    grid-column: span 2;
-    grid-row: span 2;
+    grid-column: 1 / -1;
+    aspect-ratio: 3 / 2;
+    border-radius: var(--radius-lg);
 }
-
-/* One photo alone sits wide rather than square. */
-.photogrid--single { grid-template-columns: minmax(0, 1fr); max-width: 40rem; }
-.photogrid--single .photogrid__item--cover { grid-column: auto; grid-row: auto; aspect-ratio: 4 / 3; }
 
 .photogrid__link {
     display: block;
@@ -185,7 +187,7 @@
 .photoupload--empty .photoupload__pick {
     display: grid;
     width: 100%;
-    max-width: 40rem;
+    box-sizing: border-box;
     justify-content: center;
     padding: 1.4rem 1rem;
 }
@@ -290,10 +292,11 @@
 }
 
 @media (max-width: 40rem) {
-    .photogrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
+    .photogrid { grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr)); gap: 0.4rem; }
 
-    /* On a phone the cover runs the full width above the rest. */
-    .photogrid__item--cover { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 4 / 3; }
+    .photogrid__item--cover { aspect-ratio: 4 / 3; }
+
+    .photogrid__tool { width: 1.85rem; height: 1.85rem; }
 
     .photoviewer__img {
         max-width: calc(100vw - 1rem);
@@ -314,3 +317,65 @@
 
     .photoupload.is-uploading .photoupload__pick svg { animation: none; }
 }
+
+/* ---------- photos chosen on the recipe form ---------- */
+
+.formphotos__pick {
+    display: grid;
+    width: 100%;
+    max-width: 36rem;
+    box-sizing: border-box;
+    justify-content: center;
+    padding: 1.1rem 1rem;
+}
+
+.formphotos__preview {
+    list-style: none;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+    gap: 0.45rem;
+    max-width: 36rem;
+}
+
+.formphotos__preview li {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--paper-sunk);
+    box-shadow: var(--shadow);
+}
+
+.formphotos__preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.formphotos__preview .formphotos__cover::after {
+    content: "Cover";
+    position: absolute;
+    left: 0.3rem;
+    top: 0.3rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(255, 252, 245, 0.92);
+    color: var(--herb-deep);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.formphotos__preview .formphotos__over { opacity: 0.35; }
+
+.formphotos__preview .formphotos__clearrow {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    overflow: visible;
+    background: none;
+    box-shadow: none;
+}
+
+.formphotos__dropped { margin: 0.6rem 0 0; max-width: 36rem; }

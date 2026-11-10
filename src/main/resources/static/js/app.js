@@ -1200,3 +1200,85 @@
         }
     }, true);
 }());
+
+/*
+ * Photos chosen on the recipe form: small previews before saving, the first
+ * marked as the cover, and any past the recipe's limit dimmed with a note.
+ * The photos upload with the form; nothing here sends them.
+ */
+(function () {
+    "use strict";
+
+    var urls = [];
+
+    function show(input) {
+        var field = input.closest(".formphotos");
+        var preview = field.querySelector("[data-form-photos-preview]");
+        var label = field.querySelector("[data-form-photos-label]");
+        var error = field.querySelector("[data-form-photos-error]");
+        var room = parseInt(input.getAttribute("data-room"), 10) || 0;
+        var files = Array.prototype.slice.call(input.files || []);
+
+        urls.forEach(function (url) { URL.revokeObjectURL(url); });
+        urls = [];
+        preview.textContent = "";
+        if (!label.getAttribute("data-empty")) {
+            label.setAttribute("data-empty", label.textContent);
+        }
+
+        files.forEach(function (file, index) {
+            var item = document.createElement("li");
+            if (index === 0 && input.getAttribute("data-has") === "0") {
+                item.className = "formphotos__cover";
+            }
+            if (index >= room) {
+                item.className = "formphotos__over";
+            }
+            if (/^image\/(jpeg|png|gif)$/.test(file.type)) {
+                var url = URL.createObjectURL(file);
+                urls.push(url);
+                var img = document.createElement("img");
+                img.src = url;
+                img.alt = file.name;
+                item.appendChild(img);
+            } else {
+                item.title = file.name;
+            }
+            preview.appendChild(item);
+        });
+
+        if (files.length) {
+            var clear = document.createElement("button");
+            clear.type = "button";
+            clear.className = "linkbutton";
+            clear.textContent = "Clear";
+            clear.setAttribute("data-form-photos-clear", "");
+            var holder = document.createElement("li");
+            holder.className = "formphotos__clearrow";
+            holder.appendChild(clear);
+            preview.appendChild(holder);
+        }
+        preview.hidden = files.length === 0;
+        label.textContent = files.length === 0 ? label.getAttribute("data-empty")
+            : files.length === 1 ? "1 photo chosen" : files.length + " photos chosen";
+        var over = files.length - room;
+        error.hidden = over <= 0;
+        error.textContent = over > 0 ? "Only " + room + (room === 1 ? " more photo fits" : " more photos fit")
+            + " on this recipe, so the dimmed ones won't be added." : "";
+    }
+
+    document.addEventListener("change", function (event) {
+        if (event.target.matches && event.target.matches("[data-form-photos]")) {
+            show(event.target);
+        }
+    });
+
+    document.addEventListener("click", function (event) {
+        var clear = event.target.closest && event.target.closest("[data-form-photos-clear]");
+        if (clear) {
+            var input = clear.closest(".formphotos").querySelector("[data-form-photos]");
+            input.value = "";
+            show(input);
+        }
+    });
+}());

@@ -58,6 +58,21 @@ final class IngredientMatcher {
         });
     }
 
+    /**
+     * Plans an ingredient from the Ingredients sheet, with the details given
+     * there. Call before any other sheet, so their rows find it.
+     */
+    Ingredient planDetailed(String name, IngredientCategory category, Unit unit, StorageLocation location,
+                            java.math.BigDecimal usualAmount, java.math.BigDecimal gramsPerCup) {
+        Ingredient ingredient = plan(name, category, unit);
+        if (location != null) {
+            ingredient.setDefaultLocation(location);
+        }
+        ingredient.setDefaultQuantity(usualAmount);
+        ingredient.setGramsPerCup(gramsPerCup);
+        return ingredient;
+    }
+
     List<String> plannedNames() {
         return planned.values().stream().map(Ingredient::getName).toList();
     }

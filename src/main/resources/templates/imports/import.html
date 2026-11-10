@@ -1,24 +1,17 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head(${kind.title})}"></head>
+<head th:replace="~{fragments/layout :: head('Import spreadsheet')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: topnav}"></header>
 
 <main class="page importpage">
-    <p class="crumb">
-        <a th:href="@{/{path}(path=${kind.path})}"
-           th:text="${kind == T(edu.wgu.pantryprep.web.ImportController.Kind).PANTRY ? 'Pantry' : 'Recipes'}">Recipes</a>
-    </p>
     <div class="pagehead">
         <div>
-            <h1 th:text="${kind.title}">Import recipes</h1>
-            <p class="pagehead__note" th:if="${kind.name() == 'RECIPES'}">
-                Bring in a whole cookbook at once: fill in the spreadsheet, upload it, check the
-                preview, and import. Any ingredient you don't have yet is added for you.
-            </p>
-            <p class="pagehead__note" th:if="${kind.name() == 'PANTRY'}">
-                Stock the shelves in one go: fill in the spreadsheet, upload it, check the preview,
-                and import. Any ingredient you don't have yet is added for you.
+            <h1>Import spreadsheet</h1>
+            <p class="pagehead__note">
+                Bring in recipes, pantry items and ingredients from one spreadsheet: fill in whichever
+                sheets you need, upload it, check the preview, and import. Any ingredient you don't have
+                yet is added for you.
             </p>
         </div>
     </div>
@@ -73,28 +66,42 @@
         </ul>
 
         <div class="importlists">
-            <div th:unless="${#lists.isEmpty(report.created())}">
-                <h3 th:text="${kind.name() == 'PANTRY' ? 'Stocking' : 'Recipes to add'}">Recipes to add</h3>
+            <div th:unless="${#lists.isEmpty(report.recipes())}">
+                <h3>Recipes to add</h3>
                 <ul class="importnames">
-                    <li th:each="name : ${report.created()}" th:text="${name}">Weeknight chili</li>
+                    <li th:each="name : ${report.recipes()}" th:text="${name}">Weeknight chili</li>
+                </ul>
+            </div>
+            <div th:if="${report.pantryItems() > 0}">
+                <h3 th:text="${report.pantryItems() == 1} ? '1 pantry item' : |${report.pantryItems()} pantry items|">
+                    12 pantry items</h3>
+                <ul class="importnames">
+                    <li th:each="name : ${report.stocked()}" th:text="${name}">Rice</li>
                 </ul>
             </div>
             <div th:unless="${#lists.isEmpty(report.newIngredients())}">
                 <h3>New ingredients</h3>
-                <p class="importlists__hint">Not on your ingredients list yet, so these are added too.
-                    You can set their details later on the Ingredients page.</p>
+                <p class="importlists__hint">Not on your ingredients list yet, so these are added too.</p>
                 <ul class="importnames importnames--new">
                     <li th:each="name : ${report.newIngredients()}" th:text="${name}">Smoked paprika</li>
+                </ul>
+            </div>
+            <div th:unless="${#lists.isEmpty(report.unchangedIngredients())}">
+                <h3>Already on your list</h3>
+                <p class="importlists__hint">These rows on the Ingredients sheet are left as they are. Edit
+                    them on the Ingredients page if they need changing.</p>
+                <ul class="importnames">
+                    <li th:each="name : ${report.unchangedIngredients()}" th:text="${name}">Flour</li>
                 </ul>
             </div>
         </div>
 
         <div class="importresult__actions">
-            <form th:action="@{/{path}/import/confirm(path=${kind.path})}" method="post">
+            <form th:action="@{/import/confirm}" method="post">
                 <input type="hidden" name="token" th:value="${pending.token()}">
                 <button type="submit" class="button button--primary" data-busy="Importing…">Import</button>
             </form>
-            <form th:action="@{/{path}/import/cancel(path=${kind.path})}" method="post">
+            <form th:action="@{/import/cancel}" method="post">
                 <button type="submit" class="button button--quiet">Cancel</button>
             </form>
         </div>
@@ -105,24 +112,23 @@
             <h2>Download the spreadsheet</h2>
             <p>It opens in Excel, Numbers or Google Sheets. The first sheet explains every column.</p>
             <a class="button button--quiet importstep__button"
-               th:href="@{/{path}/import/template(path=${kind.path})}" download>
+               th:href="@{/import/template}" download>
                 <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>Download template</span>
             </a>
-            <p class="importstep__file" th:text="${kind.templateName}">pantryprep-recipes-template.xlsx</p>
+            <p class="importstep__file" th:text="${templateName}">pantryprep-import-template.xlsx</p>
         </li>
         <li class="importstep">
             <h2>Fill it in</h2>
-            <p th:if="${kind.name() == 'RECIPES'}">One recipe per row on <em>Recipes</em>, and one row per
-                ingredient on <em>Recipe Ingredients</em>, naming the recipe it belongs to.</p>
-            <p th:if="${kind.name() == 'PANTRY'}">One row per thing on your shelves. Leave Unit blank to
-                use the unit the ingredient is already kept in.</p>
+            <p>It has a sheet each for <em>Recipes</em> (with their ingredients on <em>Recipe
+                Ingredients</em>), <em>Pantry</em> and <em>Ingredients</em>. Fill in any of them and leave
+                the rest empty.</p>
             <p class="importstep__more"><a href="#columns">What goes in each column</a></p>
         </li>
         <li class="importstep">
             <h2>Upload it</h2>
             <p>You'll see what will be added before anything is saved.</p>
-            <form class="importupload" th:action="@{/{path}/import/preview(path=${kind.path})}" method="post"
+            <form class="importupload" th:action="@{/import/preview}" method="post"
                   enctype="multipart/form-data" th:attr="data-max-bytes=${maxMegabytes * 1024 * 1024}">
                 <label class="importupload__drop">
                     <input type="file" name="file" required data-import-file
@@ -138,8 +144,9 @@
 
     <details class="importcolumns" id="columns">
         <summary>What goes in each column</summary>
-        <div class="importcolumns__sheet" th:each="sheet : ${kind.workbook.sheets()}">
+        <div class="importcolumns__sheet" th:each="sheet : ${workbook.sheets()}">
             <h3 th:text="${sheet.name()}">Recipes</h3>
+            <p class="importcolumns__purpose" th:text="${sheet.purpose()}">One row per recipe.</p>
             <dl>
                 <div th:each="column : ${sheet.columns()}">
                     <dt>

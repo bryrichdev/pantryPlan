@@ -17,8 +17,7 @@
               th:text="|${#lists.size(photos)} of ${maxPhotos}|">3 of 12</span>
     </div>
 
-    <ul class="photogrid" th:unless="${#lists.isEmpty(photos)}"
-        th:classappend="${#lists.size(photos) == 1} ? 'photogrid--single'">
+    <ul class="photogrid" th:unless="${#lists.isEmpty(photos)}">
         <li class="photogrid__item" th:each="photo, iter : ${photos}"
             th:classappend="${iter.first} ? 'photogrid__item--cover'">
             <a class="photogrid__link" th:href="|${photoBase}${photo.id}|" data-photo-open

@@ -323,3 +323,9 @@
     .importstep__button svg,
     .importupload__drop { transition: none; }
 }
+
+.importcolumns__purpose {
+    margin: 0 0 0.3rem;
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+}

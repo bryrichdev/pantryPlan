@@ -1,10 +1,9 @@
 package edu.wgu.pantryprep;
 
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.PANTRY;
-import static edu.wgu.pantryprep.importing.ImportWorkbooks.PANTRY_WORKBOOK;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.RECIPES;
 import static edu.wgu.pantryprep.importing.ImportWorkbooks.RECIPE_INGREDIENTS;
-import static edu.wgu.pantryprep.importing.ImportWorkbooks.RECIPE_WORKBOOK;
+import static edu.wgu.pantryprep.importing.ImportWorkbooks.WORKBOOK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -68,27 +67,31 @@ class SpreadsheetImportPageTests {
     }
 
     @Test
-    void bothListsLinkToTheirImportAndThePagesRender() throws Exception {
-        for (String kind : new String[] {"recipes", "pantry"}) {
-            String list = mockMvc.perform(get("/" + kind).with(user(principal)))
+    void recipesPantryAndIngredientsAllLinkToTheOneImport() throws Exception {
+        for (String list : new String[] {"recipes", "pantry", "ingredients"}) {
+            String page = mockMvc.perform(get("/" + list).with(user(principal)))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-            assertTrue(list.contains("href=\"/" + kind + "/import\""), kind + " links to its import");
-
-            String page = mockMvc.perform(get("/" + kind + "/import").with(user(principal)))
-                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-            assertTrue(page.contains("/" + kind + "/import/template"));
-            assertTrue(page.contains("enctype=\"multipart/form-data\""));
-            assertTrue(page.contains("What goes in each column"));
+            assertTrue(page.contains("href=\"/import\""), list + " links to the import");
         }
+        String page = mockMvc.perform(get("/import").with(user(principal)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(page.contains("/import/template"));
+        assertTrue(page.contains("enctype=\"multipart/form-data\""));
+        assertTrue(page.contains("What goes in each column"));
+        for (String sheet : new String[] {"Recipes", "Recipe Ingredients", "Pantry", "Ingredients"}) {
+            assertTrue(page.contains("<h3>" + sheet + "</h3>"), sheet + " is explained");
+        }
+        mockMvc.perform(get("/recipes/import").with(user(principal))).andExpect(redirectedUrl("/import"));
+        mockMvc.perform(get("/pantry/import").with(user(principal))).andExpect(redirectedUrl("/import"));
     }
 
     @Test
     void templatesDownloadAsSpreadsheets() throws Exception {
-        byte[] body = mockMvc.perform(get("/pantry/import/template").with(user(principal)))
+        byte[] body = mockMvc.perform(get("/import/template").with(user(principal)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", XLSX))
                 .andExpect(header().string("Content-Disposition",
-                        "attachment; filename=\"pantryprep-pantry-template.xlsx\""))
+                        "attachment; filename=\"pantryprep-import-template.xlsx\""))
                 .andReturn().getResponse().getContentAsByteArray();
         assertEquals('P', body[0], "a zip file");
         assertEquals('K', body[1]);
@@ -96,19 +99,19 @@ class SpreadsheetImportPageTests {
 
     @Test
     void uploadPreviewThenImport() throws Exception {
-        byte[] file = ImportTestWorkbooks.of(RECIPE_WORKBOOK)
+        byte[] file = ImportTestWorkbooks.of(WORKBOOK)
                 .row(RECIPES, "Garlic noodles", "2", "5", "10", "Dinner", "Asian", "Pasta", "", "", "")
                 .row(RECIPE_INGREDIENTS, "Garlic noodles", "Garlic", "4", "pc", "minced", "Produce")
                 .bytes();
         MockHttpSession session = new MockHttpSession();
 
-        mockMvc.perform(multipart("/recipes/import/preview")
+        mockMvc.perform(multipart("/import/preview")
                         .file(new MockMultipartFile("file", "noodles.xlsx", XLSX, file))
                         .session(session).with(user(principal)).with(csrf()))
-                .andExpect(redirectedUrl("/recipes/import"));
+                .andExpect(redirectedUrl("/import"));
         assertTrue(recipeService.findAll(user).isEmpty(), "a preview saves nothing");
 
-        String page = mockMvc.perform(get("/recipes/import").session(session).with(user(principal)))
+        String page = mockMvc.perform(get("/import").session(session).with(user(principal)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertTrue(page.contains("Ready to import"));
         assertTrue(page.contains("Garlic noodles"));
@@ -116,58 +119,58 @@ class SpreadsheetImportPageTests {
         Matcher token = Pattern.compile("name=\"token\" value=\"([0-9a-f]+)\"").matcher(page);
         assertTrue(token.find(), "the page carries the upload's token");
 
-        mockMvc.perform(post("/recipes/import/confirm").param("token", token.group(1))
+        mockMvc.perform(post("/import/confirm").param("token", token.group(1))
                         .session(session).with(user(principal)).with(csrf()))
                 .andExpect(redirectedUrl("/recipes"))
-                .andExpect(flash().attribute("message", "Imported 1 recipe and added 1 new ingredient."));
+                .andExpect(flash().attribute("message", "Imported 1 recipe and 1 new ingredient."));
         assertEquals(1, recipeService.findAll(user).size());
         assertNull(session.getAttribute("pantryprep.pendingImport"), "the held file is let go");
 
-        mockMvc.perform(post("/recipes/import/confirm").param("token", token.group(1))
+        mockMvc.perform(post("/import/confirm").param("token", token.group(1))
                         .session(session).with(user(principal)).with(csrf()))
-                .andExpect(redirectedUrl("/recipes/import"))
+                .andExpect(redirectedUrl("/import"))
                 .andExpect(flash().attributeExists("error"));
         assertEquals(1, recipeService.findAll(user).size(), "a second click doesn't import twice");
     }
 
     @Test
     void problemsAreListedOnThePageAndCancelLetsGo() throws Exception {
-        byte[] bad = ImportTestWorkbooks.of(PANTRY_WORKBOOK)
+        byte[] bad = ImportTestWorkbooks.of(WORKBOOK)
                 .row(PANTRY, "Rice", "lots", "kg", "", "", "", "").bytes();
         MockHttpSession session = new MockHttpSession();
-        var result = mockMvc.perform(multipart("/pantry/import/preview")
+        var result = mockMvc.perform(multipart("/import/preview")
                         .file(new MockMultipartFile("file", "shelf.xlsx", XLSX, bad))
                         .session(session).with(user(principal)).with(csrf()))
-                .andExpect(redirectedUrl("/pantry/import"))
+                .andExpect(redirectedUrl("/import"))
                 .andReturn();
         Object report = result.getFlashMap().get("report");
         assertNotNull(report);
-        String withProblems = mockMvc.perform(get("/pantry/import").session(session).with(user(principal))
+        String withProblems = mockMvc.perform(get("/import").session(session).with(user(principal))
                         .flashAttrs(result.getFlashMap()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertTrue(withProblems.contains("Nothing was imported yet"));
         assertTrue(withProblems.contains("shelf.xlsx"));
         assertTrue(withProblems.contains("Amount"));
 
-        byte[] good = ImportTestWorkbooks.of(PANTRY_WORKBOOK)
+        byte[] good = ImportTestWorkbooks.of(WORKBOOK)
                 .row(PANTRY, "Rice", "2", "kg", "", "", "", "").bytes();
-        mockMvc.perform(multipart("/pantry/import/preview")
+        mockMvc.perform(multipart("/import/preview")
                         .file(new MockMultipartFile("file", "shelf.xlsx", XLSX, good))
                         .session(session).with(user(principal)).with(csrf()))
-                .andExpect(redirectedUrl("/pantry/import"));
+                .andExpect(redirectedUrl("/import"));
         assertNotNull(session.getAttribute("pantryprep.pendingImport"));
-        mockMvc.perform(post("/pantry/import/cancel").session(session).with(user(principal)).with(csrf()))
-                .andExpect(redirectedUrl("/pantry/import"));
+        mockMvc.perform(post("/import/cancel").session(session).with(user(principal)).with(csrf()))
+                .andExpect(redirectedUrl("/import"));
         assertNull(session.getAttribute("pantryprep.pendingImport"));
         assertTrue(pantryService.findAll(user).isEmpty());
     }
 
     @Test
     void theWrongKindOfFileIsTurnedAwayPolitely() throws Exception {
-        mockMvc.perform(multipart("/pantry/import/preview")
+        mockMvc.perform(multipart("/import/preview")
                         .file(new MockMultipartFile("file", "shelf.csv", "text/csv", "a,b".getBytes()))
                         .with(user(principal)).with(csrf()))
-                .andExpect(redirectedUrl("/pantry/import"))
+                .andExpect(redirectedUrl("/import"))
                 .andExpect(flash().attribute("error",
                         org.hamcrest.Matchers.containsString("save it as an Excel workbook")));
     }

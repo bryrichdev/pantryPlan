@@ -36,7 +36,7 @@ class SpreadsheetTemplateTests {
 
     @Test
     void eachTemplateReadsBackWithItsSheetsHeadersAndNoRows() throws Exception {
-        for (WorkbookSpec spec : List.of(ImportWorkbooks.RECIPE_WORKBOOK, ImportWorkbooks.PANTRY_WORKBOOK)) {
+        for (WorkbookSpec spec : List.of(ImportWorkbooks.WORKBOOK)) {
             XlsxWorkbook workbook = XlsxReader.read(new ByteArrayInputStream(spec.template()));
             List<String> names = workbook.sheets().stream().map(XlsxSheet::name).toList();
             assertEquals(WorkbookSpec.INSTRUCTIONS, names.getFirst(), "instructions come first");
@@ -52,8 +52,16 @@ class SpreadsheetTemplateTests {
     }
 
     @Test
+    void oneTemplateHoldsEverySheetInOrder() throws Exception {
+        XlsxWorkbook workbook = XlsxReader.read(new ByteArrayInputStream(ImportWorkbooks.WORKBOOK.template()));
+        assertEquals(List.of("Instructions", "Recipes", "Recipe Ingredients", "Pantry", "Ingredients"),
+                workbook.sheets().stream().map(XlsxSheet::name).filter(n -> !n.equals(XlsxWriter.LISTS_SHEET))
+                        .toList());
+    }
+
+    @Test
     void everyDropdownFitsWhereExcelLooksForIt() throws Exception {
-        for (WorkbookSpec spec : List.of(ImportWorkbooks.RECIPE_WORKBOOK, ImportWorkbooks.PANTRY_WORKBOOK)) {
+        for (WorkbookSpec spec : List.of(ImportWorkbooks.WORKBOOK)) {
             String xml = allSheetXml(spec.template());
             Matcher formulas = Pattern.compile("<formula1>(.*?)</formula1>").matcher(xml);
             int found = 0;
@@ -64,7 +72,7 @@ class SpreadsheetTemplateTests {
             }
             assertTrue(found > 0, spec.title() + " offers dropdowns");
         }
-        assertTrue(allSheetXml(ImportWorkbooks.RECIPE_WORKBOOK.template()).contains(RecipeIcon.WRAP.getLabel()),
+        assertTrue(allSheetXml(ImportWorkbooks.WORKBOOK.template()).contains(RecipeIcon.WRAP.getLabel()),
                 "every picture is offered");
     }
 
