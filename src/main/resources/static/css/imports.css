@@ -1,0 +1,325 @@
+/* PantryPrep — spreadsheet import: the three steps, the preview, and problems. */
+
+.importpage { max-width: 64rem; }
+
+/* ---------- the three steps ---------- */
+
+.importsteps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+    counter-reset: importstep;
+}
+
+.importstep {
+    counter-increment: importstep;
+    padding: 1.25rem 1.35rem 1.35rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    min-width: 0;
+}
+
+.importstep::before {
+    content: counter(importstep);
+    display: inline-grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 0.7rem;
+    border-radius: 50%;
+    background: var(--herb-wash);
+    color: var(--herb-deep);
+    font-weight: 700;
+}
+
+.importstep h2 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    margin: 0 0 0.35rem;
+}
+
+.importstep > p {
+    margin: 0 0 1rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+}
+
+.importstep__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: 100%;
+}
+
+.importstep__button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.importstep__button svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex: none;
+    transition: transform 0.2s ease;
+}
+
+.importstep__button:hover svg { transform: translateY(2px); }
+
+/* ---------- what goes in each column ---------- */
+
+.importstep__more { margin: -0.4rem 0 0; font-size: 0.93rem; }
+
+.importstep__more a { font-weight: 600; }
+
+.importstep__file {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+}
+
+.importcolumns {
+    margin-top: 1.5rem;
+    padding: 1rem 1.35rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    scroll-margin-top: 6rem;
+}
+
+.importcolumns[open] { padding-bottom: 1.35rem; }
+
+.importcolumns__sheet dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.2rem 1.5rem;
+}
+
+.importcolumns__sheet dl > div,
+.importcolumns dt { break-inside: avoid; }
+
+.importcolumns summary {
+    cursor: pointer;
+    color: var(--herb);
+    font-weight: 600;
+    font-size: 0.93rem;
+}
+
+.importcolumns summary:hover { color: var(--herb-deep); }
+
+.importcolumns h3 {
+    font-size: 0.95rem;
+    margin: 1.1rem 0 0.2rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink);
+}
+
+.importcolumns dl {
+    margin: 0;
+    font-size: 0.86rem;
+}
+
+.importcolumns dt {
+    font-weight: 600;
+    margin-top: 0.7rem;
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+}
+
+.importcolumns dd {
+    margin: 0.1rem 0 0;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+}
+
+.importcolumns__required {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--herb-deep);
+    background: var(--herb-wash);
+    border-radius: 999px;
+    padding: 0.02rem 0.45rem;
+}
+
+/* ---------- upload ---------- */
+
+.importupload { display: grid; gap: 0.75rem; }
+
+.importupload__drop {
+    position: relative;
+    display: grid;
+    gap: 0.15rem;
+    justify-items: center;
+    text-align: center;
+    padding: 1.1rem 0.9rem;
+    border: 1.5px dashed var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--paper);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.importupload__drop:hover,
+.importupload__drop:focus-within,
+.importupload__drop.is-chosen {
+    border-color: var(--herb);
+    background: var(--herb-wash);
+}
+
+/* The real input covers the box, so a click or a dropped file lands on it. */
+.importupload__drop input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.importupload__label {
+    font-weight: 600;
+    color: var(--herb-deep);
+    overflow-wrap: anywhere;
+}
+
+.importupload__hint {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+}
+
+.importupload__error { margin: 0; }
+
+.importupload .button { justify-self: start; }
+
+/* ---------- preview and problems ---------- */
+
+.importresult {
+    padding: 1.25rem 1.35rem 1.35rem;
+    margin: 0 0 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--herb);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+.importresult--bad { border-left-color: var(--rust); }
+
+.importresult h2 {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    margin: 0 0 0.35rem;
+}
+
+.importresult > p { margin: 0 0 1rem; color: var(--ink-soft); }
+
+.importresult__file {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.importresult .table { margin-bottom: 0; }
+
+.importproblems__message { min-width: 16rem; }
+
+.importcounts {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.importcounts li {
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--radius);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    font-size: 0.92rem;
+}
+
+.importcounts strong {
+    font-size: 1.05rem;
+    color: var(--herb-deep);
+    margin-right: 0.15rem;
+}
+
+.importlists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.importlists h3 {
+    font-size: 0.95rem;
+    margin: 0 0 0.45rem;
+}
+
+.importlists__hint {
+    margin: -0.2rem 0 0.55rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+}
+
+.importnames {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    max-height: 12rem;
+    overflow-y: auto;
+}
+
+.importnames li {
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    background: var(--paper-sunk);
+    font-size: 0.86rem;
+    overflow-wrap: anywhere;
+}
+
+.importnames--new li {
+    background: var(--honey-wash);
+    color: var(--honey-ink);
+}
+
+.importresult__actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.importresult__actions form { margin: 0; }
+
+@media (max-width: 70rem) {
+    .importsteps { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 40rem) {
+    .importresult,
+    .importstep { padding: 1rem 1rem 1.1rem; }
+
+    .importresult__actions form,
+    .importresult__actions .button,
+    .importupload .button { width: 100%; justify-self: stretch; }
+
+    .importproblems__message { min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .importstep__button svg,
+    .importupload__drop { transition: none; }
+}

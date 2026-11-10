@@ -1,0 +1,164 @@
+package edu.wgu.pantryprep.importing;
+
+import static edu.wgu.pantryprep.importing.WorkbookSpec.optional;
+import static edu.wgu.pantryprep.importing.WorkbookSpec.required;
+
+import edu.wgu.pantryprep.domain.IngredientCategory;
+import edu.wgu.pantryprep.domain.RecipeClassification;
+import edu.wgu.pantryprep.domain.RecipeIcon;
+import edu.wgu.pantryprep.domain.StorageLocation;
+import edu.wgu.pantryprep.domain.Unit;
+import edu.wgu.pantryprep.importing.WorkbookSpec.Column;
+import edu.wgu.pantryprep.importing.WorkbookSpec.Sheet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * The two spreadsheets a cook can download, fill in and import: one for
+ * recipes with their ingredients, one for what is in the pantry. Limits match
+ * the forms, so a row that imports is one the form would have accepted.
+ */
+public final class ImportWorkbooks {
+
+    // Column keys.
+    public static final String NAME = "name";
+    public static final String SERVINGS = "servings";
+    public static final String PREP = "prepMinutes";
+    public static final String COOK = "cookMinutes";
+    public static final String MEAL_TYPE = "mealType";
+    public static final String CUISINE = "cuisine";
+    public static final String PICTURE = "picture";
+    public static final String TAGS = "tags";
+    public static final String DESCRIPTION = "description";
+    public static final String INSTRUCTIONS = "instructions";
+    public static final String RECIPE = "recipe";
+    public static final String INGREDIENT = "ingredient";
+    public static final String AMOUNT = "amount";
+    public static final String UNIT = "unit";
+    public static final String NOTE = "note";
+    public static final String CATEGORY = "category";
+    public static final String LOCATION = "location";
+    public static final String PURCHASED = "purchasedOn";
+    public static final String EXPIRES = "expiresOn";
+
+    private ImportWorkbooks() {
+    }
+
+    // ------------------------------------------------------- shared columns
+
+    /** Units by their short name, plus the spellings people write out. */
+    static final ValueType UNIT_TYPE = ValueType.choice(Unit.class, Unit::getAbbreviation, unitAliases());
+
+    private static Map<String, Unit> unitAliases() {
+        Map<String, Unit> aliases = new LinkedHashMap<>();
+        for (String alias : List.of("gram", "grams", "gr")) aliases.put(alias, Unit.GRAM);
+        for (String alias : List.of("kilogram", "kilograms", "kilo", "kilos", "kgs")) aliases.put(alias, Unit.KILOGRAM);
+        for (String alias : List.of("ounce", "ounces")) aliases.put(alias, Unit.OUNCE);
+        for (String alias : List.of("pound", "pounds", "lbs")) aliases.put(alias, Unit.POUND);
+        for (String alias : List.of("milliliter", "milliliters", "millilitre", "millilitres", "mls")) {
+            aliases.put(alias, Unit.MILLILITER);
+        }
+        for (String alias : List.of("liter", "liters", "litre", "litres")) aliases.put(alias, Unit.LITER);
+        for (String alias : List.of("teaspoon", "teaspoons", "tsps")) aliases.put(alias, Unit.TEASPOON);
+        for (String alias : List.of("tablespoon", "tablespoons", "tbsps", "tbs", "tbl")) {
+            aliases.put(alias, Unit.TABLESPOON);
+        }
+        for (String alias : List.of("cups")) aliases.put(alias, Unit.CUP);
+        for (String alias : List.of("piece", "pieces", "pcs", "each", "ea", "whole", "count")) {
+            aliases.put(alias, Unit.PIECE);
+        }
+        return aliases;
+    }
+
+    static final ValueType CATEGORY_TYPE = ValueType.choice(IngredientCategory.class);
+
+    private static Column ingredient(String note) {
+        return required(INGREDIENT, "Ingredient", ValueType.text(120), 24, note);
+    }
+
+    private static Column category() {
+        return optional(CATEGORY, "Category", CATEGORY_TYPE, 15,
+                "Only used for an ingredient you don't have yet. Other if left blank");
+    }
+
+    // -------------------------------------------------------------- recipes
+
+    public static final Sheet RECIPES = new Sheet("Recipes",
+            "One row per recipe. Each recipe's ingredients go on the Recipe Ingredients sheet.",
+            List.of(
+                    required(NAME, "Name", ValueType.text(150), 30,
+                            "Each name can be used once, and not for a recipe you already have"),
+                    required(SERVINGS, "Serves", ValueType.whole(1, 100), 9, "How many it feeds"),
+                    optional(PREP, "Prep minutes", ValueType.whole(0, 1440), 12, null),
+                    optional(COOK, "Cook minutes", ValueType.whole(0, 1440), 12, null),
+                    optional(MEAL_TYPE, "Meal type", ValueType.oneOf(RecipeClassification.MEAL_TYPES), 12,
+                            "Auto-fill puts a recipe only in slots of its meal type"),
+                    optional(CUISINE, "Cuisine", ValueType.oneOf(RecipeClassification.CUISINES), 15, null),
+                    optional(PICTURE, "Picture", ValueType.choice(RecipeIcon.class, RecipeIcon::getLabel, Map.of()),
+                            17, "A little drawing to spot it by in lists"),
+                    optional(TAGS, "Tags", ValueType.text(300), 22, "Separate with commas, such as weeknight, freezer"),
+                    optional(DESCRIPTION, "Description", ValueType.text(2000), 34, "One or two lines about the dish"),
+                    optional(INSTRUCTIONS, "Instructions", ValueType.text(20000), 50, "The method, in as many lines as you like")));
+
+    public static final Sheet RECIPE_INGREDIENTS = new Sheet("Recipe Ingredients",
+            "One row per ingredient in a recipe: a recipe with six ingredients has six rows here.",
+            List.of(
+                    required(RECIPE, "Recipe", ValueType.text(150), 30,
+                            "The recipe's name, as written on the Recipes sheet"),
+                    ingredient("Matched to your ingredients by name. One you don't have yet is added for you, "
+                            + "kept in the unit used here"),
+                    required(AMOUNT, "Amount", ValueType.amount(false), 10, null),
+                    required(UNIT, "Unit", UNIT_TYPE, 8, null),
+                    optional(NOTE, "Note", ValueType.text(255), 24, "Such as diced, or to taste"),
+                    category()));
+
+    public static final WorkbookSpec RECIPE_WORKBOOK = new WorkbookSpec(
+            "PantryPrep recipes",
+            "pantryprep-recipes.xlsx",
+            List.of(
+                    "Put one recipe per row on the Recipes sheet, then list its ingredients on the Recipe "
+                            + "Ingredients sheet, one per row, each naming the recipe it belongs to.",
+                    "Keep row 1 on each sheet as it is: PantryPrep finds every column by its header. Column order "
+                            + "doesn't matter.",
+                    "Green headers marked * are required on every row you fill in.",
+                    "Ingredients are matched to the ones you already have by name, ignoring case. Any that don't "
+                            + "match are added to your ingredients for you.",
+                    "Where a column has a dropdown, pick from it. Amounts can be 2, 1.5, 1/2 or 1 1/2.",
+                    "To import: in PantryPrep, open Recipes, choose Import spreadsheet, upload this file and check "
+                            + "the preview. Nothing is saved until you click Import, and then everything is saved "
+                            + "together or not at all."),
+            List.of(RECIPES, RECIPE_INGREDIENTS));
+
+    // --------------------------------------------------------------- pantry
+
+    public static final Sheet PANTRY = new Sheet("Pantry",
+            "One row per thing on your shelves. Two bags of flour in different places can be two rows.",
+            List.of(
+                    ingredient("Matched to your ingredients by name. One you don't have yet is added for you"),
+                    required(AMOUNT, "Amount", ValueType.amount(true), 10, null),
+                    optional(UNIT, "Unit", UNIT_TYPE, 8,
+                            "Leave blank to use the unit the ingredient is kept in. Another unit is converted "
+                                    + "to that one. Required for an ingredient you don't have yet"),
+                    optional(LOCATION, "Location", ValueType.choice(StorageLocation.class), 12,
+                            "Where the ingredient usually lives if left blank"),
+                    optional(PURCHASED, "Purchased", ValueType.DATE, 12, "Today if left blank"),
+                    optional(EXPIRES, "Expires", ValueType.DATE, 12, "Leave blank if it keeps"),
+                    category()));
+
+    public static final WorkbookSpec PANTRY_WORKBOOK = new WorkbookSpec(
+            "PantryPrep pantry",
+            "pantryprep-pantry.xlsx",
+            List.of(
+                    "Put one pantry item per row on the Pantry sheet.",
+                    "Keep row 1 as it is: PantryPrep finds every column by its header. Column order doesn't matter.",
+                    "Green headers marked * are required on every row you fill in.",
+                    "Ingredients are matched to the ones you already have by name, ignoring case. Any that don't "
+                            + "match are added to your ingredients for you, kept in the unit you give.",
+                    "Where a column has a dropdown, pick from it. Dates can be typed as 2026-01-31 or 1/31/2026.",
+                    "Importing adds to your pantry. It doesn't replace what's already there.",
+                    "To import: in PantryPrep, open Pantry, choose Import spreadsheet, upload this file and check "
+                            + "the preview. Nothing is saved until you click Import, and then everything is saved "
+                            + "together or not at all."),
+            List.of(PANTRY));
+}

@@ -1034,3 +1034,61 @@
         });
     });
 }());
+
+/*
+ * Spreadsheet import: the upload box shows the chosen file's name, and a file
+ * that is plainly wrong (too large, or not an .xlsx) is caught before it is
+ * sent. The server checks the same things, so this only saves a round trip.
+ */
+(function () {
+    "use strict";
+
+    function check(input) {
+        var form = input.form;
+        var box = input.closest(".importupload__drop");
+        var label = form.querySelector("[data-import-file-name]");
+        var error = form.querySelector("[data-import-file-error]");
+        var file = input.files && input.files[0];
+        var max = parseInt(form.getAttribute("data-max-bytes"), 10) || 0;
+        var problem = "";
+        if (file && !/\.xlsx$/i.test(file.name)) {
+            problem = "Choose an .xlsx file. If yours is .xls, .csv or .numbers, save it as an Excel workbook first.";
+        } else if (file && max && file.size > max) {
+            problem = "That file is larger than " + Math.round(max / 1048576) + " MB.";
+        }
+        if (label) {
+            label.textContent = file ? file.name : "Choose a .xlsx file";
+        }
+        if (box) {
+            box.classList.toggle("is-chosen", Boolean(file) && !problem);
+        }
+        if (error) {
+            error.textContent = problem;
+            error.hidden = !problem;
+        }
+        return !problem;
+    }
+
+    /* "What goes in each column" opens the guide it points to, not just scrolls to it. */
+    document.addEventListener("click", function (event) {
+        var link = event.target.closest && event.target.closest('a[href="#columns"]');
+        var guide = link && document.getElementById("columns");
+        if (guide) {
+            guide.open = true;
+        }
+    });
+
+    document.addEventListener("change", function (event) {
+        if (event.target.matches && event.target.matches("[data-import-file]")) {
+            check(event.target);
+        }
+    });
+
+    document.addEventListener("submit", function (event) {
+        var input = event.target.querySelector && event.target.querySelector("[data-import-file]");
+        if (input && !check(input)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }, true);
+}());

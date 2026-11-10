@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${kind.title})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topnav}"></header>
+
+<main class="page importpage">
+    <p class="crumb">
+        <a th:href="@{/{path}(path=${kind.path})}"
+           th:text="${kind == T(edu.wgu.pantryprep.web.ImportController.Kind).PANTRY ? 'Pantry' : 'Recipes'}">Recipes</a>
+    </p>
+    <div class="pagehead">
+        <div>
+            <h1 th:text="${kind.title}">Import recipes</h1>
+            <p class="pagehead__note" th:if="${kind.name() == 'RECIPES'}">
+                Bring in a whole cookbook at once: fill in the spreadsheet, upload it, check the
+                preview, and import. Any ingredient you don't have yet is added for you.
+            </p>
+            <p class="pagehead__note" th:if="${kind.name() == 'PANTRY'}">
+                Stock the shelves in one go: fill in the spreadsheet, upload it, check the preview,
+                and import. Any ingredient you don't have yet is added for you.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!-- A file that was read but can't be imported as it is. -->
+    <section class="importresult importresult--bad" th:if="${report != null and report.hasProblems()}"
+             aria-labelledby="problems-title">
+        <h2 id="problems-title">Nothing was imported yet</h2>
+        <p>
+            <span th:text="${fileName}">recipes.xlsx</span> has
+            <strong th:text="${#lists.size(report.problems()) == 1 ? '1 thing' : #lists.size(report.problems()) + ' things'}">3 things</strong>
+            to fix first. Fix them in the spreadsheet, save it, and upload it again.
+        </p>
+        <table class="table importproblems">
+            <caption class="visually-hidden">Problems found in the spreadsheet</caption>
+            <thead>
+            <tr>
+                <th scope="col">Sheet</th>
+                <th scope="col">Row</th>
+                <th scope="col">Column</th>
+                <th scope="col">What to fix</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="problem : ${report.problems()}">
+                <td data-label="Sheet" th:text="${problem.sheet() ?: 'Whole file'}">Recipes</td>
+                <td data-label="Row" th:text="${problem.row() ?: '—'}">4</td>
+                <td data-label="Column" th:text="${problem.column() ?: '—'}">Serves</td>
+                <td data-label="What to fix" class="importproblems__message table__wide" th:text="${problem.message()}">
+                    Use a number from 1 to 100</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- A file that passed every check, waiting for the go-ahead. -->
+    <section class="importresult importresult--ready" th:if="${pending != null}" aria-labelledby="ready-title">
+        <h2 id="ready-title">Ready to import</h2>
+        <p class="importresult__file" th:text="${pending.fileName()}">recipes.xlsx</p>
+        <ul class="importcounts">
+            <li th:each="count : ${report.counts()}">
+                <strong th:text="${count.rows()}">3</strong>
+                <span th:text="${count.rows() == 1 ? 'row' : 'rows'}">rows</span>
+                <span>from</span> <span th:text="${count.sheet()}">Recipes</span>
+            </li>
+            <li th:unless="${#lists.isEmpty(report.newIngredients())}">
+                <strong th:text="${#lists.size(report.newIngredients())}">2</strong>
+                <span th:text="${#lists.size(report.newIngredients()) == 1 ? 'new ingredient' : 'new ingredients'}">new ingredients</span>
+            </li>
+        </ul>
+
+        <div class="importlists">
+            <div th:unless="${#lists.isEmpty(report.created())}">
+                <h3 th:text="${kind.name() == 'PANTRY' ? 'Stocking' : 'Recipes to add'}">Recipes to add</h3>
+                <ul class="importnames">
+                    <li th:each="name : ${report.created()}" th:text="${name}">Weeknight chili</li>
+                </ul>
+            </div>
+            <div th:unless="${#lists.isEmpty(report.newIngredients())}">
+                <h3>New ingredients</h3>
+                <p class="importlists__hint">Not on your ingredients list yet, so these are added too.
+                    You can set their details later on the Ingredients page.</p>
+                <ul class="importnames importnames--new">
+                    <li th:each="name : ${report.newIngredients()}" th:text="${name}">Smoked paprika</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="importresult__actions">
+            <form th:action="@{/{path}/import/confirm(path=${kind.path})}" method="post">
+                <input type="hidden" name="token" th:value="${pending.token()}">
+                <button type="submit" class="button button--primary" data-busy="Importing…">Import</button>
+            </form>
+            <form th:action="@{/{path}/import/cancel(path=${kind.path})}" method="post">
+                <button type="submit" class="button button--quiet">Cancel</button>
+            </form>
+        </div>
+    </section>
+
+    <ol class="importsteps">
+        <li class="importstep">
+            <h2>Download the spreadsheet</h2>
+            <p>It opens in Excel, Numbers or Google Sheets. The first sheet explains every column.</p>
+            <a class="button button--quiet importstep__button"
+               th:href="@{/{path}/import/template(path=${kind.path})}" download>
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Download template</span>
+            </a>
+            <p class="importstep__file" th:text="${kind.templateName}">pantryprep-recipes-template.xlsx</p>
+        </li>
+        <li class="importstep">
+            <h2>Fill it in</h2>
+            <p th:if="${kind.name() == 'RECIPES'}">One recipe per row on <em>Recipes</em>, and one row per
+                ingredient on <em>Recipe Ingredients</em>, naming the recipe it belongs to.</p>
+            <p th:if="${kind.name() == 'PANTRY'}">One row per thing on your shelves. Leave Unit blank to
+                use the unit the ingredient is already kept in.</p>
+            <p class="importstep__more"><a href="#columns">What goes in each column</a></p>
+        </li>
+        <li class="importstep">
+            <h2>Upload it</h2>
+            <p>You'll see what will be added before anything is saved.</p>
+            <form class="importupload" th:action="@{/{path}/import/preview(path=${kind.path})}" method="post"
+                  enctype="multipart/form-data" th:attr="data-max-bytes=${maxMegabytes * 1024 * 1024}">
+                <label class="importupload__drop">
+                    <input type="file" name="file" required data-import-file
+                           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                    <span class="importupload__label" data-import-file-name>Choose a .xlsx file</span>
+                    <span class="importupload__hint" th:text="|Up to ${maxMegabytes} MB|">Up to 5 MB</span>
+                </label>
+                <p class="field__error importupload__error" data-import-file-error hidden></p>
+                <button type="submit" class="button button--primary" data-busy="Checking…">Preview</button>
+            </form>
+        </li>
+    </ol>
+
+    <details class="importcolumns" id="columns">
+        <summary>What goes in each column</summary>
+        <div class="importcolumns__sheet" th:each="sheet : ${kind.workbook.sheets()}">
+            <h3 th:text="${sheet.name()}">Recipes</h3>
+            <dl>
+                <div th:each="column : ${sheet.columns()}">
+                    <dt>
+                        <span th:text="${column.header()}">Name</span>
+                        <span class="importcolumns__required" th:if="${column.required()}">required</span>
+                    </dt>
+                    <dd>
+                        <span th:text="${column.type().describe()}">Text</span><span
+                            th:if="${column.note() != null}" th:text="|. ${column.note()}|">. Note</span>
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </details>
+</main>
+
+<footer th:replace="~{fragments/layout :: sitefooter}"></footer>
+</body>
+</html>
